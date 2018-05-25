@@ -3,6 +3,7 @@
 attribute vec4 offset;
 attribute float scale;
 attribute float txValue;
+attribute float id;
 
 varying vec3 vViewPosition;
 
@@ -15,8 +16,8 @@ void main() {
 
     transformed.xy *= scale;
 
-	//float height = log(  (txValue) );
-	float height = txValue;
+	//float height = log( (txValue) );
+	float height = txValue * 0.0000001;
 
     transformed.z *= height;
     transformed.z += height * 0.5;

@@ -10,6 +10,8 @@ import 'firebase/firestore'
 import 'firebase/auth'
 import Voronoi from 'voronoi'
 import SimplexNoise from 'simplex-noise'
+import seedrandom from 'seedrandom'
+import { map } from './utils/math'
 
 // Config
 import Config from './Config'
@@ -19,8 +21,6 @@ import Crystal from './geometry/crystal/Crystal'
 
 // CSS
 import './App.css'
-
-const noisejs = require('noisejs')
 
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
@@ -91,22 +91,29 @@ class App extends mixin(EventEmitter, Component) {
         window.fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
           .then((resp) => resp.json())
           .then(function (block) {
+            block.tx.forEach(function (tx, index) {
+              let txValue = 0
+              tx.out.forEach((output, index) => {
+                txValue += output.value
+              })
+              tx.value = txValue
+            })
+
             block.tx.sort(function (a, b) {
               let transactionValueA = 0
               a.out.forEach((output, index) => {
                 transactionValueA += output.value
               })
-              a.value = transactionValueA
 
               let transactionValueB = 0
               b.out.forEach((output, index) => {
                 transactionValueB += output.value
               })
-              b.value = transactionValueB
 
               return transactionValueA - transactionValueB
             })
 
+            let outputTotal = 0
             let transactions = []
             block.tx.forEach((tx) => {
               let out = []
@@ -118,16 +125,23 @@ class App extends mixin(EventEmitter, Component) {
                 )
               })
 
+              if (typeof tx.value === 'undefined') {
+                tx.value = 0
+              }
+
               let txObj = {
                 value: tx.value,
                 out: out
               }
+
+              outputTotal += tx.value
 
               transactions.push(txObj)
             })
 
             console.log('Saving block to cache...')
 
+            block.outputTotal = outputTotal
             block.tx = transactions
 
             // save to firebase
@@ -136,7 +150,7 @@ class App extends mixin(EventEmitter, Component) {
             ).then(function () {
               console.log('Document successfully written!')
             }).catch(function (error) {
-              console.error('Error writing document: ', error)
+              console.log('Error writing document: ', error)
             })
 
             resolve(block)
@@ -146,90 +160,178 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initLights () {
-    let light = new THREE.AmbientLight(0xffffff)
+    let light = new THREE.AmbientLight(0xcccccc)
     this.scene.add(light)
 
-    let pointLight = new THREE.PointLight(0xffffff, 10)
+    let pointLight = new THREE.PointLight(0xffffff, 1)
     pointLight.position.set(0, -50, -100)
     this.scene.add(pointLight)
 
-    let pointLight2 = new THREE.PointLight(0xffffff, 10)
+    let pointLight2 = new THREE.PointLight(0xffffff, 1)
     pointLight2.position.set(0, 50, 100)
     this.scene.add(pointLight2)
   }
 
   async initGeometry () {
     this.hashes = [
+      '0000000000000000223fe310bdde3f52009c4aa77e27292db062bb85925ee811',
       '00000000000000000018b2ebf79807d850af7fb61cfc7c33477a1061ceac9693',
       '000000000000000000a3ccaa60d0f98276b24e0b0f4c145477805e4181325140',
       '000000000000000074953313ca30236fafe09ebd7b990f69e31778cf54c33de6',
       '00000000000000000043eaeb09b0d6b25e564068a130642fab809ed91e1acfcc',
       '0000000000000587556425a377c751a40d61fe1156c2e6b16e844fdc38c252b7',
-      '00000000000000000088092c77b76f59f7294ef68b361a23c8827cc6bc3fe29f'
+      '00000000000000000088092c77b76f59f7294ef68b361a23c8827cc6bc3fe29f',
+      '000000000000000003543ccba3b0fcc00ea298cce116764f1e3bd5f6d20a917a',
+      '000000000000000024113997c7331a9d083bff486f7c564c36fe2925734510b7',
+      '00000000000000002316a635e60c4b315b2ce9f7109fbbc70a5088229574325b',
+      '000000000000000014393e948604bc967c739725989222a3c2d96f98a6dac313',
+      '0000000000000000223fe310bdde3f52009c4aa77e27292db062bb85925ee811',
+      '0000000000000000279132016eea95836db7ecc8b5a71110e8640d16a436863e',
+      '000000000000000015a7a05e84b57a4773c119ce560e896b86fe7e9fafd0ac87',
+      '0000000000000000279132016eea95836db7ecc8b5a71110e8640d16a436863e',
+      '0000000000000000129dc2df86682d8c19bcc24e4b49e3390c363477a27e15d8',
+      '000000000000000001cf3ddab04e81d07abc36fbab57f652e520d125ebd6277b',
+      '0000000000000000208ffc094fdc9d647cdc73e60587336ade608c467e0effe6',
+      '00000000000000002731d68233e73e21544925aad3622accf4b779deac229ec0',
+      '0000000000000000039994df7b762f60818eb8a8fc5b78122a28eabdd143cdd8',
+      '00000000000000000f86f2978a64f99b22fa17a75d22320686a0d500e1cc8ffa',
+      '000000000000000000e2cc68fc9245186abebf43f1bf8c3a69900a8b006b4061',
+      '00000000000000000cb816b0c13d2485e48c6e38da50c131e514b5bcee881208',
+      '0000000000000000102c0e933321897d87132171105bb5796d267b06e0b958dd',
+      '0000000000000000183e67f807eb33f4708da2714da3606ff157145d4c09a56d',
+      '00000000000000001b9959619c7a556baacaf8d0a6e9a0994ba93f2dfdf30765',
+      '0000000000000000088937c33778264f601537f9409256a09801bd5f4fcb4cdd',
+      '00000000000000000fe49efb9fafc78f38960b6962894576025400ab80c3442b',
+      '000000000000000027f912db19dc4976569022f24d27ae5f69094d154db08c9a',
+      '00000000000000001119c560f70c35932bffb5ff682d59f9cbf8af42fcdda747',
+      '000000000000000007311dc0dfad3525d2816772ae6fdafe3ce8bfd99860f6f0',
+      '00000000000000000018b2ebf79807d850af7fb61cfc7c33477a1061ceac9693',
+      '000000000000000000a3ccaa60d0f98276b24e0b0f4c145477805e4181325140',
+      '000000000000000074953313ca30236fafe09ebd7b990f69e31778cf54c33de6',
+      '00000000000000000043eaeb09b0d6b25e564068a130642fab809ed91e1acfcc',
+      '0000000000000587556425a377c751a40d61fe1156c2e6b16e844fdc38c252b7',
+      '00000000000000000088092c77b76f59f7294ef68b361a23c8827cc6bc3fe29f',
+      '000000000000000003543ccba3b0fcc00ea298cce116764f1e3bd5f6d20a917a',
+      '000000000000000024113997c7331a9d083bff486f7c564c36fe2925734510b7',
+      '00000000000000002316a635e60c4b315b2ce9f7109fbbc70a5088229574325b',
+      '000000000000000014393e948604bc967c739725989222a3c2d96f98a6dac313',
+      '0000000000000000223fe310bdde3f52009c4aa77e27292db062bb85925ee811',
+      '0000000000000000279132016eea95836db7ecc8b5a71110e8640d16a436863e',
+      '000000000000000015a7a05e84b57a4773c119ce560e896b86fe7e9fafd0ac87',
+      '0000000000000000279132016eea95836db7ecc8b5a71110e8640d16a436863e',
+      '0000000000000000129dc2df86682d8c19bcc24e4b49e3390c363477a27e15d8',
+      '000000000000000001cf3ddab04e81d07abc36fbab57f652e520d125ebd6277b',
+      '0000000000000000208ffc094fdc9d647cdc73e60587336ade608c467e0effe6',
+      '00000000000000002731d68233e73e21544925aad3622accf4b779deac229ec0',
+      '0000000000000000039994df7b762f60818eb8a8fc5b78122a28eabdd143cdd8',
+      '00000000000000000f86f2978a64f99b22fa17a75d22320686a0d500e1cc8ffa',
+      '000000000000000000e2cc68fc9245186abebf43f1bf8c3a69900a8b006b4061',
+      '00000000000000000cb816b0c13d2485e48c6e38da50c131e514b5bcee881208',
+      '0000000000000000102c0e933321897d87132171105bb5796d267b06e0b958dd',
+      '0000000000000000183e67f807eb33f4708da2714da3606ff157145d4c09a56d',
+      '00000000000000001b9959619c7a556baacaf8d0a6e9a0994ba93f2dfdf30765',
+      '0000000000000000088937c33778264f601537f9409256a09801bd5f4fcb4cdd',
+      '00000000000000000fe49efb9fafc78f38960b6962894576025400ab80c3442b',
+      '000000000000000027f912db19dc4976569022f24d27ae5f69094d154db08c9a',
+      '00000000000000001119c560f70c35932bffb5ff682d59f9cbf8af42fcdda747',
+      '000000000000000007311dc0dfad3525d2816772ae6fdafe3ce8bfd99860f6f0'
     ]
 
-    let block = await this.getData('00000000000000000018b2ebf79807d850af7fb61cfc7c33477a1061ceac9693')
+    let blocks = []
+    let diagrams = []
 
-    let pointCount = Math.max(block.n_tx, 4)
+    async function asyncForEach (array, callback) {
+      for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array)
+      }
+    }
 
-    let noise = new noisejs.Noise(777)
+    let generateGeometry = async function (hash, blockIndex) {
+      let block = await this.getData(hash)
 
-    var simplex = new SimplexNoise(777)
+      blocks.push(block)
+      let pointCount = Math.max(block.n_tx, 4)
 
-    let sites = []
+      var simplex = new SimplexNoise(block.height)
 
-    for (let index = 0; index < pointCount; index++) {
-      let found = false
-      let x = 0
-      let y = 0
+      let sites = []
 
-      while (found === false) {
-        x = Math.floor(Math.random() * this.planeSize)
-        y = Math.floor(Math.random() * this.planeSize)
+      Math.seedrandom(block.height)
 
-        // let noiseVal = noise.perlin2(x / 100, y / 100)
-        let noiseVal = simplex.noise2D(x / 300, y / 300)
+      for (let index = 0; index < pointCount; index++) {
+        let found = false
+        let x = 0
+        let y = 0
 
-        if (((Math.random() * 5) * noiseVal) > -0.3) {
-        // if (noiseVal > 0.0) {
-          let exists = false
-          for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
-            const site = sites[existsIndex]
-            if (site.x === x && site.y === y) {
-              exists = true
-              break
+        while (found === false) {
+          x = Math.floor(Math.random() * this.planeSize)
+          y = Math.floor(Math.random() * this.planeSize)
+
+          let noiseVal = simplex.noise2D(x / 300, y / 300)
+
+          if (((Math.random() * 5) * noiseVal) > -0.3) {
+            let exists = false
+            for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
+              const site = sites[existsIndex]
+              if (site.x === x && site.y === y) {
+                exists = true
+                break
+              }
+            }
+            if (!exists) {
+              found = true
             }
           }
-          if (!exists) {
-            found = true
+        }
+        sites.push({x: x, y: y})
+      }
+
+      let diagram = this.voronoi.compute(sites, {
+        xl: 0,
+        xr: this.planeSize,
+        yt: 0,
+        yb: this.planeSize
+      })
+
+      // work out network health
+      let feeToValueRatio = 0
+      if (block.outputTotal !== 0) {
+        feeToValueRatio = block.fee / block.outputTotal
+      }
+
+      let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
+      if (blockHealth < 0) {
+        blockHealth = 0
+      }
+
+      let relaxIterations = Math.round(blockHealth)
+
+      if (block.n_tx > 1) {
+        for (let index = 0; index < relaxIterations; index++) {
+          try {
+            diagram = this.relaxSites(diagram)
+          } catch (error) {
+            console.log(error)
           }
         }
       }
-      sites.push({x: x, y: y})
+
+      diagrams.push(diagram)
+
+      let crystal = new Crystal().create(block, diagram)
+
+      crystal.rotation.z = (2 * Math.PI) / this.hashes.length * blockIndex
+      crystal.translateY(4800)
+      crystal.rotateZ(-0.09)
+
+      this.scene.add(crystal)
     }
 
-    this.diagram = this.voronoi.compute(sites, {
-      xl: 0,
-      xr: this.planeSize,
-      yt: 0,
-      yb: this.planeSize
+    let blockIndex = 0
+    await asyncForEach(this.hashes, async (hash) => {
+      await generateGeometry.call(this, hash, blockIndex)
+      blockIndex++
     })
-
-    this.relaxIterate()
-
-    this.crystal = new Crystal().create(block, this.diagram, this.scene, sites)
-
-    this.scene.add(this.crystal)
-  }
-
-  relaxIterate () {
-    for (let index = 0; index < 2; index++) {
-      try {
-        this.relaxSites()
-      } catch (error) {
-        console.log(error)
-      }
-    }
   }
 
   // Lloyds relaxation methods: http://www.raymondhill.net/voronoi/rhill-voronoi-demo5.html
@@ -279,8 +381,8 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  relaxSites () {
-    let cells = this.diagram.cells
+  relaxSites (diagram) {
+    let cells = diagram.cells
     let cellIndex = cells.length
     let cell
     let site
@@ -316,12 +418,14 @@ class App extends mixin(EventEmitter, Component) {
       sites.push(site)
     }
 
-    this.diagram = this.voronoi.compute(sites, {
+    diagram = this.voronoi.compute(sites, {
       xl: 0,
       xr: this.planeSize,
       yt: 0,
       yb: this.planeSize
     })
+
+    return diagram
   }
 
   initSound () {
@@ -345,7 +449,7 @@ class App extends mixin(EventEmitter, Component) {
     this.controls.enablePan = false
     this.controls.autoRotate = this.config.scene.autoRotate
     this.controls.autoRotateSpeed = this.config.scene.autoRotateSpeed */
-    // this.controls.zoomSpeed = 0.7
+    this.controls.zoomSpeed = 2.0
     this.controls.rotateSpeed = 0.07
     this.controls.enableDamping = true
     this.controls.enableZoom = true
@@ -386,7 +490,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.scene = new THREE.Scene()
-    this.scene.rotation.z = 0.3
+    this.scene.rotation.x = (Math.PI / 2)
     this.scene.rotation.y = Math.PI
     this.scene.position.y += 1.0
   }
@@ -395,7 +499,13 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera () {
-    this.camera = new THREE.PerspectiveCamera(this.config.camera.fov, window.innerWidth / window.innerHeight, 0.1, 20000)
+    this.camera = new THREE.PerspectiveCamera(
+      this.config.camera.fov,
+      window.innerWidth / window.innerHeight,
+      1.0,
+      10000000
+    )
+    // this.camera.logarithmicDepthBuffer = true
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
     this.camera.position.z = this.config.camera.initPos.z

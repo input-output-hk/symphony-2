@@ -4,7 +4,6 @@ import * as THREE from 'three'
 // shaders
 import fragmentShader from './shaders/crystal.frag'
 import vertexShader from './shaders/crystal.vert'
-
 import { map } from '../../utils/math'
 
 export default class Crystal {
@@ -15,9 +14,7 @@ export default class Crystal {
     return center
   }
 
-  create (block, voronoiDiagram, scene) {
-    console.log(voronoiDiagram)
-
+  create (block, voronoiDiagram) {
     this.instances = voronoiDiagram.cells.length
 
     let path = new THREE.LineCurve3()
@@ -25,9 +22,12 @@ export default class Crystal {
     path.v2 = new THREE.Vector3(0.0, 0.0, 50.0)
 
     // let tubeGeo = new THREE.TubeBufferGeometry(path, 2, 1, 6, true)
-    let tubeGeo = new THREE.CylinderBufferGeometry(1, 1, 1, 6)
+    let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.03, 0))
 
-    this.geometry = new THREE.InstancedBufferGeometry().copy(tubeGeo)
+    let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
+
+    this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
 
     let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instances * 2), 2)
@@ -75,7 +75,8 @@ export default class Crystal {
 
       txValues.setX(
         i,
-        map(tx.value, minTxValue, maxTxValue, 1.0, 5000.0)
+        // map(tx.value, minTxValue, maxTxValue, 1.0, 5000.0)
+        tx.value
       )
 
       offsets.setXY(
@@ -97,8 +98,8 @@ export default class Crystal {
       flatShading: true,
       metalness: 0.5,
       roughness: 0.5,
-      transparent: true,
-      opacity: 0.8
+      transparent: false,
+      opacity: 1.0
     })
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
