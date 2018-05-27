@@ -7,6 +7,11 @@ import vertexShader from './shaders/crystal.vert'
 import { map } from '../../utils/math'
 
 export default class Crystal {
+  constructor (firebaseDB) {
+    this.firebaseDB = firebaseDB
+    this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
+  }
+
   getCentroid (coord) {
     var center = coord.reduce(function (x, y) {
       return [x[0] + y[0] / coord.length, x[1] + y[1] / coord.length]
@@ -14,14 +19,9 @@ export default class Crystal {
     return center
   }
 
-  create (block, voronoiDiagram) {
-    this.instances = voronoiDiagram.cells.length
+  async create (block, voronoiDiagram) {
+    this.instanceCount = voronoiDiagram.cells.length
 
-    let path = new THREE.LineCurve3()
-    path.v1 = new THREE.Vector3(0.0, 0.0, 0.0)
-    path.v2 = new THREE.Vector3(0.0, 0.0, 50.0)
-
-    // let tubeGeo = new THREE.TubeBufferGeometry(path, 2, 1, 6, true)
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
     tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.03, 0))
 
@@ -30,9 +30,9 @@ export default class Crystal {
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
 
-    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instances * 2), 2)
-    let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instances), 1)
-    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instances), 1)
+    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount * 2), 2)
+    let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
+    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
 
     // get min/max tx value in block
     let maxTxValue = 0
@@ -42,7 +42,7 @@ export default class Crystal {
       minTxValue = Math.min(minTxValue, tx.value)
     })
 
-    for (let i = 0, ul = offsets.count; i < ul; i++) {
+    for (let i = 0; i < this.instanceCount; i++) {
       if (typeof block.tx[i] === 'undefined') {
         continue
       }
@@ -71,24 +71,81 @@ export default class Crystal {
       // let radius = Math.max(0.01, (Math.sqrt(minDistToSite))) * 0.5
       let radius = Math.sqrt(minDistToSite) * 0.5
 
-      let tx = block.tx[i]
-
-      txValues.setX(
-        i,
-        // map(tx.value, minTxValue, maxTxValue, 1.0, 5000.0)
-        tx.value
-      )
-
       offsets.setXY(
         i,
         site.x,
         site.y
       )
+
       scales.setX(
         i,
         radius
       )
+
+      let tx = block.tx[i]
+      txValues.setX(
+        i,
+        // map(tx.value, minTxValue, maxTxValue, 1.0, 5000.0)
+        tx.value
+      )
     }
+
+    this.docRefGeo.doc(block.hash).set({
+      offsets: JSON.stringify(offsets.array),
+      scales: JSON.stringify(scales.array)
+    }).then(function () {
+      console.log('Document successfully written!')
+    }).catch(function (error) {
+      console.log('Error writing document: ', error)
+    })
+
+    this.geometry.addAttribute('offset', offsets)
+    this.geometry.addAttribute('scale', scales)
+    this.geometry.addAttribute('txValue', txValues)
+
+    this.material = new CrystalMaterial({
+      color: 0xffffff,
+      flatShading: true,
+      metalness: 0.5,
+      roughness: 0.5,
+      transparent: false,
+      opacity: 1.0
+    })
+
+    this.mesh = new THREE.Mesh(this.geometry, this.material)
+
+    this.mesh.frustumCulled = false
+
+    return this.mesh
+  }
+
+  async fetch (block, offsetsArray, scalesArray) {
+    this.instanceCount = scalesArray.length
+
+    let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.03, 0))
+
+    let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
+
+    this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
+    this.geometry.rotateX(Math.PI / 2)
+
+    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 2)
+    let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
+    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
+
+    for (let i = 0; i < this.instanceCount; i++) {
+      if (typeof block.tx[i] === 'undefined') {
+        continue
+      }
+      let tx = block.tx[i]
+      txValues.setX(
+        i,
+        // map(tx.value, minTxValue, maxTxValue, 1.0, 5000.0)
+        tx.value
+      )
+    }
+
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('txValue', txValues)

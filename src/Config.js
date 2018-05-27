@@ -26,7 +26,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 45,
+    fov: 70,
     initPos: {x: 0, y: 0, z: -200}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType

@@ -29,6 +29,7 @@ class App extends mixin(EventEmitter, Component) {
     this.OrbitControls = OrbitContructor(THREE)
     this.voronoi = new Voronoi()
     this.planeSize = 500
+    this.ObjectLoader = new THREE.ObjectLoader()
   }
 
   componentDidMount () {
@@ -61,6 +62,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.firebaseDB = firebase.firestore()
     this.docRef = this.firebaseDB.collection('blocks')
+    this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
 
     this.anonymousSignin()
 
@@ -249,76 +251,96 @@ class App extends mixin(EventEmitter, Component) {
     let generateGeometry = async function (hash, blockIndex) {
       let block = await this.getData(hash)
 
-      blocks.push(block)
-      let pointCount = Math.max(block.n_tx, 4)
+      // check for offsets in cache
+      let blockRefGeo = this.docRefGeo.doc(block.hash)
+      let snapshotGeo = await blockRefGeo.get()
 
-      var simplex = new SimplexNoise(block.height)
+      let crystal
 
-      let sites = []
+      if (snapshotGeo.exists === true) {
+        // get offsets/scales from cache
+        console.log('get offsets/scales from cache')
+        let data = snapshotGeo.data()
 
-      Math.seedrandom(block.height)
+        let offsetJSON = JSON.parse(data.offsets)
+        let offsetsArray = Object.values(offsetJSON)
 
-      for (let index = 0; index < pointCount; index++) {
-        let found = false
-        let x = 0
-        let y = 0
+        let scalesJSON = JSON.parse(data.scales)
+        let scalesArray = Object.values(scalesJSON)
 
-        while (found === false) {
-          x = Math.floor(Math.random() * this.planeSize)
-          y = Math.floor(Math.random() * this.planeSize)
+        crystal = await new Crystal(this.firebaseDB).fetch(block, offsetsArray, scalesArray)
+      } else {
+      // blocks.push(block)
+        let pointCount = Math.max(block.n_tx, 4)
 
-          let noiseVal = simplex.noise2D(x / 300, y / 300)
+        var simplex = new SimplexNoise(block.height)
 
-          if (((Math.random() * 5) * noiseVal) > -0.3) {
-            let exists = false
-            for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
-              const site = sites[existsIndex]
-              if (site.x === x && site.y === y) {
-                exists = true
-                break
+        let sites = []
+
+        Math.seedrandom(block.height)
+
+        for (let index = 0; index < pointCount; index++) {
+          let found = false
+          let x = 0
+          let y = 0
+
+          while (found === false) {
+            x = Math.floor(Math.random() * this.planeSize)
+            y = Math.floor(Math.random() * this.planeSize)
+
+            let noiseVal = simplex.noise2D(x / 300, y / 300)
+
+            if (((Math.random() * 5) * noiseVal) > -0.3) {
+              let exists = false
+              for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
+                const site = sites[existsIndex]
+                if (site.x === x && site.y === y) {
+                  exists = true
+                  break
+                }
+              }
+              if (!exists) {
+                found = true
               }
             }
-            if (!exists) {
-              found = true
+          }
+          sites.push({x: x, y: y})
+        }
+
+        let diagram = this.voronoi.compute(sites, {
+          xl: 0,
+          xr: this.planeSize,
+          yt: 0,
+          yb: this.planeSize
+        })
+
+        // work out network health
+        let feeToValueRatio = 0
+        if (block.outputTotal !== 0) {
+          feeToValueRatio = block.fee / block.outputTotal
+        }
+
+        let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
+        if (blockHealth < 0) {
+          blockHealth = 0
+        }
+
+        let relaxIterations = Math.round(blockHealth)
+
+        if (block.n_tx > 1) {
+          for (let index = 0; index < relaxIterations; index++) {
+            try {
+              diagram = this.relaxSites(diagram)
+            } catch (error) {
+              console.log(error)
             }
           }
         }
-        sites.push({x: x, y: y})
+
+        diagrams.push(diagram)
+
+        crystal = await new Crystal(this.firebaseDB).create(block, diagram)
       }
-
-      let diagram = this.voronoi.compute(sites, {
-        xl: 0,
-        xr: this.planeSize,
-        yt: 0,
-        yb: this.planeSize
-      })
-
-      // work out network health
-      let feeToValueRatio = 0
-      if (block.outputTotal !== 0) {
-        feeToValueRatio = block.fee / block.outputTotal
-      }
-
-      let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
-      if (blockHealth < 0) {
-        blockHealth = 0
-      }
-
-      let relaxIterations = Math.round(blockHealth)
-
-      if (block.n_tx > 1) {
-        for (let index = 0; index < relaxIterations; index++) {
-          try {
-            diagram = this.relaxSites(diagram)
-          } catch (error) {
-            console.log(error)
-          }
-        }
-      }
-
-      diagrams.push(diagram)
-
-      let crystal = new Crystal().create(block, diagram)
 
       crystal.rotation.z = (2 * Math.PI) / this.hashes.length * blockIndex
       crystal.translateY(4800)
