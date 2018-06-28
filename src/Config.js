@@ -12,7 +12,9 @@ const Config = {
     antialias: window.devicePixelRatio === 1,
     canvasID: 'symphony-stage', // ID of wegbl canvas element
     autoRotate: false, // auto rotate camera around target
-    autoRotateSpeed: 0.1 // speed of auto rotation
+    autoRotateSpeed: 0.1, // speed of auto rotation
+    bgColor: 0x000000,
+    fogDensity: 0.000003
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
@@ -27,6 +29,7 @@ const Config = {
   },
   camera: {
     fov: 70,
+    // initPos: {x: 159338192555.9354, y: 1.0002559461900744, z: 1240559260230.258}
     initPos: {x: 0, y: 0, z: -200}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
