@@ -15,6 +15,7 @@ export default class Crystal {
     this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
     this.alphaMap = new THREE.TextureLoader().load('assets/images/textures/alphaMap.jpg')
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
+    this.planeSize = 500
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -51,30 +52,12 @@ export default class Crystal {
     return center
   }
 
-  async create (block, voronoiDiagram) {
+  async save (block, voronoiDiagram) {
     return new Promise((resolve, reject) => {
       this.instanceCount = voronoiDiagram.cells.length
 
-      let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-      tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
-
-      let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
-
-      this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
-      this.geometry.rotateX(Math.PI / 2)
-
       let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount * 2), 2)
       let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-      let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-      let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-
-      // get min/max tx value in block
-      let maxTxValue = 0
-      let minTxValue = Number.MAX_SAFE_INTEGER
-      block.tx.forEach((tx) => {
-        maxTxValue = Math.max(maxTxValue, tx.value)
-        minTxValue = Math.min(minTxValue, tx.value)
-      })
 
       for (let i = 0; i < this.instanceCount; i++) {
         if (typeof block.tx[i] === 'undefined') {
@@ -102,7 +85,6 @@ export default class Crystal {
           }
         })
 
-        // let radius = Math.max(0.01, (Math.sqrt(minDistToSite))) * 0.5
         let radius = Math.sqrt(minDistToSite) * 0.5
 
         offsets.setXY(
@@ -115,62 +97,28 @@ export default class Crystal {
           i,
           radius
         )
-
-        let tx = block.tx[i]
-        txValues.setX(
-          i,
-          // map(tx.value, minTxValue, maxTxValue, 1.0, 1000.0)
-          tx.value
-        )
-
-        //   console.log(txValues)
-
-        let spentCount = 0
-        tx.out.forEach(function (el, index) {
-          if (el.spent === 1) {
-            spentCount++
-          }
-        })
-
-        let spentRatio = 1
-        if (spentCount !== 0) {
-          spentRatio = spentCount / tx.out.length
-        } else {
-          spentRatio = 0.0
-        }
-
-        spentRatios.setX(
-          i,
-          spentRatio
-        )
       }
 
-      this.geometry.computeVertexNormals()
-      this.geometry.computeFaceNormals()
+      let geoData = {
+        offsets: offsets.array,
+        scales: scales.array
+      }
 
       this.docRefGeo.doc(block.hash).set({
-        offsets: JSON.stringify(offsets.array),
-        scales: JSON.stringify(scales.array)
-      }).then(function () {
-        console.log('Document successfully written!')
-
-        this.geometry.addAttribute('offset', offsets)
-        this.geometry.addAttribute('scale', scales)
-        this.geometry.addAttribute('txValue', txValues)
-        this.geometry.addAttribute('spentRatio', spentRatios)
-
-        this.mesh = new THREE.Mesh(this.geometry, this.material)
-
-        this.mesh.frustumCulled = false
-
-        resolve(this.mesh)
-      }.bind(this)).catch(function (error) {
-        console.log('Error writing document: ', error)
-      })
+        offsets: JSON.stringify(geoData.offsets),
+        scales: JSON.stringify(geoData.scales),
+        height: block.height
+      }, { merge: true })
+        .then(function () {
+          console.log('Document successfully written!')
+          resolve(geoData)
+        }).catch(function (error) {
+          console.log('Error writing document: ', error)
+        })
     })
   }
 
-  async fetch (block, offsetsArray, scalesArray) {
+  async get (block, offsetsArray, scalesArray) {
     this.instanceCount = scalesArray.length
 
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
@@ -238,6 +186,168 @@ export default class Crystal {
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('spentRatio', spentRatios)
+
+    this.mesh = new THREE.Mesh(this.geometry, this.material)
+
+    this.mesh.frustumCulled = false
+
+    return this.mesh
+  }
+
+  async getMultiple (blockGeoData) {
+    this.instanceCount = 0
+
+    let blockHeightsArray = []
+    let offsetsArray = []
+    let planeOffsetsArray = []
+    let scalesArray = []
+    let txArray = []
+
+    let coils = 200
+    let radius = 1000000
+    let center = {x: 0, y: 0}
+
+    // value of theta corresponding to end of last coil
+    let thetaMax = coils * (Math.PI * 2)
+
+    // How far to step away from center for each side.
+    let awayStep = radius / thetaMax
+
+    // distance between points to plot
+    let chord = this.planeSize
+
+    let blockIndex = 0
+
+    for (const hash in blockGeoData) {
+      if (blockGeoData.hasOwnProperty(hash)) {
+        if (typeof this.theta === 'undefined') {
+          let offset = this.planeSize
+          let chord = this.planeSize + offset
+          this.theta = chord / awayStep
+        }
+
+        let rotation = 0
+
+        let away = awayStep * this.theta
+
+        // How far around the center.
+        let around = this.theta + rotation
+
+        // Convert 'around' and 'away' to X and Y.
+        let xOffset = center.x + Math.cos(around) * away
+        let yOffset = center.y + Math.sin(around) * away
+
+        let angle = -this.theta + (Math.PI / 2)
+
+        // to a first approximation, the points are on a circle
+        // so the angle between them is chord/radius
+        this.theta += chord / away
+
+        var yRotMatrix = new THREE.Matrix3()
+        yRotMatrix.set(
+          Math.cos(angle), Math.sin(angle), 0,
+          -Math.sin(angle), Math.cos(angle), 0,
+          0, 0, 1
+        )
+
+        let block = blockGeoData[hash]
+        this.instanceCount += block.scales.length
+
+        for (let i = 0; i < block.offsets.length / 2; i++) {
+          let x = block.offsets[i * 2 + 0]
+          let y = block.offsets[i * 2 + 1]
+          let z = 0
+
+          let vector = new THREE.Vector3(x, y, z)
+
+          vector.applyMatrix3(yRotMatrix)
+
+          vector.x += xOffset
+          vector.y += yOffset
+
+          offsetsArray.push(vector.x)
+          offsetsArray.push(vector.y)
+          offsetsArray.push(vector.z)
+
+          planeOffsetsArray.push(xOffset)
+          planeOffsetsArray.push(yOffset)
+        }
+
+        block.scales.forEach((scale) => {
+          scalesArray.push(scale)
+          // blockHeightsArray.push(block.block.height)
+          blockHeightsArray.push(blockIndex)
+        })
+
+        block.block.tx.forEach((tx) => {
+          txArray.push(tx)
+        })
+
+        console.log('block at height: ' + block.block.height + ' added')
+
+        blockIndex++
+      }
+    }
+
+    // set up base geometry
+    let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
+
+    let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
+
+    this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
+    this.geometry.rotateX(Math.PI / 2)
+
+    // attributes
+    let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
+    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 3)
+    let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
+    let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
+    let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
+
+    console.log('this.instanceCount: ' + this.instanceCount)
+
+    for (let i = 0; i < this.instanceCount; i++) {
+      if (typeof txArray[i] === 'undefined') {
+        continue
+      }
+      let tx = txArray[i]
+
+      let txValue = (tx.value * 0.00000001) + 1.0
+      if (txValue > 1000) {
+        txValue = 1000
+      }
+
+      offsets.setZ(
+        i,
+        txValue
+      )
+
+      let spentCount = 0
+      tx.out.forEach(function (el, index) {
+        if (el.spent === 1) {
+          spentCount++
+        }
+      })
+
+      let spentRatio = 1
+      if (spentCount !== 0) {
+        spentRatio = spentCount / tx.out.length
+      } else {
+        spentRatio = 0.0
+      }
+
+      spentRatios.setX(
+        i,
+        spentRatio
+      )
+    }
+
+    this.geometry.addAttribute('offset', offsets)
+    this.geometry.addAttribute('planeOffset', planeOffsets)
+    this.geometry.addAttribute('scale', scales)
+    this.geometry.addAttribute('spentRatio', spentRatios)
+    this.geometry.addAttribute('blockHeight', blockHeights)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

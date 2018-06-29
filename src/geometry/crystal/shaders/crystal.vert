@@ -1,13 +1,31 @@
 #define PHYSICAL
 
-attribute vec4 offset;
+attribute vec3 offset;
+attribute vec2 planeOffset;
 attribute float scale;
-attribute float txValue;
-attribute float id;
 attribute float spentRatio;
+attribute float blockHeight;
+//attribute vec4 orientation;
 
 varying vec3 vViewPosition;
 varying float vSpentRatio;
+
+// http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
+vec3 applyQuaternionToVector( vec4 q, vec3 v ){
+	return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
+}
+
+mat4 rotationMatrix(vec3 axis, float angle) {
+   axis = normalize(axis);
+   float s = sin(angle);
+   float c = cos(angle);
+   float oc = 1.0 - c;
+
+   return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+               oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+               oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+               0.0,                                0.0,                                0.0,                                1.0);
+}
 
 #ifndef FLAT_SHADED
 
@@ -47,17 +65,21 @@ void main() {
 
 	#include <begin_vertex>
 
+	
     transformed.xy *= scale;
 	
-	//float height = txValue * 0.00000005;
-	float height = txValue;
-	//float height = log(txValue) * 10.0;
+    transformed.z *= offset.z;
+    transformed.z += offset.z * 0.5;
+    transformed.xy += offset.xy;
 
-    transformed.z *= height;
-    transformed.z += height * 0.5;
+//    transformed.xyz += offset.xyz;
+	float scaledHeight = blockHeight * 50.0;
 
+    transformed.z += scaledHeight;
 
-    transformed.xyz += offset.xyz;
+	transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
+
+	//transformed = applyQuaternionToVector( orientation, transformed );
 
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>
