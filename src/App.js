@@ -34,6 +34,7 @@ import Config from './Config'
 
 // Geometry
 import Crystal from './geometry/crystal/Crystal'
+import Plane from './geometry/plane/Plane'
 
 // CSS
 import './App.css'
@@ -57,6 +58,7 @@ class App extends mixin(EventEmitter, Component) {
   async initStage () {
     await this.initFirebase()
     this.crystalGenerator = new Crystal(this.firebaseDB)
+    this.planeGenerator = new Plane()
     this.initScene()
     this.initCamera()
     this.initRenderer()
@@ -227,8 +229,12 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initLights () {
-    let light = new THREE.AmbientLight(0xffffff)
-    this.scene.add(light)
+    /* let light = new THREE.AmbientLight(0xffffff)
+    this.scene.add(light) */
+
+    this.pointLight = new THREE.PointLight(0xffffff, 2, 0, 9999999)
+    this.pointLight.position.set(0, 200, 0)
+    this.scene.add(this.pointLight)
   }
 
   async initGeometry () {
@@ -321,47 +327,52 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    let timestamp = 1231642465000
+    let timestamp = 1529482203000
 
-    window.fetch('https://blockchain.info/blocks/' + timestamp + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-      .then((resp) => resp.json())
-      .then(async function (data) {
-        data.blocks.forEach(block => {
-          this.hashes.push(block.hash)
-        })
+    // window.fetch('https://blockchain.info/blocks/' + timestamp + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    //   .then((resp) => resp.json())
+    //   .then(async function (data) {
+    //     data.blocks.forEach(block => {
+    //       this.hashes.push(block.hash)
+    //     })
 
-        // await asyncForEach(this.hashes, async (hash) => {
-        //   await storeGeometry.call(this, hash)
-        // })
+    // await asyncForEach(this.hashes, async (hash) => {
+    //   await storeGeometry.call(this, hash)
+    // })
 
-        let blockGeoRef = this.docRefGeo.orderBy('height', 'asc').limit(500)
-        let snapshot = await blockGeoRef.get()
-        snapshot.forEach((doc) => {
-          let blockGeoData = doc.data()
-          let hash = doc.id
-          let offsetJSON = JSON.parse(blockGeoData.offsets)
-          let offsetsArray = Object.values(offsetJSON)
+    let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(10)
 
-          let scalesJSON = JSON.parse(blockGeoData.scales)
-          let scalesArray = Object.values(scalesJSON)
+    let snapshot = await blockGeoRef.get()
+    snapshot.forEach((doc) => {
+      let blockGeoData = doc.data()
+      let hash = doc.id
+      let offsetJSON = JSON.parse(blockGeoData.offsets)
+      let offsetsArray = Object.values(offsetJSON)
 
-          this.blockGeoData[hash] = {
-            offsets: offsetsArray,
-            scales: scalesArray
-          }
-        })
+      let scalesJSON = JSON.parse(blockGeoData.scales)
+      let scalesArray = Object.values(scalesJSON)
 
-        let blockRef = this.docRef.orderBy('height', 'asc').limit(500)
-        snapshot = await blockRef.get()
-        snapshot.forEach((doc) => {
-          let blockData = doc.data()
-          let hash = doc.id
-          this.blockGeoData[hash].block = blockData
-        })
+      this.blockGeoData[hash] = {
+        offsets: offsetsArray,
+        scales: scalesArray
+      }
+    })
 
-        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoData)
-        this.scene.add(crystal)
-      }.bind(this))
+    let blockRef = this.docRef.orderBy('height', 'desc').limit(10)
+
+    snapshot = await blockRef.get()
+    snapshot.forEach((doc) => {
+      let blockData = doc.data()
+      let hash = doc.id
+      this.blockGeoData[hash].block = blockData
+    })
+
+    let crystal = await this.crystalGenerator.getMultiple(this.blockGeoData)
+    this.scene.add(crystal)
+
+    let plane = await this.planeGenerator.getMultiple(this.blockGeoData)
+    this.scene.add(plane)
+    // }.bind(this))
   }
 
   // Lloyds relaxation methods: http://www.raymondhill.net/voronoi/rhill-voronoi-demo5.html
@@ -518,7 +529,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.position.y += 1.0
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa-med/')
+      .setPath('assets/images/textures/cubemaps/playa-blue/')
       .load([
         '0004.png',
         '0002.png',
@@ -528,7 +539,7 @@ class App extends mixin(EventEmitter, Component) {
         '0003.png'
       ])
 
-    this.scene.background = this.cubeMap
+    this.scene.background = new THREE.Color(Config.scene.bgColor)
   }
 
   /**

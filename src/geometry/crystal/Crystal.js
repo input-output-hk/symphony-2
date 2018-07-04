@@ -4,17 +4,14 @@ import * as THREE from 'three'
 // shaders
 import fragmentShader from './shaders/crystal.frag'
 import vertexShader from './shaders/crystal.vert'
-import { map } from '../../utils/math'
-
-import { SimplifyModifier } from '../../libs/SimplifyModifier'
 
 export default class Crystal {
   constructor (firebaseDB) {
-    this.simplify = new SimplifyModifier()
     this.firebaseDB = firebaseDB
     this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
-    this.alphaMap = new THREE.TextureLoader().load('assets/images/textures/alphaMap.jpg')
+    this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
+    this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
     this.planeSize = 500
 
     this.cubeMap = new THREE.CubeTextureLoader()
@@ -30,26 +27,18 @@ export default class Crystal {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      // color: 0x7fa9fc,
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 1.0,
-      roughness: 0.18,
-      opacity: 1.0,
+      roughness: 0.0,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
-      bumpMap: this.bumpMap,
-      bumpScale: 0.15
-      // alphaMap: this.alphaMap
+      // bumpMap: this.bumpMap,
+      // bumpScale: 0.2
+      normalMap: this.normalMap,
+      normalScale: new THREE.Vector2(0.1, 0.1)
     })
-  }
-
-  getCentroid (coord) {
-    var center = coord.reduce(function (x, y) {
-      return [x[0] + y[0] / coord.length, x[1] + y[1] / coord.length]
-    }, [0, 0])
-    return center
   }
 
   async save (block, voronoiDiagram) {
@@ -291,7 +280,7 @@ export default class Crystal {
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
+    // tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.03, 0))
 
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
 
@@ -348,6 +337,126 @@ export default class Crystal {
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
+
+    const positionAttrib = this.geometry.getAttribute('position')
+
+    let barycentric = []
+
+    // for each triangle in the geometry, add the barycentric coordinates
+    for (let i = 0; i < positionAttrib.count / 3; i++) {
+      if (
+        i === 23 ||
+        i === 22 ||
+        i === 21 ||
+        i === 20 ||
+        i === 19 ||
+        i === 18 ||
+        i === 17 ||
+        i === 16 ||
+        i === 15 ||
+        i === 14 ||
+        i === 13 ||
+        i === 12
+      ) {
+        barycentric.push(
+          0, 0, 0,
+          0, 0, 0,
+          0, 0, 0
+        )
+      } else if (i % 2 === 0) {
+        barycentric.push(
+          0, 0, 1,
+          0, 1, 0,
+          1, 0, 1
+        )
+      } else {
+        barycentric.push(
+          0, 1, 0,
+          0, 0, 1,
+          1, 0, 1
+        )
+      }
+    }
+
+    const array = new Float32Array(barycentric)
+    const attribute = new THREE.BufferAttribute(array, 3)
+    this.geometry.addAttribute('barycentric', attribute)
+
+    let centerTopVertex = [
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
+    ]
+
+    const CTVArray = new Float32Array(centerTopVertex)
+    const CTVAttribute = new THREE.BufferAttribute(CTVArray, 1)
+    this.geometry.addAttribute('centerTopVertex', CTVAttribute)
+
+    let topVertex = [
+      1, 0, 1,
+      0, 0, 1,
+      1, 0, 1,
+
+      0, 0, 1,
+      1, 0, 1,
+      0, 0, 1,
+
+      1, 0, 1,
+      0, 0, 1,
+      1, 0, 1,
+
+      0, 0, 1,
+      1, 0, 1,
+      0, 0, 1,
+
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1,
+
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
+    ]
+
+    const TVArray = new Float32Array(topVertex)
+    const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
+    this.geometry.addAttribute('topVertex', TVAttribute)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

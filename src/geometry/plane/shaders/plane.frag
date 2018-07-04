@@ -8,7 +8,6 @@ uniform float opacity;
 
 #pragma glslify: noise = require('glsl-noise/simplex/3d');
 
-varying vec3 vBarycentric;
 varying vec3 vTransformed;
 varying vec3 vOffset;
 
@@ -18,7 +17,6 @@ varying vec3 vOffset;
 #endif
 
 varying vec3 vViewPosition;
-varying float vSpentRatio;
 
 #ifndef FLAT_SHADED
 
@@ -56,13 +54,7 @@ void main() {
 
 	#include <clipping_planes_fragment>
 
-	vec3 diffuseVar = diffuse;
-	
-	diffuseVar *= (1.0 - (vSpentRatio));
-
-	diffuseVar += 0.2;
-
-	vec4 diffuseColor = vec4( diffuseVar, opacity );
+	vec4 diffuseColor = vec4( diffuse, opacity );
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;
@@ -89,31 +81,10 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-
-	float spentRatio = clamp(vSpentRatio, 0.5, 1.0);
-
-	outgoingLight += (1.0 - spentRatio);
-	//outgoingLight *= (1.0 - vSpentRatio);
-
-  	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-	//float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.25 * clamp(vOffset.z * 0.15, 0.0,  1.0);
-	//float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.15 * clamp(vOffset.z * 0.1, 0.0,  1.0);
-	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
-	
-	float noiseAmount = noise(vec3(vTransformed.xyz * 0.03)) * noise(vec3(vTransformed.xyz * 0.005)) * 0.15;
-
-	//float edgeNoise = edgeAmount + noiseAmount;
-
-	outgoingLight += edgeAmount;
-	outgoingLight += noiseAmount;
-
 	outgoingLight.b += 0.2;
 	outgoingLight.g += 0.1;
 
-	outgoingLight *= 0.9;
-	
-	gl_FragColor = vec4( outgoingLight, diffuseColor.a * clamp(noiseAmount + 0.9, 0.0, 1.0) );
-	//gl_FragColor = vec4( outgoingLight, diffuseColor.a);
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
