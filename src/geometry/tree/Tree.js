@@ -1,17 +1,19 @@
 // libs
 import * as THREE from 'three'
+import GLTFLoader from 'three-gltf-loader'
 
 // shaders
-import fragmentShader from './shaders/plane.frag'
-import vertexShader from './shaders/plane.vert'
+import fragmentShader from './shaders/tree.frag'
+import vertexShader from './shaders/tree.vert'
 
-export default class Plane {
+export default class Tree {
   constructor (planeOffsetMultiplier) {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
     this.planeSize = 500
     this.planeOffsetMultiplier = planeOffsetMultiplier
+    this.gltfLoader = new GLTFLoader()
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -24,15 +26,14 @@ export default class Plane {
         '0003.png'
       ])
 
-    this.material = new PlaneMaterial({
+    this.material = new TreeMaterial({
       flatShading: true,
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 1.0,
       roughness: 0.2,
-      opacity: 0.9,
-      transparent: true,
-      side: THREE.DoubleSide,
+      // transparent: true,
+      // side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2
@@ -43,13 +44,33 @@ export default class Plane {
     })
   }
 
+  async loadTreeModel (txCount) {
+    return new Promise(async (resolve, reject) => {
+      // Load a glTF resource
+      this.binaryTree = await this.gltfLoader.load(
+        'assets/models/gltf/binary-tree.gltf',
+        function (gltf) {
+          let mesh = gltf.scene.children[0]
+
+          mesh.geometry.rotateY(Math.PI / 2)
+          // mesh.geometry.rotateZ(Math.PI / 2)
+
+          resolve(mesh)
+        },
+        function () {},
+        function (error) {
+          console.log('An error happened')
+          reject(new Error(error))
+        }
+      )
+    })
+  }
+
   async getMultiple (blockGeoData) {
     this.instanceCount = 0
 
     let blockHeightsArray = []
-    // let offsetsArray = []
     let planeOffsetsArray = []
-    // let anglesArray = []
     let quatArray = []
 
     let coils = 200
@@ -66,12 +87,22 @@ export default class Plane {
     let chord = this.planeSize
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize, this.planeSize, 8, 10, 10, 10)
+    let treeMesh = await this.loadTreeModel()
 
-    let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
+    let tubeGeo = new THREE.CylinderGeometry(6, 6, 500, 6)
+    let tubeMesh = new THREE.Mesh(tubeGeo)
+    tubeMesh.rotateZ(Math.PI / 2)
 
-    this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
-    // this.geometry.rotateX(Math.PI / 2)
+    let singleGeometry = new THREE.Geometry()
+    tubeMesh.updateMatrix()
+    singleGeometry.merge(tubeMesh.geometry, tubeMesh.matrix)
+    treeMesh.updateMatrix()
+    let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
+    singleGeometry.merge(treeGeo, treeMesh.matrix)
+
+    let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
+
+    this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
     let blockIndex = 0
     for (const hash in blockGeoData) {
@@ -121,19 +152,17 @@ export default class Plane {
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)
 
-        console.log('plane at height: ' + block.block.height + ' added')
+        console.log('tree at height: ' + block.block.height + ' added')
 
         blockIndex++
       }
     }
 
     // attributes
-    // let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 3)
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
     let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
     let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
 
-    // this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
@@ -148,7 +177,7 @@ export default class Plane {
   }
 }
 
-class PlaneMaterial extends THREE.MeshStandardMaterial {
+class TreeMaterial extends THREE.MeshStandardMaterial {
   constructor (cfg) {
     super(cfg)
     this.type = 'ShaderMaterial'

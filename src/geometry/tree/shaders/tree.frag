@@ -6,12 +6,6 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-float random (in vec2 _st) {
-    return fract(sin(dot(_st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
-}
-
 #pragma glslify: noise = require('glsl-noise/simplex/3d');
 
 varying vec3 vTransformed;

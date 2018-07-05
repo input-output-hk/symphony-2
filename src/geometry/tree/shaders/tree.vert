@@ -2,27 +2,14 @@
 
 attribute vec3 offset;
 attribute vec2 planeOffset;
-attribute float scale;
-attribute float spentRatio;
 attribute float blockHeight;
-attribute vec3 barycentric;
-attribute float topVertex;
-attribute float centerTopVertex;
-attribute float txValue;
-//attribute vec4 orientation;
+attribute vec4 quaternion;
 
 float rand(float n){return fract(sin(n) * 43758.5453123);}
-
-#pragma glslify: noise = require('glsl-noise/simplex/4d');
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
-varying float vSpentRatio;
-varying vec3 vBarycentric;
-varying float vTxValue;
-varying float vTopVertex;
-varying float vCenterTopVertex;
 
 // http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
 vec3 applyQuaternionToVector( vec4 q, vec3 v ){
@@ -79,35 +66,20 @@ void main() {
 
 	#include <begin_vertex>
 
-	
-    transformed.xy *= scale;
-	
-    transformed.z *= offset.z;
-    transformed.z += offset.z * 0.5;
-    transformed.xy += offset.xy;
+    //transformed.z *= offset.z;
+    //transformed.z += offset.z * 0.5;
+	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
+
+    transformed.xy += planeOffset.xy;
 
 	float scaledHeight = blockHeight * 50.0;
+	//transformed.z += scaledHeight;
+//	transformed.z -= 8.0;
 
-//	transformed.z += scaledHeight;
-
-	transformed.x += (rand(transformed.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-	transformed.y += (rand(transformed.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-
-	transformed.x += (rand(transformed.x + transformed.x) * (scale * 0.1) - (scale * 0.05));
-	transformed.y += (rand(transformed.y + transformed.y) * (scale * 0.1) - (scale * 0.05));
-
-	transformed.z += (rand(transformed.y) * (offset.z * 0.02) - (offset.z * 0.01)) * topVertex * (1.0 - centerTopVertex);
-	transformed.z += (offset.z * 0.03) * centerTopVertex;
-
-//	transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
-
-	//transformed = applyQuaternionToVector( orientation, transformed );
+	//transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
 
 	vTransformed = transformed;
 	vOffset = offset;
-	vTopVertex = topVertex;
-
-	vTxValue = txValue;
 
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>
@@ -117,10 +89,6 @@ void main() {
 	#include <clipping_planes_vertex>
 
 	vViewPosition = - mvPosition.xyz;
-
-	vSpentRatio = spentRatio;
-
-	vBarycentric = barycentric;
 
 	#include <worldpos_vertex>
 	#include <shadowmap_vertex>

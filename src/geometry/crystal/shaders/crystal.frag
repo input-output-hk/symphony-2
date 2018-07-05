@@ -8,9 +8,31 @@ uniform float opacity;
 
 #pragma glslify: noise = require('glsl-noise/simplex/3d');
 
+vec2 truchetPattern(in vec2 _st, in float _index){
+    _index = fract(((_index-0.5)*2.0));
+    if (_index > 0.75) {
+        _st = vec2(1.0) - _st;
+    } else if (_index > 0.5) {
+        _st = vec2(1.0-_st.x,_st.y);
+    } else if (_index > 0.25) {
+        _st = 1.0-vec2(1.0-_st.x,_st.y);
+    }
+    return _st;
+}
+
+float random (in vec2 _st) {
+    return fract(sin(dot(_st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
 varying vec3 vBarycentric;
 varying vec3 vTransformed;
 varying vec3 vOffset;
+varying float vTxValue;
+
+varying float vTopVertex;
+varying float vCenterTopVertex;
 
 #ifndef STANDARD
 	uniform float clearCoat;
@@ -109,6 +131,40 @@ void main() {
 
 	outgoingLight.b += 0.2;
 	outgoingLight.g += 0.1;
+
+	float aspect = vUv.x / vUv.y;
+
+	//vec2 st = vec2(vUv.x, vUv.y) * 25.0;
+	vec2 st = vec2(vUv.x * 25.0, vTransformed.z);
+    vec2 ipos = floor(st);  // integer
+    vec2 fpos = fract(st);  // fraction
+
+    vec2 tile = truchetPattern(fpos, random( ipos ));
+
+	// Maze
+	float color = 0.0;
+    color = smoothstep(tile.x-0.3,tile.x,tile.y)-
+            smoothstep(tile.x,tile.x+0.3,tile.y);
+
+	// further smoothing    
+    color -= smoothstep(tile.x+0.3,tile.x,0.0)-
+            smoothstep(tile.x,tile.x-0.3,-0.15);
+    
+    color -= smoothstep(tile.y+0.3,tile.y,0.0)-
+            smoothstep(tile.y,tile.y-0.3,-0.15);
+    
+    color -= smoothstep(tile.x+0.3,tile.x,1.15)-
+            smoothstep(tile.x,tile.x-0.3,1.0);
+    
+	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
+		    smoothstep(tile.y,tile.y-0.3,1.0);
+
+	color *= abs(noiseAmount * 4.0);
+
+	color = clamp(color, 0.0, 1.0);
+
+	outgoingLight += (color * (1.0-vTopVertex));
+
 
 	outgoingLight *= 0.9;
 	

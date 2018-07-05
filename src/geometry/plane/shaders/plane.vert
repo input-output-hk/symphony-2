@@ -73,10 +73,10 @@ void main() {
     transformed.xy += planeOffset.xy;
 
 	float scaledHeight = blockHeight * 50.0;
-	transformed.z += scaledHeight;
-	transformed.z -= 8.0;
+	//transformed.z += scaledHeight;
+	transformed.z -= 4.0;
 
-	transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
+	//transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
 
 	vTransformed = transformed;
 	vOffset = offset;

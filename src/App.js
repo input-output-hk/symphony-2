@@ -35,6 +35,7 @@ import Config from './Config'
 // Geometry
 import Crystal from './geometry/crystal/Crystal'
 import Plane from './geometry/plane/Plane'
+import Tree from './geometry/tree/Tree'
 
 // CSS
 import './App.css'
@@ -46,6 +47,7 @@ class App extends mixin(EventEmitter, Component) {
     this.OrbitControls = OrbitContructor(THREE)
     this.voronoi = new Voronoi()
     this.planeSize = 500
+    this.planeOffsetMultiplier = 2
     this.ObjectLoader = new THREE.ObjectLoader()
     this.gltfLoader = new GLTFLoader()
     this.blockGeoData = {}
@@ -57,8 +59,9 @@ class App extends mixin(EventEmitter, Component) {
 
   async initStage () {
     await this.initFirebase()
-    this.crystalGenerator = new Crystal(this.firebaseDB)
-    this.planeGenerator = new Plane()
+    this.crystalGenerator = new Crystal(this.firebaseDB, this.planeOffsetMultiplier)
+    this.planeGenerator = new Plane(this.planeOffsetMultiplier)
+    this.treeGenerator = new Tree(this.planeOffsetMultiplier)
     this.initScene()
     this.initCamera()
     this.initRenderer()
@@ -340,7 +343,7 @@ class App extends mixin(EventEmitter, Component) {
     //   await storeGeometry.call(this, hash)
     // })
 
-    let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(10)
+    let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(100)
 
     let snapshot = await blockGeoRef.get()
     snapshot.forEach((doc) => {
@@ -358,7 +361,7 @@ class App extends mixin(EventEmitter, Component) {
       }
     })
 
-    let blockRef = this.docRef.orderBy('height', 'desc').limit(10)
+    let blockRef = this.docRef.orderBy('height', 'desc').limit(100)
 
     snapshot = await blockRef.get()
     snapshot.forEach((doc) => {
@@ -372,6 +375,15 @@ class App extends mixin(EventEmitter, Component) {
 
     let plane = await this.planeGenerator.getMultiple(this.blockGeoData)
     this.scene.add(plane)
+
+    let tree = await this.treeGenerator.getMultiple(this.blockGeoData)
+    tree.translateZ(-385)
+    this.scene.add(tree)
+
+    // this.camera.position.x = -39114.205723215884
+    // this.camera.position.y = -177.5175866333136
+    // this.camera.position.z = 30354.494367882115
+
     // }.bind(this))
   }
 
