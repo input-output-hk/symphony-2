@@ -1,19 +1,25 @@
 // libs
 import * as THREE from 'three'
+import SimplexNoise from 'simplex-noise'
+import { map } from '../../utils/math'
+import Voronoi from 'voronoi'
+import VoronoiTools from '../../utils/VoronoiTools'
+import seedrandom from 'seedrandom'
 
 // shaders
 import fragmentShader from './shaders/crystal.frag'
 import vertexShader from './shaders/crystal.vert'
 
 export default class Crystal {
-  constructor (firebaseDB, planeOffsetMultiplier) {
-    this.firebaseDB = firebaseDB
+  constructor (args) {
+    this.firebaseDB = args.firebaseDB
     this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
-    this.planeSize = 500
-    this.planeOffsetMultiplier = planeOffsetMultiplier
+    this.planeSize = args.planeSize
+    this.planeOffsetMultiplier = args.planeOffsetMultiplier
+    this.voronoi = new Voronoi()
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -35,22 +41,89 @@ export default class Crystal {
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
-      // bumpMap: this.bumpMap,
-      // bumpScale: 0.2
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.1, 0.1)
     })
   }
 
-  async save (block, voronoiDiagram) {
+  async save (blockData) {
     return new Promise((resolve, reject) => {
+      console.log('Block geo data: ' + blockData.hash + ' does not exist in the db, adding...')
+      let pointCount = Math.max(blockData.n_tx, 4)
+
+      const simplex = new SimplexNoise(blockData.height)
+
+      const voronoiTools = new VoronoiTools(this.voronoi, blockData.height, this.planeSize)
+
+      let sites = []
+
+      Math.seedrandom(blockData.height)
+
+      for (let index = 0; index < pointCount; index++) {
+        let found = false
+        let x = 0
+        let y = 0
+
+        while (found === false) {
+          x = Math.floor(Math.random() * this.planeSize - (this.planeSize / 2))
+          y = Math.floor(Math.random() * this.planeSize - (this.planeSize / 2))
+
+          let noiseVal = simplex.noise2D(x / 300, y / 300)
+
+          if (((Math.random() * 5) * noiseVal) > -0.3) {
+            let exists = false
+            for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
+              const site = sites[existsIndex]
+              if (site.x === x && site.y === y) {
+                exists = true
+                break
+              }
+            }
+            if (!exists) {
+              found = true
+            }
+          }
+        }
+        sites.push({x: x, y: y})
+      }
+
+      let voronoiDiagram = this.voronoi.compute(sites, {
+        xl: -this.planeSize / 2,
+        xr: this.planeSize / 2,
+        yt: -this.planeSize / 2,
+        yb: this.planeSize / 2
+      })
+
+      // work out network health
+      let feeToValueRatio = 0
+      if (blockData.outputTotal !== 0) {
+        feeToValueRatio = blockData.fee / blockData.outputTotal
+      }
+
+      let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
+      if (blockHealth < 0) {
+        blockHealth = 0
+      }
+
+      let relaxIterations = Math.round(blockHealth)
+
+      if (blockData.n_tx > 1) {
+        for (let index = 0; index < relaxIterations; index++) {
+          try {
+            voronoiDiagram = voronoiTools.relaxSites(voronoiDiagram)
+          } catch (error) {
+            console.log(error)
+          }
+        }
+      }
+
       this.instanceCount = voronoiDiagram.cells.length
 
       let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount * 2), 2)
       let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
 
       for (let i = 0; i < this.instanceCount; i++) {
-        if (typeof block.tx[i] === 'undefined') {
+        if (typeof blockData.tx[i] === 'undefined') {
           continue
         }
         let cell = voronoiDiagram.cells[i]
@@ -94,13 +167,13 @@ export default class Crystal {
         scales: scales.array
       }
 
-      this.docRefGeo.doc(block.hash).set({
+      this.docRefGeo.doc(blockData.hash).set({
         offsets: JSON.stringify(geoData.offsets),
         scales: JSON.stringify(geoData.scales),
-        height: block.height
+        height: blockData.height
       }, { merge: true })
         .then(function () {
-          console.log('Document successfully written!')
+          console.log('Geo data for block: ' + blockData.hash + ' successfully written')
           resolve(geoData)
         }).catch(function (error) {
           console.log('Error writing document: ', error)
@@ -108,7 +181,7 @@ export default class Crystal {
     })
   }
 
-  async get (block, offsetsArray, scalesArray) {
+  async get (blockData, offsetsArray, scalesArray) {
     this.instanceCount = scalesArray.length
 
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
@@ -124,10 +197,10 @@ export default class Crystal {
     let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
 
-    // get min/max tx value in block
+    // get min/max tx value in blockData
     let maxTxValue = 0
     let minTxValue = Number.MAX_SAFE_INTEGER
-    block.tx.forEach((tx) => {
+    blockData.tx.forEach((tx) => {
       maxTxValue = Math.max(maxTxValue, tx.value)
       minTxValue = Math.min(minTxValue, tx.value)
     })
@@ -137,10 +210,10 @@ export default class Crystal {
     }
 
     for (let i = 0; i < this.instanceCount; i++) {
-      if (typeof block.tx[i] === 'undefined') {
+      if (typeof blockData.tx[i] === 'undefined') {
         continue
       }
-      let tx = block.tx[i]
+      let tx = blockData.tx[i]
 
       let txValue = tx.value * 0.00000001
       if (txValue > 1000) {
@@ -184,12 +257,12 @@ export default class Crystal {
     return this.mesh
   }
 
-  async getMultiple (blockGeoData) {
+  async getMultiple (blockGeoDataArray) {
     this.instanceCount = 0
 
     let blockHeightsArray = []
     let offsetsArray = []
-    let txValuesArray = []
+
     let planeOffsetsArray = []
     let scalesArray = []
     let txArray = []
@@ -209,8 +282,8 @@ export default class Crystal {
 
     let blockIndex = 0
 
-    for (const hash in blockGeoData) {
-      if (blockGeoData.hasOwnProperty(hash)) {
+    for (const hash in blockGeoDataArray) {
+      if (blockGeoDataArray.hasOwnProperty(hash)) {
         if (typeof this.theta === 'undefined') {
           let offset = this.planeSize * this.planeOffsetMultiplier
           let chord = this.planeSize + offset
@@ -241,12 +314,12 @@ export default class Crystal {
           0, 0, 1
         )
 
-        let block = blockGeoData[hash]
-        this.instanceCount += block.scales.length
+        let blockGeoData = blockGeoDataArray[hash]
+        this.instanceCount += blockGeoData.scales.length
 
-        for (let i = 0; i < block.offsets.length / 2; i++) {
-          let x = block.offsets[i * 2 + 0]
-          let y = block.offsets[i * 2 + 1]
+        for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
+          let x = blockGeoData.offsets[i * 2 + 0]
+          let y = blockGeoData.offsets[i * 2 + 1]
           let z = 0
 
           let vector = new THREE.Vector3(x, y, z)
@@ -264,17 +337,17 @@ export default class Crystal {
           planeOffsetsArray.push(yOffset)
         }
 
-        block.scales.forEach((scale) => {
+        blockGeoData.scales.forEach((scale) => {
           scalesArray.push(scale)
           // blockHeightsArray.push(block.block.height)
           blockHeightsArray.push(blockIndex)
         })
 
-        block.block.tx.forEach((tx) => {
+        blockGeoData.blockData.tx.forEach((tx) => {
           txArray.push(tx)
         })
 
-        console.log('block at height: ' + block.block.height + ' added')
+        console.log('block at height: ' + blockGeoData.blockData.height + ' added')
 
         blockIndex++
       }

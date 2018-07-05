@@ -7,12 +7,12 @@ import fragmentShader from './shaders/tree.frag'
 import vertexShader from './shaders/tree.vert'
 
 export default class Tree {
-  constructor (planeOffsetMultiplier) {
+  constructor (args) {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
-    this.planeSize = 500
-    this.planeOffsetMultiplier = planeOffsetMultiplier
+    this.planeSize = args.planeSize
+    this.planeOffsetMultiplier = args.planeOffsetMultiplier
     this.gltfLoader = new GLTFLoader()
 
     this.cubeMap = new THREE.CubeTextureLoader()
@@ -66,7 +66,7 @@ export default class Tree {
     })
   }
 
-  async getMultiple (blockGeoData) {
+  async getMultiple (blockGeoDataArray) {
     this.instanceCount = 0
 
     let blockHeightsArray = []
@@ -105,15 +105,15 @@ export default class Tree {
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
     let blockIndex = 0
-    for (const hash in blockGeoData) {
-      if (blockGeoData.hasOwnProperty(hash)) {
+    for (const hash in blockGeoDataArray) {
+      if (blockGeoDataArray.hasOwnProperty(hash)) {
         if (typeof this.theta === 'undefined') {
           let offset = this.planeSize * this.planeOffsetMultiplier
           let chord = this.planeSize + offset
           this.theta = chord / awayStep
         }
 
-        let block = blockGeoData[hash]
+        let blockGeoData = blockGeoDataArray[hash]
 
         let rotation = 0
 
@@ -152,7 +152,7 @@ export default class Tree {
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)
 
-        console.log('tree at height: ' + block.block.height + ' added')
+        console.log('tree at height: ' + blockGeoData.blockData.height + ' added')
 
         blockIndex++
       }

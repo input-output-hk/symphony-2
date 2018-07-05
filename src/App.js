@@ -9,10 +9,7 @@ import mixin from 'mixin'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
-import Voronoi from 'voronoi'
-import SimplexNoise from 'simplex-noise'
-import seedrandom from 'seedrandom'
-import { map } from './utils/math'
+import moment from 'moment'
 
 // post
 import {
@@ -45,12 +42,13 @@ class App extends mixin(EventEmitter, Component) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
     this.OrbitControls = OrbitContructor(THREE)
-    this.voronoi = new Voronoi()
     this.planeSize = 500
     this.planeOffsetMultiplier = 2
     this.ObjectLoader = new THREE.ObjectLoader()
     this.gltfLoader = new GLTFLoader()
-    this.blockGeoData = {}
+    this.blockGeoDataArray = {}
+    this.hashes = []
+    this.timestampToLoad = this.setTimestampToLoad()
   }
 
   componentDidMount () {
@@ -59,9 +57,23 @@ class App extends mixin(EventEmitter, Component) {
 
   async initStage () {
     await this.initFirebase()
-    this.crystalGenerator = new Crystal(this.firebaseDB, this.planeOffsetMultiplier)
-    this.planeGenerator = new Plane(this.planeOffsetMultiplier)
-    this.treeGenerator = new Tree(this.planeOffsetMultiplier)
+
+    this.crystalGenerator = new Crystal({
+      firebaseDB: this.firebaseDB,
+      planeSize: this.planeSize,
+      planeOffsetMultiplier: this.planeOffsetMultiplier
+    })
+
+    this.planeGenerator = new Plane({
+      planeSize: this.planeSize,
+      planeOffsetMultiplier: this.planeOffsetMultiplier
+    })
+
+    this.treeGenerator = new Tree({
+      planeSize: this.planeSize,
+      planeOffsetMultiplier: this.planeOffsetMultiplier
+    })
+
     this.initScene()
     this.initCamera()
     this.initRenderer()
@@ -71,6 +83,18 @@ class App extends mixin(EventEmitter, Component) {
     this.initGeometry()
     this.addEvents()
     this.animate()
+  }
+
+  setTimestampToLoad () {
+    let timestampToLoad = moment().valueOf() // default to today's date
+    if (typeof URLSearchParams !== 'undefined') {
+      // get date from URL
+      let urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.has('date')) {
+        timestampToLoad = moment(urlParams.get('date')).valueOf()
+      }
+    }
+    return timestampToLoad
   }
 
   initPost () {
@@ -149,85 +173,114 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
-  async getData (hash) {
+  /**
+   * Get data about a block
+   *
+   * Handles caching of data to firebase
+   *
+   * @param {string} hash
+   */
+  async getBlockData (hash) {
     return new Promise(async (resolve, reject) => {
+      // should block data be saved to firebase?
+      let shouldCache = false
+
       // first check firebase
       let blockRef = this.docRef.doc(hash)
       let snapshot = await blockRef.get()
 
-      if (snapshot.exists) {
-        resolve(snapshot.data())
+      let blockData
+
+      if (!snapshot.exists) {
+        shouldCache = true
       } else {
-        window.fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
-          .then((resp) => resp.json())
-          .then(function (block) {
-            block.tx.forEach(function (tx, index) {
-              let txValue = 0
-              tx.out.forEach((output, index) => {
-                txValue += output.value
-              })
-              tx.value = txValue
-            })
-
-            /* block.tx.sort(function (a, b) {
-              let transactionValueA = 0
-              a.out.forEach((output, index) => {
-                transactionValueA += output.value
-              })
-
-              let transactionValueB = 0
-              b.out.forEach((output, index) => {
-                transactionValueB += output.value
-              })
-
-              return transactionValueA - transactionValueB
-            }) */
-
-            let outputTotal = 0
-            let transactions = []
-            block.tx.forEach((tx) => {
-              let out = []
-              tx.out.forEach((output) => {
-                out.push(
-                  {
-                    spent: output.spent ? 1 : 0
-                  }
-                )
-              })
-
-              if (typeof tx.value === 'undefined') {
-                tx.value = 0
-              }
-
-              let txObj = {
-                value: tx.value,
-                out: out
-              }
-
-              outputTotal += tx.value
-
-              transactions.push(txObj)
-            })
-
-            console.log('Saving block to cache...')
-
-            block.outputTotal = outputTotal
-            block.tx = transactions
-
-            block.cacheTime = new Date()
-
-            // save to firebase
-            this.docRef.doc(block.hash).set(
-              block, { merge: true }
-            ).then(function () {
-              console.log('Document successfully written!')
-            }).catch(function (error) {
-              console.log('Error writing document: ', error)
-            })
-
-            resolve(block)
-          }.bind(this))
+        blockData = snapshot.data()
+        // check if block was cached more than a day ago
+        if (moment().valueOf() - blockData.cacheTime.toMillis() > 86400000) {
+          console.log('Block: ' + hash + ' is out of date, re-adding')
+          shouldCache = true
+        }
       }
+
+      if (!shouldCache) {
+        console.log('Block data for: ' + hash + ' returned from cache')
+        resolve(blockData)
+      } else {
+        resolve(
+          await this.cacheBlockData(hash)
+        )
+      }
+    })
+  }
+
+  async cacheBlockData (hash) {
+    return new Promise((resolve, reject) => {
+      window.fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+        .then((resp) => resp.json())
+        .then(function (block) {
+          block.tx.forEach(function (tx, index) {
+            let txValue = 0
+            tx.out.forEach((output, index) => {
+              txValue += output.value
+            })
+            tx.value = txValue
+          })
+
+          // this.sortTXData(block.tx)
+
+          let outputTotal = 0
+          let transactions = []
+          block.tx.forEach((tx) => {
+            let out = []
+            tx.out.forEach((output) => {
+              out.push({
+                spent: output.spent ? 1 : 0
+              })
+            })
+
+            if (typeof tx.value === 'undefined') {
+              tx.value = 0
+            }
+
+            transactions.push({
+              value: tx.value,
+              out: out
+            })
+
+            outputTotal += tx.value
+          })
+
+          block.outputTotal = outputTotal
+          block.tx = transactions
+          block.cacheTime = new Date()
+
+          // save to firebase
+          this.docRef.doc(block.hash).set(
+            block, { merge: true }
+          ).then(function () {
+            console.log('Block data for: ' + block.hash + ' successfully written!')
+          }).catch(function (error) {
+            console.log('Error writing document: ', error)
+          })
+
+          resolve(block)
+        }.bind(this))
+    })
+  }
+
+  sortTXData (tx) {
+    tx.sort(function (a, b) {
+      let transactionValueA = 0
+      a.out.forEach((output, index) => {
+        transactionValueA += output.value
+      })
+
+      let transactionValueB = 0
+      b.out.forEach((output, index) => {
+        transactionValueB += output.value
+      })
+
+      return transactionValueA - transactionValueB
     })
   }
 
@@ -240,110 +293,67 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.add(this.pointLight)
   }
 
-  async initGeometry () {
-    this.hashes = []
+  async asyncForEach (array, callback) {
+    for (let index = 0; index < array.length; index++) {
+      await callback(array[index], index, array)
+    }
+  }
 
-    async function asyncForEach (array, callback) {
-      for (let index = 0; index < array.length; index++) {
-        await callback(array[index], index, array)
+  async getGeometry (hash) {
+    let blockData = await this.getBlockData(hash)
+
+    // check for data in cache
+    let blockRefGeo = this.docRefGeo.doc(blockData.hash)
+    let snapshotGeo = await blockRefGeo.get()
+
+    let blockGeoData
+
+    if (!snapshotGeo.exists) {
+      blockGeoData = await this.crystalGenerator.save(blockData)
+    } else {
+      let rawData = snapshotGeo.data()
+
+      let offsetJSON = JSON.parse(rawData.offsets)
+      let offsetsArray = Object.values(offsetJSON)
+
+      let scalesJSON = JSON.parse(rawData.scales)
+      let scalesArray = Object.values(scalesJSON)
+
+      blockGeoData = {
+        offsets: offsetsArray,
+        scales: scalesArray
       }
     }
 
-    let storeGeometry = async function (hash, blockIndex) {
-      let block = await this.getData(hash)
+    this.blockGeoDataArray[hash] = blockGeoData
+    this.blockGeoDataArray[hash].blockData = blockData
+  }
 
-      // check for data in cache
-      let blockRefGeo = this.docRefGeo.doc(block.hash)
-      let snapshotGeo = await blockRefGeo.get()
-
-      if (!snapshotGeo.exists) {
-        console.log('Block: ' + block.hash + ' does not exist in the db, adding...')
-        let pointCount = Math.max(block.n_tx, 4)
-
-        var simplex = new SimplexNoise(block.height)
-
-        let sites = []
-
-        Math.seedrandom(block.height)
-
-        for (let index = 0; index < pointCount; index++) {
-          let found = false
-          let x = 0
-          let y = 0
-
-          while (found === false) {
-            x = Math.floor(Math.random() * this.planeSize - (this.planeSize / 2))
-            y = Math.floor(Math.random() * this.planeSize - (this.planeSize / 2))
-
-            let noiseVal = simplex.noise2D(x / 300, y / 300)
-
-            if (((Math.random() * 5) * noiseVal) > -0.3) {
-              let exists = false
-              for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
-                const site = sites[existsIndex]
-                if (site.x === x && site.y === y) {
-                  exists = true
-                  break
-                }
-              }
-              if (!exists) {
-                found = true
-              }
-            }
-          }
-          sites.push({x: x, y: y})
-        }
-
-        let diagram = this.voronoi.compute(sites, {
-          xl: -this.planeSize / 2,
-          xr: this.planeSize / 2,
-          yt: -this.planeSize / 2,
-          yb: this.planeSize / 2
+  async initGeometry () {
+    window.fetch('https://blockchain.info/blocks/' + this.timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      .then((resp) => resp.json())
+      .then(async function (data) {
+        data.blocks.forEach(block => {
+          this.hashes.push(block.hash)
         })
 
-        // work out network health
-        let feeToValueRatio = 0
-        if (block.outputTotal !== 0) {
-          feeToValueRatio = block.fee / block.outputTotal
-        }
+        await this.asyncForEach(this.hashes, async (hash) => {
+          await this.getGeometry(hash)
 
-        let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
-        if (blockHealth < 0) {
-          blockHealth = 0
-        }
+          console.log(Object.keys(this.blockGeoDataArray).length)
 
-        let relaxIterations = Math.round(blockHealth)
+          /* let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
+          this.scene.add(crystal) */
 
-        if (block.n_tx > 1) {
-          for (let index = 0; index < relaxIterations; index++) {
-            try {
-              diagram = this.relaxSites(diagram)
-            } catch (error) {
-              console.log(error)
-            }
-          }
-        }
+          let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray)
+          this.scene.add(plane)
 
-        await this.crystalGenerator.save(block, diagram)
-      } else {
-        console.log('Block: ' + block.hash + ' already exists')
-      }
-    }
+          let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
+          tree.translateZ(-385)
+          this.scene.add(tree)
+        })
 
-    let timestamp = 1529482203000
-
-    // window.fetch('https://blockchain.info/blocks/' + timestamp + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-    //   .then((resp) => resp.json())
-    //   .then(async function (data) {
-    //     data.blocks.forEach(block => {
-    //       this.hashes.push(block.hash)
-    //     })
-
-    // await asyncForEach(this.hashes, async (hash) => {
-    //   await storeGeometry.call(this, hash)
-    // })
-
-    let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(100)
+        /* let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(10)
 
     let snapshot = await blockGeoRef.get()
     snapshot.forEach((doc) => {
@@ -355,135 +365,29 @@ class App extends mixin(EventEmitter, Component) {
       let scalesJSON = JSON.parse(blockGeoData.scales)
       let scalesArray = Object.values(scalesJSON)
 
-      this.blockGeoData[hash] = {
+          this.blockGeoDataArray[hash] = {
         offsets: offsetsArray,
         scales: scalesArray
       }
     })
 
-    let blockRef = this.docRef.orderBy('height', 'desc').limit(100)
+        console.log('block geo data loaded')
+
+        let blockRef = this.docRef.orderBy('height', 'desc').limit(10)
 
     snapshot = await blockRef.get()
     snapshot.forEach((doc) => {
       let blockData = doc.data()
       let hash = doc.id
-      this.blockGeoData[hash].block = blockData
+          this.blockGeoDataArray[hash].blockData = blockData
     })
 
-    let crystal = await this.crystalGenerator.getMultiple(this.blockGeoData)
-    this.scene.add(crystal)
+        console.log('block data loaded') */
 
-    let plane = await this.planeGenerator.getMultiple(this.blockGeoData)
-    this.scene.add(plane)
-
-    let tree = await this.treeGenerator.getMultiple(this.blockGeoData)
-    tree.translateZ(-385)
-    this.scene.add(tree)
-
-    // this.camera.position.x = -39114.205723215884
-    // this.camera.position.y = -177.5175866333136
-    // this.camera.position.z = 30354.494367882115
-
-    // }.bind(this))
-  }
-
-  // Lloyds relaxation methods: http://www.raymondhill.net/voronoi/rhill-voronoi-demo5.html
-  cellArea (cell) {
-    let area = 0
-    let halfedges = cell.halfedges
-    let halfedgeIndex = halfedges.length
-    let halfedge
-    let startPoint
-    let endPoint
-
-    while (halfedgeIndex--) {
-      halfedge = halfedges[halfedgeIndex]
-      startPoint = halfedge.getStartpoint()
-      endPoint = halfedge.getEndpoint()
-      area += startPoint.x * endPoint.y
-      area -= startPoint.y * endPoint.x
-    }
-
-    return area / 2
-  }
-
-  cellCentroid (cell) {
-    let x = 0
-    let y = 0
-    let halfedges = cell.halfedges
-    let halfedgeIndex = halfedges.length
-    let halfedge
-    let v
-    let startPoint
-    let endPoint
-
-    while (halfedgeIndex--) {
-      halfedge = halfedges[halfedgeIndex]
-      startPoint = halfedge.getStartpoint()
-      endPoint = halfedge.getEndpoint()
-      let vector = startPoint.x * endPoint.y - endPoint.x * startPoint.y
-      x += (startPoint.x + endPoint.x) * vector
-      y += (startPoint.y + endPoint.y) * vector
-    }
-
-    v = this.cellArea(cell) * 6
-
-    return {
-      x: x / v,
-      y: y / v
-    }
-  }
-
-  relaxSites (diagram) {
-    let cells = diagram.cells
-    let cellIndex = cells.length
-    let cell
-    let site
-    let sites = []
-    let rn
-    let dist
-
-    let p = 1 / cellIndex * 0.1
-
-    while (cellIndex--) {
-      cell = cells[cellIndex]
-      rn = Math.random()
-
-      site = this.cellCentroid(cell)
-
-      dist = new THREE.Vector2(site.x, site.y).distanceTo(new THREE.Vector2(cell.site.x, cell.site.y))
-
-      if (isNaN(dist)) {
-        console.log('NaN')
-        continue
-      }
-
-      // don't relax too fast
-      if (dist > 2) {
-        site.x = (site.x + cell.site.x) / 2
-        site.y = (site.y + cell.site.y) / 2
-      }
-
-      // probability of mytosis
-      if (rn > (1 - p)) {
-        dist /= 2
-        sites.push({
-          x: site.x + (site.x - cell.site.x) / dist,
-          y: site.y + (site.y - cell.site.y) / dist
-        })
-      }
-
-      sites.push(site)
-    }
-
-    diagram = this.voronoi.compute(sites, {
-      xl: -this.planeSize / 2,
-      xr: this.planeSize / 2,
-      yt: -this.planeSize / 2,
-      yb: this.planeSize / 2
-    })
-
-    return diagram
+        // this.camera.position.x = -39114.205723215884
+        // this.camera.position.y = -177.5175866333136
+        // this.camera.position.z = 30354.494367882115
+      }.bind(this))
   }
 
   initSound () {

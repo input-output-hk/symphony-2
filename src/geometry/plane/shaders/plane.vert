@@ -74,7 +74,7 @@ void main() {
 
 	float scaledHeight = blockHeight * 50.0;
 	//transformed.z += scaledHeight;
-	transformed.z -= 4.0;
+	transformed.z -= 5.0;
 
 	//transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
 
