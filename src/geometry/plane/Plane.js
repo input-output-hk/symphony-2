@@ -8,6 +8,11 @@ import vertexShader from './shaders/plane.vert'
 export default class Plane {
   constructor (args) {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
+
+    this.normalMap.wrapS = THREE.RepeatWrapping
+    this.normalMap.wrapT = THREE.RepeatWrapping
+    this.normalMap.repeat.set(4, 4)
+
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
     this.planeSize = args.planeSize
@@ -30,7 +35,7 @@ export default class Plane {
       emissive: 0x000000,
       metalness: 1.0,
       roughness: 0.2,
-      opacity: 0.9,
+      opacity: 0.8,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -39,7 +44,7 @@ export default class Plane {
       /* roughnessMap: this.roughnessMap,
       metalnessMap: this.roughnessMap, */
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.03, 0.03)
+      normalScale: new THREE.Vector2(0.1, 0.1)
     })
   }
 
@@ -82,7 +87,7 @@ export default class Plane {
           this.theta = chord / awayStep
         }
 
-        let blockGeoData = blockGeoDataArray[hash]
+        // let blockGeoData = blockGeoDataArray[hash]
 
         let rotation = 0
 
@@ -121,7 +126,7 @@ export default class Plane {
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)
 
-        console.log('plane at height: ' + blockGeoData.blockData.height + ' added')
+        // console.log('plane at height: ' + blockGeoData.blockData.height + ' added')
 
         blockIndex++
       }
@@ -137,8 +142,6 @@ export default class Plane {
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
-
-    console.log(this.geometry)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

@@ -113,7 +113,7 @@ export default class Tree {
           this.theta = chord / awayStep
         }
 
-        let blockGeoData = blockGeoDataArray[hash]
+        // let blockGeoData = blockGeoDataArray[hash]
 
         let rotation = 0
 
@@ -152,7 +152,7 @@ export default class Tree {
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)
 
-        console.log('tree at height: ' + blockGeoData.blockData.height + ' added')
+        // console.log('tree at height: ' + blockGeoData.blockData.height + ' added')
 
         blockIndex++
       }
@@ -166,8 +166,6 @@ export default class Tree {
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
-
-    console.log(this.geometry)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

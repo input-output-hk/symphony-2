@@ -1,5 +1,7 @@
 #define PHYSICAL
 
+uniform float uTime;
+
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
@@ -93,8 +95,8 @@ void main() {
 	transformed.x += (rand(transformed.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 	transformed.y += (rand(transformed.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
-	transformed.x += (rand(transformed.x + transformed.x) * (scale * 0.1) - (scale * 0.05));
-	transformed.y += (rand(transformed.y + transformed.y) * (scale * 0.1) - (scale * 0.05));
+	/*transformed.x += (rand(transformed.x + transformed.x) * (scale * 0.1) - (scale * 0.05));
+	transformed.y += (rand(transformed.y + transformed.y) * (scale * 0.1) - (scale * 0.05));*/
 
 	transformed.z += (rand(transformed.y) * (offset.z * 0.02) - (offset.z * 0.01)) * topVertex * (1.0 - centerTopVertex);
 	transformed.z += (offset.z * 0.03) * centerTopVertex;

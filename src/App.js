@@ -14,17 +14,19 @@ import moment from 'moment'
 // post
 import {
   EffectComposer,
-  // ShaderPass,
-  RenderPass
-  // UnrealBloomPass,
+  ShaderPass,
+  RenderPass,
+  UnrealBloomPass
   // SMAAPass,
   // SSAARenderPass
 } from './libs/post/EffectComposer'
 
-// import FXAA from './libs/post/FXAA'
-// import VignetteShader from './libs/post/Vignette'
+import HueSaturation from './libs/post/HueSaturation'
+import BrightnessContrast from './libs/post/BrightnessContrast'
+import FXAA from './libs/post/FXAA'
+import VignetteShader from './libs/post/Vignette'
 // import CopyShader from './libs/post/CopyShader'
-// import FilmShader from './libs/post/Film'
+import FilmShader from './libs/post/Film'
 
 // Config
 import Config from './Config'
@@ -43,7 +45,7 @@ class App extends mixin(EventEmitter, Component) {
     this.config = deepAssign(Config, this.props.config)
     this.OrbitControls = OrbitContructor(THREE)
     this.planeSize = 500
-    this.planeOffsetMultiplier = 2
+    this.planeOffsetMultiplier = 20
     this.ObjectLoader = new THREE.ObjectLoader()
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataArray = {}
@@ -77,7 +79,7 @@ class App extends mixin(EventEmitter, Component) {
     this.initScene()
     this.initCamera()
     this.initRenderer()
-    // this.initPost()
+    this.initPost()
     this.initControls()
     this.initLights()
     this.initGeometry()
@@ -110,23 +112,30 @@ class App extends mixin(EventEmitter, Component) {
     // this.ssaaRenderPass.renderToScreen = false
     // this.composer.addPass(this.ssaaRenderPass)
 
+    this.HueSaturationPass = new ShaderPass(HueSaturation)
+    this.composer.addPass(this.HueSaturationPass)
+
+    this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
+    this.composer.addPass(this.BrightnessContrastPass)
+
     // res, strength, radius, threshold
     // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.01, 0.75)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.15, 0.6, 0.95)
     // this.bloomPass.renderToScreen = true
-    // this.composer.addPass(this.bloomPass)
+    this.composer.addPass(this.bloomPass)
 
-    // this.VignettePass = new ShaderPass(VignetteShader)
+    this.VignettePass = new ShaderPass(VignetteShader)
     // this.VignettePass.renderToScreen = true
-    // this.composer.addPass(this.VignettePass)
+    this.composer.addPass(this.VignettePass)
 
-    // this.FilmShaderPass = new ShaderPass(FilmShader)
+    this.FilmShaderPass = new ShaderPass(FilmShader)
     // this.FilmShaderPass.renderToScreen = true
-    // this.composer.addPass(this.FilmShaderPass)
+    this.composer.addPass(this.FilmShaderPass)
 
-    /* this.FXAAPass = new ShaderPass(FXAA)
+    this.FXAAPass = new ShaderPass(FXAA)
     this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
     this.FXAAPass.renderToScreen = true
-    this.composer.addPass(this.FXAAPass) */
+    this.composer.addPass(this.FXAAPass)
 
     // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
     // this.ssaaRenderPass.renderToScreen = true
@@ -288,7 +297,8 @@ class App extends mixin(EventEmitter, Component) {
     /* let light = new THREE.AmbientLight(0xffffff)
     this.scene.add(light) */
 
-    this.pointLight = new THREE.PointLight(0xffffff, 2, 0, 9999999)
+    this.pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 9999999)
+    // this.pointLight = new THREE.PointLight(0xffffff)
     this.pointLight.position.set(0, 200, 0)
     this.scene.add(this.pointLight)
   }
@@ -337,13 +347,18 @@ class App extends mixin(EventEmitter, Component) {
           this.hashes.push(block.hash)
         })
 
+        let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
           await this.getGeometry(hash)
 
-          console.log(Object.keys(this.blockGeoDataArray).length)
+          if (addCount > 5) {
+            return
+          }
 
-          /* let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
-          this.scene.add(crystal) */
+          addCount++
+
+          let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
+          this.scene.add(crystal)
 
           let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray)
           this.scene.add(plane)
@@ -428,8 +443,10 @@ class App extends mixin(EventEmitter, Component) {
   renderFrame () {
     this.controls.update()
 
-    this.renderer.render(this.scene, this.camera)
-    // this.composer.render()
+    this.crystalGenerator.update()
+
+    // this.renderer.render(this.scene, this.camera)
+    this.composer.render()
   }
 
   addEvents () {
@@ -466,7 +483,8 @@ class App extends mixin(EventEmitter, Component) {
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
       1,
-      100000
+      // 100000
+      10000
     )
     window.camera = this.camera
     this.camera.position.x = this.config.camera.initPos.x
@@ -514,7 +532,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height, false)
 
-    // this.composer.setSize(this.width, this.height)
+    this.composer.setSize(this.width, this.height)
   }
 
   render () {

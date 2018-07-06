@@ -6,7 +6,10 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-#pragma glslify: noise = require('glsl-noise/simplex/3d');
+uniform float uTime;
+
+#pragma glslify: noise = require('glsl-noise/simplex/4d');
+//#pragma glslify: noise = require('glsl-noise/simplex/3d');
 
 vec2 truchetPattern(in vec2 _st, in float _index){
     _index = fract(((_index-0.5)*2.0));
@@ -112,9 +115,10 @@ void main() {
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
 
-	float spentRatio = clamp(vSpentRatio, 0.5, 1.0);
+	float spentRatio = clamp(vSpentRatio, 0.0, 1.0);
 
 	outgoingLight += (1.0 - spentRatio);
+	outgoingLight *= 0.5;
 	//outgoingLight *= (1.0 - vSpentRatio);
 
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
@@ -122,7 +126,8 @@ void main() {
 	//float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.15 * clamp(vOffset.z * 0.1, 0.0,  1.0);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 	
-	float noiseAmount = noise(vec3(vTransformed.xyz * 0.03)) * noise(vec3(vTransformed.xyz * 0.005)) * 0.15;
+	//float noiseAmount = noise(vec4(vTransformed.xyz * 0.03, uTime * 0.005)) * noise(vec4(vTransformed.xyz * 0.005, uTime * 0.005)) * 0.25;
+	float noiseAmount = noise(vec4(vTransformed.xyz * 0.03, uTime * 0.005)) * 0.15;
 
 	//float edgeNoise = edgeAmount + noiseAmount;
 
@@ -139,7 +144,8 @@ void main() {
     vec2 ipos = floor(st);  // integer
     vec2 fpos = fract(st);  // fraction
 
-    vec2 tile = truchetPattern(fpos, random( ipos ));
+    //vec2 tile = truchetPattern(fpos, random( ipos ));
+    vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.0005);
 
 	// Maze
 	float color = 0.0;
@@ -159,11 +165,14 @@ void main() {
 	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
 		    smoothstep(tile.y,tile.y-0.3,1.0);
 
-	color *= abs(noiseAmount * 4.0);
+	color *= abs(noiseAmount * 15.0);
 
-	color = clamp(color, 0.0, 1.0);
+	color = clamp(color, 0.0, 2.0);
 
-	outgoingLight += (color * (1.0-vTopVertex));
+	outgoingLight.b += (color * (1.0 - vTopVertex));
+	outgoingLight.g += (color * (1.0 - vTopVertex)) * 0.3;
+	/*outgoingLight.b *= (color * (1.0 - vTopVertex));
+	outgoingLight.g *= (color * (1.0 - vTopVertex)) * 0.3;*/
 
 
 	outgoingLight *= 0.9;

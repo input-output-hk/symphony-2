@@ -21,6 +21,8 @@ export default class Crystal {
     this.planeOffsetMultiplier = args.planeOffsetMultiplier
     this.voronoi = new Voronoi()
 
+    this.uTime = 0
+
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
       .load([
@@ -36,7 +38,7 @@ export default class Crystal {
       flatShading: true,
       color: 0xffffff,
       emissive: 0x000000,
-      metalness: 1.0,
+      metalness: 0.8,
       roughness: 0.0,
       transparent: true,
       side: THREE.DoubleSide,
@@ -545,6 +547,11 @@ export default class Crystal {
     this.mesh.frustumCulled = false
 
     return this.mesh
+  }
+
+  update (args) {
+    this.uTime++
+    this.material.uniforms.uTime.value = this.uTime
   }
 }
 
