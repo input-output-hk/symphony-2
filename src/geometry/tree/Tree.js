@@ -62,10 +62,6 @@ export default class Tree extends Base {
     let planeOffsetsArray = []
     let quatArray = []
 
-    let thetaMax = this.coils * (Math.PI * 2)
-    let awayStep = this.radius / thetaMax
-    let chord = this.planeSize + this.planeMargin
-
     // set up base geometry
     let treeMesh = await this.loadTreeModel()
 
@@ -83,23 +79,14 @@ export default class Tree extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
     this.geometry.translate(0, -395, 0)
 
-    let theta = 0
     let blockIndex = 0
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (theta === 0) {
-          let offset = this.planeSize * this.planeOffsetMultiplier
-          let chord = this.planeSize + offset
-          theta = chord / awayStep
-        }
-
-        let away = awayStep * theta
-        let xOffset = Math.cos(theta) * away
-        let zOffset = Math.sin(theta) * away
-        theta += chord / away
+        let blockGeoData = blockGeoDataArray[hash]
+        let blockPosition = this.getBlockPosition(blockGeoData.blockData.height)
 
         let object = new THREE.Object3D()
-        object.position.set(xOffset, 0, zOffset)
+        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
 
         quatArray.push(object.quaternion.x)
@@ -107,8 +94,8 @@ export default class Tree extends Base {
         quatArray.push(object.quaternion.z)
         quatArray.push(object.quaternion.w)
 
-        planeOffsetsArray.push(xOffset)
-        planeOffsetsArray.push(zOffset)
+        planeOffsetsArray.push(blockPosition.xOffset)
+        planeOffsetsArray.push(blockPosition.zOffset)
 
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)

@@ -21,7 +21,7 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    this.normalMap.magFilter = THREE.NearestFilter
+    /* this.normalMap.magFilter = THREE.NearestFilter */
 
     this.voronoi = new Voronoi()
 
@@ -176,85 +176,6 @@ export default class Crystal extends Base {
     })
   }
 
-  async get (blockData, offsetsArray, scalesArray) {
-    this.instanceCount = scalesArray.length
-
-    let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
-
-    let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
-
-    this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
-    // this.geometry.rotateX(Math.PI / 2)
-
-    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 2)
-    let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
-    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-    let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-
-    // get min/max tx value in blockData
-    let maxTxValue = 0
-    let minTxValue = Number.MAX_SAFE_INTEGER
-    blockData.tx.forEach((tx) => {
-      maxTxValue = Math.max(maxTxValue, tx.value)
-      minTxValue = Math.min(minTxValue, tx.value)
-    })
-
-    if (minTxValue === maxTxValue) {
-      minTxValue = 0
-    }
-
-    for (let i = 0; i < this.instanceCount; i++) {
-      if (typeof blockData.tx[i] === 'undefined') {
-        continue
-      }
-      let tx = blockData.tx[i]
-
-      let txValue = tx.value * 0.00000001
-      if (txValue > 1000) {
-        txValue = 1000
-      }
-      if (txValue < 1) {
-        txValue = 1
-      }
-
-      txValues.setX(
-        i,
-        txValue
-      )
-
-      let spentCount = 0
-      tx.out.forEach(function (el, index) {
-        if (el.spent === 1) {
-          spentCount++
-        }
-      })
-
-      let spentRatio = 1
-      if (spentCount !== 0) {
-        spentRatio = spentCount / tx.out.length
-      } else {
-        spentRatio = 0.0
-      }
-
-      spentRatios.setX(
-        i,
-        spentRatio
-      )
-    }
-
-    this.geometry.addAttribute('offset', offsets)
-    this.geometry.addAttribute('scale', scales)
-    this.geometry.addAttribute('txValue', txValues)
-    this.geometry.addAttribute('spentRatio', spentRatios)
-
-    this.mesh = new THREE.Mesh(this.geometry, this.material)
-
-    this.mesh.frustumCulled = false
-
-    return this.mesh
-  }
-
   async getMultiple (blockGeoDataArray) {
     this.instanceCount = 0
 
@@ -266,31 +187,18 @@ export default class Crystal extends Base {
     let txArray = []
     let quatArray = []
 
-    let thetaMax = this.coils * (Math.PI * 2)
-    let awayStep = this.radius / thetaMax
-    let chord = this.planeSize + this.planeMargin
-    let theta = 0
-
     let blockIndex = 0
 
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (theta === 0) {
-          let offset = this.planeSize * this.planeOffsetMultiplier
-          let chord = this.planeSize + offset
-          theta = chord / awayStep
-        }
+        let blockGeoData = blockGeoDataArray[hash]
 
-        let away = awayStep * theta
-        let xOffset = Math.cos(theta) * away
-        let zOffset = Math.sin(theta) * away
-        theta += chord / away
+        let blockPosition = this.getBlockPosition(blockGeoData.blockData.height)
 
         let object = new THREE.Object3D()
-        object.position.set(xOffset, 0, zOffset)
+        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
 
-        let blockGeoData = blockGeoDataArray[hash]
         this.instanceCount += blockGeoData.scales.length
 
         for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
@@ -302,15 +210,15 @@ export default class Crystal extends Base {
 
           vector.applyQuaternion(object.quaternion)
 
-          vector.x += xOffset
-          vector.z += zOffset
+          vector.x += blockPosition.xOffset
+          vector.z += blockPosition.zOffset
 
           offsetsArray.push(vector.x)
           offsetsArray.push(vector.y)
           offsetsArray.push(vector.z)
 
-          planeOffsetsArray.push(xOffset)
-          planeOffsetsArray.push(zOffset)
+          planeOffsetsArray.push(blockPosition.xOffset)
+          planeOffsetsArray.push(blockPosition.zOffset)
 
           quatArray.push(object.quaternion.x)
           quatArray.push(object.quaternion.y)
@@ -359,9 +267,12 @@ export default class Crystal extends Base {
       }
       let tx = txArray[i]
 
-      let txValue = (tx.value * 0.00000001) + 1.0
+      let txValue = (tx.value * 0.00000001)
       if (txValue > 1000) {
         txValue = 1000
+      }
+      if (txValue < 1) {
+        txValue = 1
       }
 
       txValues.setX(

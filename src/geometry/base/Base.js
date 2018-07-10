@@ -24,4 +24,31 @@ export default class Base {
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
   }
+
+  getBlockPosition (blockIndex) {
+    let thetaMax = this.coils * (Math.PI * 2)
+    let awayStep = this.radius / thetaMax
+    let chord = this.planeSize + this.planeMargin
+
+    let xOffset
+    let zOffset
+
+    let offset = this.planeSize * this.planeOffsetMultiplier
+
+    let theta = (this.planeSize + offset) / awayStep
+
+    for (let index = 0; index <= blockIndex; index++) {
+      let away = awayStep * theta
+      if (index === blockIndex) {
+        xOffset = Math.cos(theta) * away
+        zOffset = Math.sin(theta) * away
+      }
+      theta += chord / away
+    }
+
+    return {
+      xOffset,
+      zOffset
+    }
+  }
 }

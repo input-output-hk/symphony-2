@@ -6,14 +6,6 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-float random (in vec2 _st) {
-    return fract(sin(dot(_st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
-}
-
-#pragma glslify: noise = require('glsl-noise/simplex/3d');
-
 varying vec3 vTransformed;
 varying vec3 vOffset;
 
@@ -37,10 +29,10 @@ varying vec3 vViewPosition;
 #include <uv_pars_fragment>
 #include <uv2_pars_fragment>
 #include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <aomap_pars_fragment>
-#include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
+//#include <alphamap_pars_fragment>
+//#include <aomap_pars_fragment>
+//#include <lightmap_pars_fragment>
+//#include <emissivemap_pars_fragment>
 #include <envmap_pars_fragment>
 #include <fog_pars_fragment>
 #include <bsdfs>
@@ -48,10 +40,10 @@ varying vec3 vViewPosition;
 #include <lights_pars_begin>
 #include <lights_pars_maps>
 #include <lights_physical_pars_fragment>
-#include <shadowmap_pars_fragment>
-#include <bumpmap_pars_fragment>
+//#include <shadowmap_pars_fragment>
+//#include <bumpmap_pars_fragment>
 #include <normalmap_pars_fragment>
-#include <roughnessmap_pars_fragment>
+//#include <roughnessmap_pars_fragment>
 #include <metalnessmap_pars_fragment>
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
@@ -68,13 +60,13 @@ void main() {
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>
 	#include <color_fragment>
-	#include <alphamap_fragment>
+	//#include <alphamap_fragment>
 	#include <alphatest_fragment>
 	#include <roughnessmap_fragment>
 	#include <metalnessmap_fragment>
 	#include <normal_fragment_begin>
 	#include <normal_fragment_maps>
-	#include <emissivemap_fragment>
+	//#include <emissivemap_fragment>
 
 	// accumulation
 	#include <lights_physical_fragment>
@@ -83,7 +75,7 @@ void main() {
 	#include <lights_fragment_end>
 
 	// modulation
-	#include <aomap_fragment>
+	//#include <aomap_fragment>
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 

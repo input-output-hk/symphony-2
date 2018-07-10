@@ -29,10 +29,8 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 80,
-    // initPos: {x: 159338192555.9354, y: 1.0002559461900744, z: 1240559260230.258}
-    initPos: {x: 0, y: 50, z: -200}
-    // initPos: {x: -12464.212460041297, y: 871.9361183808118, z: 9360.601144233508}
+    fov: 60,
+    initPos: {x: 0, y: 0, z: -200}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
 }

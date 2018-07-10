@@ -46,10 +46,10 @@ class App extends mixin(EventEmitter, Component) {
     this.config = deepAssign(Config, this.props.config)
     this.OrbitControls = OrbitContructor(THREE)
     this.planeSize = 500
-    this.planeOffsetMultiplier = 20
+    this.planeOffsetMultiplier = 500
     this.planeMargin = 100
-    this.coils = 200
-    this.radius = 10000
+    this.coils = 100
+    this.radius = 1000000
     this.ObjectLoader = new THREE.ObjectLoader()
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataArray = {}
@@ -319,10 +319,8 @@ class App extends mixin(EventEmitter, Component) {
     /* let light = new THREE.AmbientLight(0xffffff)
     this.scene.add(light) */
 
-    // this.pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 9999999)
-    // this.pointLight = new THREE.PointLight(0xee1111, 0.3, 0, 9999999)
-    // // this.pointLight = new THREE.PointLight(0xffffff)
-    // this.pointLight.position.set(0, 200, 0)
+    // this.pointLight = new THREE.PointLight(0xffffff, 1.0, 0, 9999999)
+    // this.pointLight.position.set(0, 100, 0)
     // this.scene.add(this.pointLight)
   }
 
@@ -373,7 +371,7 @@ class App extends mixin(EventEmitter, Component) {
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
           if (addCount < 10) {
-            await this.getGeometry(hash)
+            await this.getGeometry(hash, addCount)
           }
 
           addCount++
@@ -454,9 +452,6 @@ class App extends mixin(EventEmitter, Component) {
   initScene () {
     this.scene = new THREE.Scene()
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
-    /* this.scene.rotation.x = (Math.PI / 2)
-    this.scene.rotation.y = Math.PI
-    this.scene.position.y += 1.0 */
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-blue/')

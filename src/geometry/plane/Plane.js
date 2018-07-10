@@ -20,9 +20,8 @@ export default class Plane extends Base {
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
-      // emissive: 0x220000,
-      emissive: 0x000000,
-      metalness: 0.8,
+      // emissive: 0xffffff,
+      metalness: 0.9,
       roughness: 0.2,
       opacity: 0.8,
       transparent: true,
@@ -40,64 +39,45 @@ export default class Plane extends Base {
   async getMultiple (blockGeoDataArray) {
     this.instanceCount = 0
 
-    let blockHeightsArray = []
     let planeOffsetsArray = []
     let quatArray = []
 
-    let thetaMax = this.coils * (Math.PI * 2)
-    let awayStep = this.radius / thetaMax
-    let chord = this.planeSize + this.planeMargin
-
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize, this.planeSize, 16, 10, 10, 10)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 16, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
     this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -8.1, 0)
+    this.geometry.translate(0, -8.2, 0)
 
-    let theta = 0
-
-    let blockIndex = 0
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (theta === 0) {
-          let offset = this.planeSize * this.planeOffsetMultiplier
-          let chord = this.planeSize + offset
-          theta = chord / awayStep
-        }
+        let blockGeoData = blockGeoDataArray[hash]
 
-        let away = awayStep * theta
-        let xOffset = Math.cos(theta) * away
-        let zOffset = Math.sin(theta) * away
-        theta += chord / away
+        let blockHeight = blockGeoData.blockData.height
+
+        let blockPosition = this.getBlockPosition(blockHeight)
 
         let object = new THREE.Object3D()
-        object.position.set(xOffset, 0, zOffset)
+        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
+        // object.rotateY(1 / (blockHeight + 20))
 
         quatArray.push(object.quaternion.x)
         quatArray.push(object.quaternion.y)
         quatArray.push(object.quaternion.z)
         quatArray.push(object.quaternion.w)
 
-        planeOffsetsArray.push(xOffset)
-        planeOffsetsArray.push(zOffset)
-
-        // blockHeightsArray.push(block.block.height)
-        blockHeightsArray.push(blockIndex)
-
-        blockIndex++
+        planeOffsetsArray.push(blockPosition.xOffset)
+        planeOffsetsArray.push(blockPosition.zOffset)
       }
     }
 
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
-    let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
     let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
 
     this.geometry.addAttribute('planeOffset', planeOffsets)
-    this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)

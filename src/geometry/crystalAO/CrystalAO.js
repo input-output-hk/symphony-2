@@ -40,31 +40,18 @@ export default class CrystalAO extends Base {
     let txArray = []
     let quatArray = []
 
-    let thetaMax = this.coils * (Math.PI * 2)
-    let awayStep = this.radius / thetaMax
-    let chord = this.planeSize + this.planeMargin
-    let theta = 0
-
     let blockIndex = 0
 
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (theta === 0) {
-          let offset = this.planeSize * this.planeOffsetMultiplier
-          let chord = this.planeSize + offset
-          theta = chord / awayStep
-        }
+        let blockGeoData = blockGeoDataArray[hash]
 
-        let away = awayStep * theta
-        let xOffset = Math.cos(theta) * away
-        let zOffset = Math.sin(theta) * away
-        theta += chord / away
+        let blockPosition = this.getBlockPosition(blockGeoData.blockData.height)
 
         let object = new THREE.Object3D()
-        object.position.set(xOffset, 0, zOffset)
+        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
 
-        let blockGeoData = blockGeoDataArray[hash]
         this.instanceCount += blockGeoData.scales.length
 
         for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
@@ -76,15 +63,15 @@ export default class CrystalAO extends Base {
 
           vector.applyQuaternion(object.quaternion)
 
-          vector.x += xOffset
-          vector.z += zOffset
+          vector.x += blockPosition.xOffset
+          vector.z += blockPosition.zOffset
 
           offsetsArray.push(vector.x)
           offsetsArray.push(vector.y)
           offsetsArray.push(vector.z)
 
-          planeOffsetsArray.push(xOffset)
-          planeOffsetsArray.push(zOffset)
+          planeOffsetsArray.push(blockPosition.xOffset)
+          planeOffsetsArray.push(blockPosition.zOffset)
 
           quatArray.push(object.quaternion.x)
           quatArray.push(object.quaternion.y)
@@ -93,7 +80,7 @@ export default class CrystalAO extends Base {
         }
 
         blockGeoData.scales.forEach((scale) => {
-          scale *= 2.3
+          scale *= 2.6
 
           scalesArray.push(scale)
           // blockHeightsArray.push(block.block.height)
@@ -116,6 +103,7 @@ export default class CrystalAO extends Base {
 
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
+    this.geometry.translate(0, -0.01, 0)
 
     // attributes
     let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)

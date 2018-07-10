@@ -91,7 +91,7 @@ void main() {
     transformed.xz += offset.xz;
 
 
-	float scaledHeight = blockHeight * 50.0;
+	//float scaledHeight = blockHeight * 50.0;
 
 //	transformed.z += scaledHeight;
 
