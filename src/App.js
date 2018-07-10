@@ -33,6 +33,7 @@ import Config from './Config'
 
 // Geometry
 import Crystal from './geometry/crystal/Crystal'
+import CrystalAO from './geometry/crystalAO/CrystalAO'
 import Plane from './geometry/plane/Plane'
 import Tree from './geometry/tree/Tree'
 
@@ -46,6 +47,9 @@ class App extends mixin(EventEmitter, Component) {
     this.OrbitControls = OrbitContructor(THREE)
     this.planeSize = 500
     this.planeOffsetMultiplier = 20
+    this.planeMargin = 100
+    this.coils = 200
+    this.radius = 10000
     this.ObjectLoader = new THREE.ObjectLoader()
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataArray = {}
@@ -63,17 +67,35 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin,
+      coils: this.coils,
+      radius: this.radius
+    })
+
+    this.crystalAOGenerator = new CrystalAO({
+      firebaseDB: this.firebaseDB,
+      planeSize: this.planeSize,
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin,
+      coils: this.coils,
+      radius: this.radius
     })
 
     this.planeGenerator = new Plane({
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin,
+      coils: this.coils,
+      radius: this.radius
     })
 
     this.treeGenerator = new Tree({
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin,
+      coils: this.coils,
+      radius: this.radius
     })
 
     this.initScene()
@@ -297,10 +319,11 @@ class App extends mixin(EventEmitter, Component) {
     /* let light = new THREE.AmbientLight(0xffffff)
     this.scene.add(light) */
 
-    this.pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 9999999)
-    // this.pointLight = new THREE.PointLight(0xffffff)
-    this.pointLight.position.set(0, 200, 0)
-    this.scene.add(this.pointLight)
+    // this.pointLight = new THREE.PointLight(0xffffff, 0.3, 0, 9999999)
+    // this.pointLight = new THREE.PointLight(0xee1111, 0.3, 0, 9999999)
+    // // this.pointLight = new THREE.PointLight(0xffffff)
+    // this.pointLight.position.set(0, 200, 0)
+    // this.scene.add(this.pointLight)
   }
 
   async asyncForEach (array, callback) {
@@ -349,59 +372,33 @@ class App extends mixin(EventEmitter, Component) {
 
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
-          await this.getGeometry(hash)
-
-          if (addCount > 5) {
-            return
+          if (addCount < 10) {
+            await this.getGeometry(hash)
           }
 
           addCount++
-
-          let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
-          this.scene.add(crystal)
-
-          let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray)
-          this.scene.add(plane)
-
-          let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
-          tree.translateZ(-385)
-          this.scene.add(tree)
         })
 
-        /* let blockGeoRef = this.docRefGeo.orderBy('height', 'desc').limit(10)
+        let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(tree)
 
-    let snapshot = await blockGeoRef.get()
-    snapshot.forEach((doc) => {
-      let blockGeoData = doc.data()
-      let hash = doc.id
-      let offsetJSON = JSON.parse(blockGeoData.offsets)
-      let offsetsArray = Object.values(offsetJSON)
+        let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(plane)
 
-      let scalesJSON = JSON.parse(blockGeoData.scales)
-      let scalesArray = Object.values(scalesJSON)
+        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(crystal)
 
-          this.blockGeoDataArray[hash] = {
-        offsets: offsetsArray,
-        scales: scalesArray
-      }
-    })
+        let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(crystalAO)
 
-        console.log('block geo data loaded')
+        let planeX = plane.geometry.attributes.planeOffset.array[0]
+        let planeZ = plane.geometry.attributes.planeOffset.array[1]
 
-        let blockRef = this.docRef.orderBy('height', 'desc').limit(10)
+        this.camera.position.x = planeX + 300
+        this.camera.position.z = planeZ - 400
 
-    snapshot = await blockRef.get()
-    snapshot.forEach((doc) => {
-      let blockData = doc.data()
-      let hash = doc.id
-          this.blockGeoDataArray[hash].blockData = blockData
-    })
-
-        console.log('block data loaded') */
-
-        // this.camera.position.x = -39114.205723215884
-        // this.camera.position.y = -177.5175866333136
-        // this.camera.position.z = 30354.494367882115
+        this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
+        this.controls.update()
       }.bind(this))
   }
 
@@ -457,9 +454,9 @@ class App extends mixin(EventEmitter, Component) {
   initScene () {
     this.scene = new THREE.Scene()
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
-    this.scene.rotation.x = (Math.PI / 2)
+    /* this.scene.rotation.x = (Math.PI / 2)
     this.scene.rotation.y = Math.PI
-    this.scene.position.y += 1.0
+    this.scene.position.y += 1.0 */
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-blue/')
@@ -483,8 +480,8 @@ class App extends mixin(EventEmitter, Component) {
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
       1,
-      // 100000
-      10000
+      1000000000
+      // 10000
     )
     window.camera = this.camera
     this.camera.position.x = this.config.camera.initPos.x

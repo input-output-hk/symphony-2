@@ -6,33 +6,26 @@ import Voronoi from 'voronoi'
 import VoronoiTools from '../../utils/VoronoiTools'
 import seedrandom from 'seedrandom'
 
+// base geometry class
+import Base from '../base/Base'
+
 // shaders
 import fragmentShader from './shaders/crystal.frag'
 import vertexShader from './shaders/crystal.vert'
 
-export default class Crystal {
+export default class Crystal extends Base {
   constructor (args) {
+    super(args)
     this.firebaseDB = args.firebaseDB
     this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
-    this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
-    this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
-    this.planeSize = args.planeSize
-    this.planeOffsetMultiplier = args.planeOffsetMultiplier
+
+    this.normalMap.minFilter = THREE.NearestFilter
+    this.normalMap.magFilter = THREE.NearestFilter
+
     this.voronoi = new Voronoi()
 
     this.uTime = 0
-
-    this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa-full/')
-      .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
-      ])
 
     this.material = new CrystalMaterial({
       flatShading: true,
@@ -44,7 +37,7 @@ export default class Crystal {
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.1, 0.1)
+      normalScale: new THREE.Vector2(0.05, 0.05)
     })
   }
 
@@ -192,7 +185,7 @@ export default class Crystal {
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
 
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
-    this.geometry.rotateX(Math.PI / 2)
+    // this.geometry.rotateX(Math.PI / 2)
 
     let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 2)
     let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
@@ -220,6 +213,9 @@ export default class Crystal {
       let txValue = tx.value * 0.00000001
       if (txValue > 1000) {
         txValue = 1000
+      }
+      if (txValue < 1) {
+        txValue = 1
       }
 
       txValues.setX(
@@ -268,75 +264,58 @@ export default class Crystal {
     let planeOffsetsArray = []
     let scalesArray = []
     let txArray = []
+    let quatArray = []
 
-    let coils = 200
-    let radius = 1000000
-    let center = {x: 0, y: 0}
-
-    // value of theta corresponding to end of last coil
-    let thetaMax = coils * (Math.PI * 2)
-
-    // How far to step away from center for each side.
-    let awayStep = radius / thetaMax
-
-    // distance between points to plot
-    let chord = this.planeSize
+    let thetaMax = this.coils * (Math.PI * 2)
+    let awayStep = this.radius / thetaMax
+    let chord = this.planeSize + this.planeMargin
+    let theta = 0
 
     let blockIndex = 0
 
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (typeof this.theta === 'undefined') {
+        if (theta === 0) {
           let offset = this.planeSize * this.planeOffsetMultiplier
           let chord = this.planeSize + offset
-          this.theta = chord / awayStep
+          theta = chord / awayStep
         }
 
-        let rotation = 0
+        let away = awayStep * theta
+        let xOffset = Math.cos(theta) * away
+        let zOffset = Math.sin(theta) * away
+        theta += chord / away
 
-        let away = awayStep * this.theta
-
-        // How far around the center.
-        let around = this.theta + rotation
-
-        // Convert 'around' and 'away' to X and Y.
-        let xOffset = center.x + Math.cos(around) * away
-        let yOffset = center.y + Math.sin(around) * away
-
-        let angle = -this.theta + (Math.PI / 2) + 0.015
-
-        // to a first approximation, the points are on a circle
-        // so the angle between them is chord/radius
-        this.theta += chord / away
-
-        var yRotMatrix = new THREE.Matrix3()
-        yRotMatrix.set(
-          Math.cos(angle), Math.sin(angle), 0,
-          -Math.sin(angle), Math.cos(angle), 0,
-          0, 0, 1
-        )
+        let object = new THREE.Object3D()
+        object.position.set(xOffset, 0, zOffset)
+        object.lookAt(0, 0, 0)
 
         let blockGeoData = blockGeoDataArray[hash]
         this.instanceCount += blockGeoData.scales.length
 
         for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
           let x = blockGeoData.offsets[i * 2 + 0]
-          let y = blockGeoData.offsets[i * 2 + 1]
-          let z = 0
+          let y = 0
+          let z = blockGeoData.offsets[i * 2 + 1]
 
           let vector = new THREE.Vector3(x, y, z)
 
-          vector.applyMatrix3(yRotMatrix)
+          vector.applyQuaternion(object.quaternion)
 
           vector.x += xOffset
-          vector.y += yOffset
+          vector.z += zOffset
 
           offsetsArray.push(vector.x)
           offsetsArray.push(vector.y)
           offsetsArray.push(vector.z)
 
           planeOffsetsArray.push(xOffset)
-          planeOffsetsArray.push(yOffset)
+          planeOffsetsArray.push(zOffset)
+
+          quatArray.push(object.quaternion.x)
+          quatArray.push(object.quaternion.y)
+          quatArray.push(object.quaternion.z)
+          quatArray.push(object.quaternion.w)
         }
 
         blockGeoData.scales.forEach((scale) => {
@@ -362,7 +341,6 @@ export default class Crystal {
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
 
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
-    this.geometry.rotateX(Math.PI / 2)
 
     // attributes
     let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
@@ -371,6 +349,7 @@ export default class Crystal {
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
     let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
+    let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
 
     console.log('this.instanceCount: ' + this.instanceCount)
 
@@ -390,7 +369,7 @@ export default class Crystal {
         txValue
       )
 
-      offsets.setZ(
+      offsets.setY(
         i,
         txValue
       )
@@ -421,6 +400,7 @@ export default class Crystal {
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
+    this.geometry.addAttribute('quaternion', quaternions)
 
     const positionAttrib = this.geometry.getAttribute('position')
 

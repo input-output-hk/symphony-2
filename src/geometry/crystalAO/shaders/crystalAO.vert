@@ -1,15 +1,24 @@
 #define PHYSICAL
 
+uniform float uTime;
+
 attribute vec3 offset;
 attribute vec2 planeOffset;
+attribute float scale;
+attribute float spentRatio;
 attribute float blockHeight;
+attribute float txValue;
 attribute vec4 quaternion;
 
 float rand(float n){return fract(sin(n) * 43758.5453123);}
 
+#pragma glslify: noise = require('glsl-noise/simplex/4d');
+
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
+varying float vSpentRatio;
+varying float vTxValue;
 
 // http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
 vec3 applyQuaternionToVector( vec4 q, vec3 v ){
@@ -65,22 +74,18 @@ void main() {
 #endif
 
 	#include <begin_vertex>
-
-    //transformed.z *= offset.z;
-    //transformed.z += offset.z * 0.5;
+	
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-    transformed.xz += planeOffset.xy;
-
-	//float scaledHeight = blockHeight * 50.0;
-	//transformed.z += scaledHeight;
-
-	//transformed.y -= 8.3;
-
-	//transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
+    transformed.xz *= scale;
+    
+    transformed.xz += offset.xz;
 
 	vTransformed = transformed;
 	vOffset = offset;
+
+	vTxValue = txValue;
+	vSpentRatio = spentRatio;
 
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>

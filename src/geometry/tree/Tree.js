@@ -2,29 +2,18 @@
 import * as THREE from 'three'
 import GLTFLoader from 'three-gltf-loader'
 
+// base geometry class
+import Base from '../base/Base'
+
 // shaders
 import fragmentShader from './shaders/tree.frag'
 import vertexShader from './shaders/tree.vert'
 
-export default class Tree {
+export default class Tree extends Base {
   constructor (args) {
+    super(args)
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
-    this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
-    this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
-    this.planeSize = args.planeSize
-    this.planeOffsetMultiplier = args.planeOffsetMultiplier
     this.gltfLoader = new GLTFLoader()
-
-    this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa-full/')
-      .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
-      ])
 
     this.material = new TreeMaterial({
       flatShading: true,
@@ -48,12 +37,12 @@ export default class Tree {
     return new Promise(async (resolve, reject) => {
       // Load a glTF resource
       this.binaryTree = await this.gltfLoader.load(
-        'assets/models/gltf/binary-tree.gltf',
+        'assets/models/gltf/binary-tree-13.gltf',
         function (gltf) {
           let mesh = gltf.scene.children[0]
 
-          mesh.geometry.rotateY(Math.PI / 2)
-          // mesh.geometry.rotateZ(Math.PI / 2)
+          mesh.geometry.rotateZ(Math.PI / 2)
+          // mesh.geometry.rotateY(Math.PI / 2)
 
           resolve(mesh)
         },
@@ -73,23 +62,14 @@ export default class Tree {
     let planeOffsetsArray = []
     let quatArray = []
 
-    let coils = 200
-    let radius = 1000000
-    let center = {x: 0, y: 0}
-
-    // value of theta corresponding to end of last coil
-    let thetaMax = coils * (Math.PI * 2)
-
-    // How far to step away from center for each side.
-    let awayStep = radius / thetaMax
-
-    // distance between points to plot
-    let chord = this.planeSize
+    let thetaMax = this.coils * (Math.PI * 2)
+    let awayStep = this.radius / thetaMax
+    let chord = this.planeSize + this.planeMargin
 
     // set up base geometry
     let treeMesh = await this.loadTreeModel()
 
-    let tubeGeo = new THREE.CylinderGeometry(6, 6, 500, 6)
+    let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
     let tubeMesh = new THREE.Mesh(tubeGeo)
     tubeMesh.rotateZ(Math.PI / 2)
 
@@ -99,55 +79,36 @@ export default class Tree {
     treeMesh.updateMatrix()
     let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
     singleGeometry.merge(treeGeo, treeMesh.matrix)
-
     let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
-
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
+    this.geometry.translate(0, -395, 0)
 
+    let theta = 0
     let blockIndex = 0
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {
-        if (typeof this.theta === 'undefined') {
+        if (theta === 0) {
           let offset = this.planeSize * this.planeOffsetMultiplier
           let chord = this.planeSize + offset
-          this.theta = chord / awayStep
+          theta = chord / awayStep
         }
 
-        // let blockGeoData = blockGeoDataArray[hash]
+        let away = awayStep * theta
+        let xOffset = Math.cos(theta) * away
+        let zOffset = Math.sin(theta) * away
+        theta += chord / away
 
-        let rotation = 0
+        let object = new THREE.Object3D()
+        object.position.set(xOffset, 0, zOffset)
+        object.lookAt(0, 0, 0)
 
-        let away = awayStep * this.theta
-
-        // How far around the center.
-        let around = this.theta + rotation
-
-        // Convert 'around' and 'away' to X and Y.
-        let xOffset = center.x + Math.cos(around) * away
-        let yOffset = center.y + Math.sin(around) * away
-
-        let angle = -this.theta + (Math.PI / 2) + 0.015
-
-        // to a first approximation, the points are on a circle
-        // so the angle between them is chord/radius
-        this.theta += chord / away
-
-        var yRotMatrix = new THREE.Matrix4()
-        yRotMatrix.set(
-          Math.cos(angle), Math.sin(angle), 0, 0,
-          -Math.sin(angle), Math.cos(angle), 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1
-        )
-
-        let quaternion = new THREE.Quaternion().setFromRotationMatrix(yRotMatrix)
-        quatArray.push(quaternion.x)
-        quatArray.push(quaternion.y)
-        quatArray.push(quaternion.z)
-        quatArray.push(quaternion.w)
+        quatArray.push(object.quaternion.x)
+        quatArray.push(object.quaternion.y)
+        quatArray.push(object.quaternion.z)
+        quatArray.push(object.quaternion.w)
 
         planeOffsetsArray.push(xOffset)
-        planeOffsetsArray.push(yOffset)
+        planeOffsetsArray.push(zOffset)
 
         // blockHeightsArray.push(block.block.height)
         blockHeightsArray.push(blockIndex)

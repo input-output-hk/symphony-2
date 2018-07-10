@@ -69,10 +69,11 @@ void main() {
     //transformed.z *= offset.z;
     //transformed.z += offset.z * 0.5;
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
+	//transformed.y -= 10.0;
 
-    transformed.xy += planeOffset.xy;
+    transformed.xz += planeOffset.xy;
 
-	float scaledHeight = blockHeight * 50.0;
+	//float scaledHeight = blockHeight * 50.0;
 	//transformed.z += scaledHeight;
 //	transformed.z -= 8.0;
 

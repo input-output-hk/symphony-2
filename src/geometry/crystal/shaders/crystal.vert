@@ -11,7 +11,7 @@ attribute vec3 barycentric;
 attribute float topVertex;
 attribute float centerTopVertex;
 attribute float txValue;
-//attribute vec4 orientation;
+attribute vec4 quaternion;
 
 float rand(float n){return fract(sin(n) * 43758.5453123);}
 
@@ -24,6 +24,7 @@ varying float vSpentRatio;
 varying vec3 vBarycentric;
 varying float vTxValue;
 varying float vTopVertex;
+varying float vBottomVertex;
 varying float vCenterTopVertex;
 
 // http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
@@ -81,25 +82,29 @@ void main() {
 
 	#include <begin_vertex>
 
+	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
+
+    transformed.xz *= scale;
 	
-    transformed.xy *= scale;
-	
-    transformed.z *= offset.z;
-    transformed.z += offset.z * 0.5;
-    transformed.xy += offset.xy;
+    transformed.y *= offset.y;
+    transformed.y += offset.y * 0.5;
+    transformed.xz += offset.xz;
+
 
 	float scaledHeight = blockHeight * 50.0;
 
 //	transformed.z += scaledHeight;
 
 	transformed.x += (rand(transformed.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-	transformed.y += (rand(transformed.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
+	transformed.z += (rand(transformed.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
 	/*transformed.x += (rand(transformed.x + transformed.x) * (scale * 0.1) - (scale * 0.05));
 	transformed.y += (rand(transformed.y + transformed.y) * (scale * 0.1) - (scale * 0.05));*/
 
-	transformed.z += (rand(transformed.y) * (offset.z * 0.02) - (offset.z * 0.01)) * topVertex * (1.0 - centerTopVertex);
-	transformed.z += (offset.z * 0.03) * centerTopVertex;
+	transformed.y += (rand(transformed.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
+	transformed.y += (offset.y * 0.03) * centerTopVertex;
+
+	//transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(transformed.xyz), 0.01 )  ).xyz;
 
 //	transformed = (vec4(transformed.xyz, 0.0) * rotationMatrix( vec3(planeOffset.xy, scaledHeight), 0.1 )  ).xyz;
 
@@ -108,6 +113,7 @@ void main() {
 	vTransformed = transformed;
 	vOffset = offset;
 	vTopVertex = topVertex;
+	vBottomVertex = 1.0 - topVertex;
 
 	vTxValue = txValue;
 

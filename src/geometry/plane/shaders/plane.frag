@@ -87,11 +87,12 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
+	outgoingLight += 0.2;
+
 	outgoingLight.b += 0.2;
 	outgoingLight.g += 0.1;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
-	//gl_FragColor = vec4( outgoingLight, 0.0);
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
