@@ -1,3 +1,5 @@
+#pragma glslify: applyQuaternionToVector = require('../../../shaders/applyQuaternionToVector')
+
 #define PHYSICAL
 
 attribute vec3 offset;
@@ -8,11 +10,6 @@ attribute vec4 quaternion;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
-
-// http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
-vec3 applyQuaternionToVector( vec4 q, vec3 v ){
-	return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
-}
 
 #ifndef FLAT_SHADED
 
@@ -28,7 +25,7 @@ vec3 applyQuaternionToVector( vec4 q, vec3 v ){
 #include <fog_pars_vertex>
 //#include <morphtarget_pars_vertex>
 //#include <skinning_pars_vertex>
-//#include <shadowmap_pars_vertex>
+#include <shadowmap_pars_vertex>
 #include <logdepthbuf_pars_vertex>
 #include <clipping_planes_pars_vertex>
 
@@ -68,7 +65,7 @@ void main() {
 	vViewPosition = - mvPosition.xyz;
 
 	#include <worldpos_vertex>
-	//#include <shadowmap_vertex>
+	#include <shadowmap_vertex>
 	#include <fog_vertex>
 
 }

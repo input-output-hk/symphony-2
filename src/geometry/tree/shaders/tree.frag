@@ -6,11 +6,6 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-#pragma glslify: noise = require('glsl-noise/simplex/3d');
-
-varying vec3 vTransformed;
-varying vec3 vOffset;
-
 #ifndef STANDARD
 	uniform float clearCoat;
 	uniform float clearCoatRoughness;

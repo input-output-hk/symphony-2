@@ -1,3 +1,7 @@
+#pragma glslify: noise = require('glsl-noise/simplex/4d');
+#pragma glslify: random = require('../../../shaders/random')
+#pragma glslify: truchetPattern = require('../../../shaders/truchetPattern')
+
 #define PHYSICAL
 
 uniform vec3 diffuse;
@@ -5,35 +9,12 @@ uniform vec3 emissive;
 uniform float roughness;
 uniform float metalness;
 uniform float opacity;
-
 uniform float uTime;
-
-#pragma glslify: noise = require('glsl-noise/simplex/4d');
-//#pragma glslify: noise = require('glsl-noise/simplex/3d');
-
-vec2 truchetPattern(in vec2 _st, in float _index){
-    _index = fract(((_index-0.5)*2.0));
-    if (_index > 0.75) {
-        _st = vec2(1.0) - _st;
-    } else if (_index > 0.5) {
-        _st = vec2(1.0-_st.x,_st.y);
-    } else if (_index > 0.25) {
-        _st = 1.0-vec2(1.0-_st.x,_st.y);
-    }
-    return _st;
-}
-
-float random (in vec2 _st) {
-    return fract(sin(dot(_st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
-}
 
 varying vec3 vBarycentric;
 varying vec3 vTransformed;
 varying vec3 vOffset;
 varying float vTxValue;
-
 varying float vTopVertex;
 varying float vBottomVertex;
 varying float vCenterTopVertex;
@@ -115,40 +96,28 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-
 	float spentRatio = clamp(vSpentRatio, 0.0, 1.0);
 
 	outgoingLight += (1.0 - spentRatio);
 	outgoingLight *= 0.5;
-	//outgoingLight *= (1.0 - vSpentRatio);
 
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-	//float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.25 * clamp(vOffset.z * 0.15, 0.0,  1.0);
-	//float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.15 * clamp(vOffset.z * 0.1, 0.0,  1.0);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 
-	//float noiseAmount = noise(vec4(vTransformed.xyz * 0.03, uTime * 0.005)) * noise(vec4(vTransformed.xyz * 0.005, uTime * 0.005)) * 0.25;
 	float noiseAmount = noise(vec4(vTransformed.xyz * 0.03, uTime * 0.005)) * 0.15;
 
-	//float edgeNoise = edgeAmount + noiseAmount;
 	outgoingLight += edgeAmount;
 	outgoingLight += noiseAmount;
-
-	/*float bottomEdge = ((vBottomVertex / (vTransformed.z * 10.0)) * 0.1);
-
-	outgoingLight -= clamp(bottomEdge, 0.0, 0.3);*/
 
 	outgoingLight.b += 0.2;
 	outgoingLight.g += 0.1;
 
 	float aspect = vUv.x / vUv.y;
 
-	//vec2 st = vec2(vUv.x, vUv.y) * 25.0;
 	vec2 st = vec2(vUv.x * 25.0, vTransformed.y);
     vec2 ipos = floor(st);  // integer
     vec2 fpos = fract(st);  // fraction
 
-    //vec2 tile = truchetPattern(fpos, random( ipos ));
     vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.0005);
 
 	// Maze
@@ -175,9 +144,6 @@ void main() {
 
 	outgoingLight.b += (color * (1.0 - vTopVertex));
 	outgoingLight.g += (color * (1.0 - vTopVertex)) * 0.3;
-	/*outgoingLight.b *= (color * (1.0 - vTopVertex));
-	outgoingLight.g *= (color * (1.0 - vTopVertex)) * 0.3;*/
-
 
 	outgoingLight *= 0.9;
 	

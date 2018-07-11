@@ -6,25 +6,6 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-uniform float uTime;
-
-#pragma glslify: noise = require('glsl-noise/simplex/4d');
-//#pragma glslify: noise = require('glsl-noise/simplex/3d');
-
-float random (in vec2 _st) {
-    return fract(sin(dot(_st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
-}
-
-varying vec3 vBarycentric;
-varying vec3 vTransformed;
-varying vec3 vOffset;
-varying float vTxValue;
-
-varying float vTopVertex;
-varying float vCenterTopVertex;
-
 #ifndef STANDARD
 	uniform float clearCoat;
 	uniform float clearCoatRoughness;
@@ -96,10 +77,6 @@ void main() {
 	#include <aomap_fragment>
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-
-	//outgoingLight += 0.8; 
-
-	//outgoingLight -= vSpentRatio;
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

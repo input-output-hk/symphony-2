@@ -1,3 +1,5 @@
+#pragma glslify: applyQuaternionToVector = require('../../../shaders/applyQuaternionToVector')
+
 #define PHYSICAL
 
 uniform float uTime;
@@ -6,36 +8,14 @@ attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
 attribute float spentRatio;
-attribute float blockHeight;
 attribute float txValue;
 attribute vec4 quaternion;
-
-float rand(float n){return fract(sin(n) * 43758.5453123);}
-
-#pragma glslify: noise = require('glsl-noise/simplex/4d');
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
 varying float vSpentRatio;
 varying float vTxValue;
-
-// http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
-vec3 applyQuaternionToVector( vec4 q, vec3 v ){
-	return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
-}
-
-mat4 rotationMatrix(vec3 axis, float angle) {
-   axis = normalize(axis);
-   float s = sin(angle);
-   float c = cos(angle);
-   float oc = 1.0 - c;
-
-   return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-               oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-               oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-               0.0,                                0.0,                                0.0,                                1.0);
-}
 
 #ifndef FLAT_SHADED
 

@@ -319,8 +319,8 @@ class App extends mixin(EventEmitter, Component) {
     /* let light = new THREE.AmbientLight(0xffffff)
     this.scene.add(light) */
 
-    // this.pointLight = new THREE.PointLight(0xffffff, 1.0, 0, 9999999)
-    // this.pointLight.position.set(0, 100, 0)
+    // this.pointLight = new THREE.PointLight(0xfffd9e, 1.0, 0, 9999999)
+    // this.pointLight.position.set(0, 0, 0)
     // this.scene.add(this.pointLight)
   }
 

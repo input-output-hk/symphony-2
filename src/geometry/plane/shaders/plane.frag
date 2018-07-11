@@ -6,9 +6,6 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 
-varying vec3 vTransformed;
-varying vec3 vOffset;
-
 #ifndef STANDARD
 	uniform float clearCoat;
 	uniform float clearCoatRoughness;
@@ -40,7 +37,7 @@ varying vec3 vViewPosition;
 #include <lights_pars_begin>
 #include <lights_pars_maps>
 #include <lights_physical_pars_fragment>
-//#include <shadowmap_pars_fragment>
+#include <shadowmap_pars_fragment>
 //#include <bumpmap_pars_fragment>
 #include <normalmap_pars_fragment>
 //#include <roughnessmap_pars_fragment>
