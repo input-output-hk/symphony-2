@@ -21,7 +21,7 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    /* this.normalMap.magFilter = THREE.NearestFilter */
+    // this.normalMap.magFilter = THREE.NearestFilter
 
     this.voronoi = new Voronoi()
 
@@ -394,6 +394,45 @@ export default class Crystal extends Base {
     const CTVArray = new Float32Array(centerTopVertex)
     const CTVAttribute = new THREE.BufferAttribute(CTVArray, 1)
     this.geometry.addAttribute('centerTopVertex', CTVAttribute)
+
+    let centerBottomVertex = [
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1
+
+    ]
+
+    const CBVArray = new Float32Array(centerBottomVertex)
+    const CBVAttribute = new THREE.BufferAttribute(CBVArray, 1)
+    this.geometry.addAttribute('centerBottomVertex', CBVAttribute)
 
     let topVertex = [
       1, 0, 1,

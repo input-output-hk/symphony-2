@@ -16,14 +16,14 @@ import {
   EffectComposer,
   ShaderPass,
   RenderPass,
-  UnrealBloomPass
-  // SMAAPass,
+  UnrealBloomPass,
+  SMAAPass
   // SSAARenderPass
 } from './libs/post/EffectComposer'
 
 import HueSaturation from './libs/post/HueSaturation'
 import BrightnessContrast from './libs/post/BrightnessContrast'
-import FXAA from './libs/post/FXAA'
+/// import FXAA from './libs/post/FXAA'
 import VignetteShader from './libs/post/Vignette'
 // import CopyShader from './libs/post/CopyShader'
 import FilmShader from './libs/post/Film'
@@ -55,6 +55,7 @@ class App extends mixin(EventEmitter, Component) {
     this.blockGeoDataArray = {}
     this.hashes = []
     this.timestampToLoad = this.setTimestampToLoad()
+    this.merkleYOffset = 0
   }
 
   componentDidMount () {
@@ -154,10 +155,10 @@ class App extends mixin(EventEmitter, Component) {
     // this.FilmShaderPass.renderToScreen = true
     this.composer.addPass(this.FilmShaderPass)
 
-    this.FXAAPass = new ShaderPass(FXAA)
-    this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
-    this.FXAAPass.renderToScreen = true
-    this.composer.addPass(this.FXAAPass)
+    // this.FXAAPass = new ShaderPass(FXAA)
+    // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
+    // this.FXAAPass.renderToScreen = true
+    // this.composer.addPass(this.FXAAPass)
 
     // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
     // this.ssaaRenderPass.renderToScreen = true
@@ -167,9 +168,9 @@ class App extends mixin(EventEmitter, Component) {
     // this.copyPass.renderToScreen = true
     // this.composer.addPass(this.copyPass)
 
-    /* this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
+    this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
     this.SMAAPass.renderToScreen = true
-    this.composer.addPass(this.SMAAPass) */
+    this.composer.addPass(this.SMAAPass)
   }
 
   async initFirebase () {
@@ -319,9 +320,10 @@ class App extends mixin(EventEmitter, Component) {
     /* let light = new THREE.AmbientLight(0xffffff)
     this.scene.add(light) */
 
-    // this.pointLight = new THREE.PointLight(0xfffd9e, 1.0, 0, 9999999)
-    // this.pointLight.position.set(0, 0, 0)
-    // this.scene.add(this.pointLight)
+    // this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
+    this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
+    this.pointLight.position.set(0, 1000, 0)
+    this.scene.add(this.pointLight)
   }
 
   async asyncForEach (array, callback) {
@@ -370,27 +372,182 @@ class App extends mixin(EventEmitter, Component) {
 
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
-          if (addCount < 10) {
+          if (addCount < 1) {
             await this.getGeometry(hash, addCount)
           }
 
           addCount++
         })
 
-        let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
-        this.scene.add(tree)
+        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(crystal)
+
+        // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
+        // this.scene.add(crystalAO)
 
         let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray)
         this.scene.add(plane)
 
-        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
-        this.scene.add(crystal)
+        let quat = new THREE.Quaternion(
+          plane.geometry.attributes.quaternion.array[0],
+          plane.geometry.attributes.quaternion.array[1],
+          plane.geometry.attributes.quaternion.array[2],
+          plane.geometry.attributes.quaternion.array[3]
+        )
 
-        let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
-        this.scene.add(crystalAO)
+        let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
+        this.scene.add(tree)
 
         let planeX = plane.geometry.attributes.planeOffset.array[0]
         let planeZ = plane.geometry.attributes.planeOffset.array[1]
+
+        const treeGeo = new THREE.Geometry()
+
+        let nTX = 0
+        for (const key in this.blockGeoDataArray) {
+          if (this.blockGeoDataArray.hasOwnProperty(key)) {
+            const blockGeoData = this.blockGeoDataArray[key]
+
+            nTX = Object.keys(blockGeoData.blockData.tx).length
+            break
+          }
+        }
+
+        let merklePositions = this.getMerklePositions(nTX)
+
+        // for (const key in this.blockGeoDataArray) {
+        //   if (this.blockGeoDataArray.hasOwnProperty(key)) {
+        //     const element = this.blockGeoDataArray[key]
+        //     for (let index = 0; index < element.offsets.length; index += 2) {
+        //       const X = element.offsets[index + 0]
+        //       const Z = element.offsets[index + 1]
+
+        //       let offsetVec = new THREE.Vector2(X, Z)
+
+        //       // find closest merkle position
+        //       let closestDist = Number.MAX_SAFE_INTEGER
+        //       let closestDistIndexes = [0, 0]
+        //       for (let mIndex = 0; mIndex < merklePositions.length; mIndex += 2) {
+        //         const mElement = new THREE.Vector2(merklePositions[mIndex + 0], merklePositions[mIndex + 1])
+        //         let distSq = mElement.distanceToSquared(offsetVec)
+
+        //         if (distSq < closestDist) {
+        //           closestDist = distSq
+        //           closestDistIndexes = [mIndex + 0, mIndex + 1]
+        //         }
+        //       }
+
+        //       if (typeof merklePositions[closestDistIndexes[0]] !== 'undefined') {
+        //         let closestMerklePointX = JSON.parse(JSON.stringify(merklePositions[closestDistIndexes[0]]))
+        //         let closestMerklePointZ = JSON.parse(JSON.stringify(merklePositions[closestDistIndexes[1]]))
+
+        //         merklePositions.splice(closestDistIndexes[0], 1)
+        //         merklePositions.splice(closestDistIndexes[0], 1)
+
+        //         let path = new THREE.LineCurve3()
+        //         path.v1 = new THREE.Vector3(X, 0, Z)
+        //         path.v2 = new THREE.Vector3(closestMerklePointX, -this.merkleYOffset, closestMerklePointZ)
+        //         let tubeGeo = new THREE.TubeGeometry(path, 1, this.merkleTubeRadius, 3, false)
+
+        //         treeGeo.merge(tubeGeo)
+        //       }
+        //     }
+        //   }
+        // }
+
+        for (const key in this.blockGeoDataArray) {
+          if (this.blockGeoDataArray.hasOwnProperty(key)) {
+            const blockGeoData = this.blockGeoDataArray[key]
+
+            let offsetStack = JSON.parse(JSON.stringify(Array.from(blockGeoData.offsets)))
+
+            for (let index = 0; index < nTX * 2; index += 2) {
+              const merkleX = merklePositions[index + 0]
+              const merkleZ = merklePositions[index + 1]
+
+              let merkleVec = new THREE.Vector2(merkleX, merkleZ)
+
+              // find closest crystal position
+              let closestDist = Number.MAX_SAFE_INTEGER
+              let closestDistIndexes = []
+              for (let oIndex = 0; oIndex < offsetStack.length; oIndex += 2) {
+                let offsetX = offsetStack[oIndex + 0]
+                let offsetZ = offsetStack[oIndex + 1]
+
+                if (offsetX === 0 && offsetZ === 0) {
+                  continue
+                }
+
+                const oElement = new THREE.Vector2(offsetX, offsetZ)
+                let distSq = oElement.distanceToSquared(merkleVec)
+
+                if (distSq < closestDist) {
+                  closestDist = distSq
+                  closestDistIndexes = [oIndex + 0, oIndex + 1]
+                }
+              }
+
+              if (closestDistIndexes.length && typeof offsetStack[closestDistIndexes[0]] !== 'undefined') {
+                let closestOffsetPointX = JSON.parse(JSON.stringify(offsetStack[closestDistIndexes[0]]))
+                let closestOffsetPointZ = JSON.parse(JSON.stringify(offsetStack[closestDistIndexes[1]]))
+
+                offsetStack.splice(closestDistIndexes[0], 1)
+                offsetStack.splice(closestDistIndexes[0], 1)
+
+                let path = new THREE.LineCurve3()
+                path.v1 = new THREE.Vector3(closestOffsetPointX, 0, closestOffsetPointZ)
+                path.v2 = new THREE.Vector3(merkleX, -this.merkleYOffset, merkleZ)
+                let tubeGeo = new THREE.TubeGeometry(path, 1, this.merkleTubeRadius, 3, false)
+                treeGeo.merge(tubeGeo)
+              }
+            }
+          }
+        }
+
+        const treeBuffer = new THREE.BufferGeometry()
+        treeBuffer.fromGeometry(treeGeo)
+
+        this.cubeMapBlur = new THREE.CubeTextureLoader()
+          .setPath('assets/images/textures/cubemaps/playa-full/')
+          .load([
+            '0004.png',
+            '0002.png',
+            '0006.png',
+            '0005.png',
+            '0001.png',
+            '0003.png'
+          ])
+
+        this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
+
+        this.wireMaterial = new THREE.MeshStandardMaterial({
+          flatShading: true,
+          color: 0xffffff,
+          // color: 0x87ffd9,
+          emissive: 0x000000,
+          metalness: 0.9,
+          roughness: 0.1,
+          // transparent: true,
+          // side: THREE.DoubleSide,
+          envMap: this.cubeMapBlur,
+          // bumpMap: this.bumpMap,
+          // bumpScale: 0.2
+          /* roughnessMap: this.roughnessMap,
+      metalnessMap: this.roughnessMap, */
+          normalMap: this.normalMap,
+          normalScale: new THREE.Vector2(0.03, 0.03)
+        })
+
+        let wires = new THREE.Mesh(treeBuffer, this.wireMaterial)
+        wires.frustumCulled = false
+
+        this.scene.add(wires)
+
+        wires.translateX(planeX)
+        wires.translateZ(planeZ)
+
+        wires.applyQuaternion(quat)
+        wires.updateMatrix()
 
         this.camera.position.x = planeX + 300
         this.camera.position.z = planeZ - 400
@@ -533,6 +690,73 @@ class App extends mixin(EventEmitter, Component) {
         <canvas width={this.config.scene.width} height={this.config.scene.height} id={this.config.scene.canvasID} />
       </div>
     )
+  }
+
+  getMerklePositions (nTX) {
+    nTX--
+    nTX |= nTX >> 1
+    nTX |= nTX >> 2
+    nTX |= nTX >> 4
+    nTX |= nTX >> 8
+    nTX |= nTX >> 16
+    nTX++
+
+    console.log(nTX)
+
+    let merkleMap = {
+      4096: 13,
+      2048: 12,
+      1024: 11,
+      512: 10,
+      256: 9,
+      128: 8,
+      64: 7,
+      32: 6,
+      16: 5,
+      8: 4,
+      4: 3,
+      2: 2,
+      1: 1
+    }
+
+    let merkleYOffsetMap = {
+      4096: 71.4,
+      2048: 71.6,
+      1024: 72.3,
+      512: 73.3,
+      256: 75,
+      128: 78,
+      64: 82,
+      32: 90,
+      16: 102,
+      8: 122,
+      4: 155,
+      2: 212,
+      1: 212
+    }
+
+    let merkleTubeRadiusMap = {
+      4096: 0.1,
+      2048: 0.2,
+      1024: 0.2,
+      512: 0.4,
+      256: 0.4,
+      128: 0.7,
+      64: 0.8,
+      32: 1,
+      16: 1.8,
+      8: 2,
+      4: 3,
+      2: 4,
+      1: 5
+    }
+
+    this.merkleYOffset = merkleYOffsetMap[nTX]
+    this.merkleTubeRadius = merkleTubeRadiusMap[nTX]
+
+    let positions = require('./data/merkle-' + merkleMap[nTX])
+
+    return positions
   }
 }
 

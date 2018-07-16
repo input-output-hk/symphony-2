@@ -1,0 +1,128 @@
+{
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5125,
+            "count" : 98280,
+            "max" : [
+                81911
+            ],
+            "min" : [
+                0
+            ],
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 81912,
+            "max" : [
+                215.355224609375,
+                378.4808044433594,
+                165.44607543945312
+            ],
+            "min" : [
+                -215.35520935058594,
+                0.0,
+                -165.4349822998047
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 81912,
+            "max" : [
+                0.9993605613708496,
+                0.9869387745857239,
+                0.9999873042106628
+            ],
+            "min" : [
+                -0.9993605613708496,
+                -1.0,
+                -0.9932484030723572
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 81912,
+            "max" : [
+                1.0,
+                1.0
+            ],
+            "min" : [
+                0.0,
+                0.0
+            ],
+            "type" : "VEC2"
+        }
+    ],
+    "asset" : {
+        "generator" : "Khronos Blender glTF 2.0 exporter",
+        "version" : "2.0"
+    },
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 393120,
+            "byteOffset" : 0,
+            "target" : 34963
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 982944,
+            "byteOffset" : 393120,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 982944,
+            "byteOffset" : 1376064,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 655296,
+            "byteOffset" : 2359008,
+            "target" : 34962
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 3014304,
+            "uri" : "binary-tree-12.bin"
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "binary-tree-12",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "NORMAL" : 2,
+                        "POSITION" : 1,
+                        "TEXCOORD_0" : 3
+                    },
+                    "indices" : 0
+                }
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "binary-tree-12"
+        }
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ]
+}

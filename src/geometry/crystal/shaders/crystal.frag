@@ -14,10 +14,12 @@ uniform float uTime;
 varying vec3 vBarycentric;
 varying vec3 vTransformed;
 varying vec3 vOffset;
+varying float vScale;
 varying float vTxValue;
 varying float vTopVertex;
 varying float vBottomVertex;
 varying float vCenterTopVertex;
+varying float vCenterBottomVertex;
 
 #ifndef STANDARD
 	uniform float clearCoat;
@@ -104,7 +106,7 @@ void main() {
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz * 0.03, uTime * 0.005)) * 0.15;
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 6.0), uTime * 0.005)) * 0.15;
 
 	outgoingLight += edgeAmount;
 	outgoingLight += noiseAmount;
@@ -112,9 +114,7 @@ void main() {
 	outgoingLight.b += 0.2;
 	outgoingLight.g += 0.1;
 
-	float aspect = vUv.x / vUv.y;
-
-	vec2 st = vec2(vUv.x * 25.0, vTransformed.y);
+	vec2 st = (vec2((vUv.x *  vScale * 5.0), vTransformed.y) * 0.5);
     vec2 ipos = floor(st);  // integer
     vec2 fpos = fract(st);  // fraction
 
@@ -142,8 +142,8 @@ void main() {
 
 	color = clamp(color, 0.0, 2.0);
 
-	outgoingLight.b += (color * (1.0 - vTopVertex));
-	outgoingLight.g += (color * (1.0 - vTopVertex)) * 0.3;
+	outgoingLight.b += (color * (1.0 - vTopVertex)) * (1.0 -spentRatio);
+	outgoingLight.g += (color * (1.0 - vTopVertex)) * 0.3 * (1.0 -spentRatio);
 
 	outgoingLight *= 0.9;
 	

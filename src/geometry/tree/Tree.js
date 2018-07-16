@@ -18,9 +18,10 @@ export default class Tree extends Base {
     this.material = new TreeMaterial({
       flatShading: true,
       color: 0xffffff,
+      // color: 0x87ffd9,
       emissive: 0x000000,
-      metalness: 1.0,
-      roughness: 0.2,
+      metalness: 0.9,
+      roughness: 0.1,
       // transparent: true,
       // side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -33,17 +34,37 @@ export default class Tree extends Base {
     })
   }
 
-  async loadTreeModel (txCount) {
+  async loadTreeModel (nTX) {
     return new Promise(async (resolve, reject) => {
+      nTX--
+      nTX |= nTX >> 1
+      nTX |= nTX >> 2
+      nTX |= nTX >> 4
+      nTX |= nTX >> 8
+      nTX |= nTX >> 16
+      nTX++
+
+      let merkleMap = {
+        4096: 13,
+        2048: 12,
+        1024: 11,
+        512: 10,
+        256: 9,
+        128: 8,
+        64: 7,
+        32: 6,
+        16: 5,
+        8: 4,
+        4: 3,
+        2: 2,
+        1: 2
+      }
+
       // Load a glTF resource
       this.binaryTree = await this.gltfLoader.load(
-        'assets/models/gltf/binary-tree-13.gltf',
+        'assets/models/gltf/binary-tree-' + merkleMap[nTX] + '.gltf',
         function (gltf) {
           let mesh = gltf.scene.children[0]
-
-          mesh.geometry.rotateZ(Math.PI / 2)
-          // mesh.geometry.rotateY(Math.PI / 2)
-
           resolve(mesh)
         },
         function () {},
@@ -62,8 +83,18 @@ export default class Tree extends Base {
     let planeOffsetsArray = []
     let quatArray = []
 
+    let nTX = 0
+    for (const key in blockGeoDataArray) {
+      if (blockGeoDataArray.hasOwnProperty(key)) {
+        const blockGeoData = blockGeoDataArray[key]
+
+        nTX = Object.keys(blockGeoData.blockData.tx).length
+        break
+      }
+    }
+
     // set up base geometry
-    let treeMesh = await this.loadTreeModel()
+    let treeMesh = await this.loadTreeModel(nTX)
 
     let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
     let tubeMesh = new THREE.Mesh(tubeGeo)
@@ -77,7 +108,10 @@ export default class Tree extends Base {
     singleGeometry.merge(treeGeo, treeMesh.matrix)
     let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
-    this.geometry.translate(0, -395, 0)
+
+    this.geometry.computeVertexNormals()
+    // this.geometry.translate(0, -400.0, 0)
+    this.geometry.translate(0, -450.0, 0)
 
     let blockIndex = 0
     for (const hash in blockGeoDataArray) {
