@@ -80,7 +80,7 @@ export default class CrystalAO extends Base {
         }
 
         blockGeoData.scales.forEach((scale) => {
-          scale *= 2.6
+          scale *= 2.8
 
           scalesArray.push(scale)
           // blockHeightsArray.push(block.block.height)
@@ -103,7 +103,7 @@ export default class CrystalAO extends Base {
 
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
-    this.geometry.translate(0, -0.01, 0)
+    // this.geometry.translate(0, -0.01, 0)
 
     // attributes
     let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)

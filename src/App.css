@@ -13,3 +13,11 @@ canvas#stage {
   z-index: 0;
 }
 
+canvas#sketchboard {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background: #000000;
+  display: none;
+}

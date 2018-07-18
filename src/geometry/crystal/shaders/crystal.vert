@@ -82,7 +82,7 @@ void main() {
 	transformed.y += (random(transformed.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
 	transformed.y += (offset.y * 0.03) * centerTopVertex;
 
-	transformed.y -= 2.0 * centerBottomVertex;
+	transformed.y -= 9.0 * centerBottomVertex;
 	//transformed.y -= offset.y * 0.25 * centerBottomVertex;*/
 
 	vTransformed = transformed;

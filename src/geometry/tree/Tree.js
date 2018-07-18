@@ -16,12 +16,12 @@ export default class Tree extends Base {
     this.gltfLoader = new GLTFLoader()
 
     this.material = new TreeMaterial({
-      flatShading: true,
+      // flatShading: true,
       color: 0xffffff,
       // color: 0x87ffd9,
       emissive: 0x000000,
-      metalness: 0.9,
-      roughness: 0.1,
+      metalness: 0.8,
+      roughness: 0.2,
       // transparent: true,
       // side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -110,8 +110,7 @@ export default class Tree extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
     this.geometry.computeVertexNormals()
-    // this.geometry.translate(0, -400.0, 0)
-    this.geometry.translate(0, -450.0, 0)
+    this.geometry.translate(0, -387, 0)
 
     let blockIndex = 0
     for (const hash in blockGeoDataArray) {

@@ -29,9 +29,10 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
+      opacity: 0.9,
       color: 0xffffff,
       emissive: 0x000000,
-      metalness: 0.8,
+      metalness: 0.9,
       roughness: 0.0,
       transparent: true,
       side: THREE.DoubleSide,

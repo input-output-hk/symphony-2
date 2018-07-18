@@ -20,19 +20,19 @@ export default class Plane extends Base {
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
-      emissive: 0x000000,
-      metalness: 0.9,
-      roughness: 0.1,
-      opacity: 0.7,
+      emissive: 0x111133,
+      metalness: 0.7,
+      roughness: 0.3,
+      opacity: 0.6,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2
-      /* roughnessMap: this.roughnessMap,
-      metalnessMap: this.roughnessMap, */
+      // roughnessMap: this.roughnessMap
+      // metalnessMap: this.roughnessMap
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.1, 0.1)
+      normalScale: new THREE.Vector2(0.01, 0.01)
     })
   }
 
@@ -43,12 +43,12 @@ export default class Plane extends Base {
     let quatArray = []
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 16, 1, 1, 1)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 8, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
     this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -8.2, 0)
+    this.geometry.translate(0, -4.1, 0)
 
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {

@@ -106,13 +106,13 @@ void main() {
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 6.0), uTime * 0.005)) * 0.15;
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 10.0), uTime * 0.002)) * 0.1;
 
 	outgoingLight += edgeAmount;
 	outgoingLight += noiseAmount;
 
-	outgoingLight.b += 0.2;
-	outgoingLight.g += 0.1;
+	outgoingLight.b += 0.1;
+	outgoingLight.g += 0.05;
 
 	vec2 st = (vec2((vUv.x *  vScale * 5.0), vTransformed.y) * 0.5);
     vec2 ipos = floor(st);  // integer
@@ -142,10 +142,12 @@ void main() {
 
 	color = clamp(color, 0.0, 2.0);
 
-	outgoingLight.b += (color * (1.0 - vTopVertex)) * (1.0 -spentRatio);
-	outgoingLight.g += (color * (1.0 - vTopVertex)) * 0.3 * (1.0 -spentRatio);
+	// outgoingLight.b += (color * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * (1.0 -spentRatio);
+	// outgoingLight.g += (color * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3 * (1.0 -spentRatio);
+	outgoingLight.b += (color * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
+	outgoingLight.g += (color * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
-	outgoingLight *= 0.9;
+	//outgoingLight *= 0.9;
 	
 	// gl_FragColor = vec4( outgoingLight, diffuseColor.a * clamp(noiseAmount + 0.9, 0.0, 1.0) );
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
