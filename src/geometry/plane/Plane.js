@@ -20,12 +20,12 @@ export default class Plane extends Base {
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
-      emissive: 0x111133,
-      metalness: 0.7,
-      roughness: 0.3,
+      emissive: 0x333333,
+      // metalness: 0.9,
+      roughness: 0.1,
       opacity: 0.6,
       transparent: true,
-      side: THREE.DoubleSide,
+      // side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2

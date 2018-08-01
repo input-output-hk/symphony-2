@@ -2,7 +2,7 @@
 import React, { Component } from 'react'
 import * as THREE from 'three'
 import GLTFLoader from 'three-gltf-loader'
-import OrbitContructor from 'three-orbit-controls'
+import OrbitConstructor from 'three-orbit-controls'
 import deepAssign from 'deep-assign'
 import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
@@ -37,6 +37,9 @@ import CrystalAO from './geometry/crystalAO/CrystalAO'
 import Plane from './geometry/plane/Plane'
 import Tree from './geometry/tree/Tree'
 
+// Audio
+import Audio from './libs/audio'
+
 // CSS
 import './App.css'
 
@@ -44,10 +47,12 @@ class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
-    this.OrbitControls = OrbitContructor(THREE)
+    this.OrbitControls = OrbitConstructor(THREE)
     this.planeSize = 500
-    this.planeOffsetMultiplier = 500
+    this.planeOffsetMultiplier = 0
     this.planeMargin = 100
+    this.blockReady = false
+    this.blockReadyTime = 0
     this.coils = 100
     this.radius = 1000000
     this.ObjectLoader = new THREE.ObjectLoader()
@@ -56,6 +61,7 @@ class App extends mixin(EventEmitter, Component) {
     this.hashes = []
     this.timestampToLoad = this.setTimestampToLoad()
     this.merkleYOffset = 0
+    this.audio = new Audio()
   }
 
   componentDidMount () {
@@ -143,7 +149,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // res, strength, radius, threshold
     // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.01, 0.75)
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.15, 0.6, 0.95)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.4, 0.97)
     // this.bloomPass.renderToScreen = true
     this.composer.addPass(this.bloomPass)
 
@@ -275,6 +281,8 @@ class App extends mixin(EventEmitter, Component) {
             }
 
             transactions.push({
+              hash: tx.hash,
+              time: tx.time,
               value: tx.value,
               out: out
             })
@@ -388,16 +396,31 @@ class App extends mixin(EventEmitter, Component) {
             break
           }
         }
-
         let undersideTexture = this.drawUnderside(nTX)
 
-        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
+        // audio
+        let blockGeoData
+        for (const key in this.blockGeoDataArray) {
+          if (this.blockGeoDataArray.hasOwnProperty(key)) {
+            blockGeoData = this.blockGeoDataArray[key]
+            break
+          }
+        }
+
+        this.audio.generate(blockGeoData.blockData)
+        this.blockReady = true
+        this.blockReadyTime = window.performance.now()
+
+        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray, this.audio.times)
+        crystal.renderOrder = 2
         this.scene.add(crystal)
 
-        let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
+        let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray, this.audio.times)
+        crystalAO.renderOrder = 2
         this.scene.add(crystalAO)
 
         let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray, undersideTexture)
+        plane.renderOrder = 2
         this.scene.add(plane)
 
         let quat = new THREE.Quaternion(
@@ -408,18 +431,23 @@ class App extends mixin(EventEmitter, Component) {
         )
 
         let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
+        tree.renderOrder = 1
         this.scene.add(tree)
 
         let planeX = plane.geometry.attributes.planeOffset.array[0]
         let planeZ = plane.geometry.attributes.planeOffset.array[1]
 
-        // undersideTexture.minFileter = THREE.NearestFilter
-        let unsdersideGeometry = new THREE.PlaneBufferGeometry(this.planeSize + 10, this.planeSize + 10, 1)
+        undersideTexture.minFilter = THREE.LinearMipMapLinearFilter
+        let undersideGeometry = new THREE.PlaneBufferGeometry(this.planeSize + 10, this.planeSize + 10, 1)
         let undersideMaterial = new THREE.MeshBasicMaterial({
+          // side: THREE.DoubleSide,
           transparent: true,
           map: undersideTexture
         })
-        let underside = new THREE.Mesh(unsdersideGeometry, undersideMaterial)
+        let underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
+        underside.frustumCulled = false
+
+        underside.renderOrder = 1
 
         underside.translateX(planeX)
         underside.translateZ(planeZ)
@@ -430,6 +458,76 @@ class App extends mixin(EventEmitter, Component) {
         underside.updateMatrix()
 
         this.scene.add(underside)
+
+        // box occluder
+        let boxGeo = new THREE.BoxBufferGeometry()
+        let boxVertices = new THREE.BufferAttribute(new Float32Array([
+          // front
+          0.5, 0.5, 0.5,
+          0.5, 0.5, -0.5,
+          0.5, -0.5, 0.5,
+          0.5, -0.5, -0.5,
+          // left
+          -0.5, 0.5, -0.5,
+          -0.5, 0.5, 0.5,
+          -0.5, -0.5, -0.5,
+          -0.5, -0.5, 0.5,
+          // back
+          -0.5, 0.5, -0.5,
+          0.5, 0.5, -0.5,
+          -0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          // right
+          -0.5, -0.5, 0.5,
+          0.5, -0.5, 0.5,
+          -0.5, -0.5, -0.5,
+          0.5, -0.5, -0.5,
+          // bottom
+          -0.5, 0.5, 0.5,
+          0.5, 0.5, 0.5,
+          -0.5, -0.5, 0.5,
+          0.5, -0.5, 0.5
+
+        ]), 3)
+
+        let indices = new Uint16Array([
+          0, 1, 2,
+          2, 1, 3,
+          4, 5, 6,
+          6, 5, 7,
+          8, 9, 10,
+          10, 9, 11,
+          12, 13, 14,
+          14, 13, 15,
+          16, 17, 18,
+          18, 17, 19
+          // 20, 21, 22,
+          // 22, 21, 23
+        ])
+
+        boxGeo.setIndex(new THREE.BufferAttribute(indices, 1))
+        boxGeo.addAttribute('position', boxVertices)
+        // boxGeo.addAttribute('uv', uvs)
+
+        // let boxGeo = new THREE.BoxBufferGeometry(510, 510, 510)
+        let boxMesh = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+          color: new THREE.Color(0xffffff),
+          side: THREE.DoubleSide,
+          colorWrite: false,
+          transparent: true
+        }))
+
+        boxMesh.scale.set(509.0, 509.0, 610.0)
+        boxMesh.frustumCulled = false
+
+        boxMesh.renderOrder = 1
+        boxMesh.translateY(-305.1)
+        boxMesh.translateX(planeX)
+        boxMesh.translateZ(planeZ)
+        boxMesh.applyQuaternion(quat)
+        boxMesh.rotateX(Math.PI / 2)
+        boxMesh.updateMatrix()
+        this.scene.add(boxMesh)
 
         this.camera.position.x = planeX + 300
         this.camera.position.z = planeZ - 400
@@ -449,9 +547,10 @@ class App extends mixin(EventEmitter, Component) {
     let canvasOffset = canvasSize / 2
     let scaleFactor = 8.03
 
+    let blockGeoData
     for (const key in this.blockGeoDataArray) {
       if (this.blockGeoDataArray.hasOwnProperty(key)) {
-        const blockGeoData = this.blockGeoDataArray[key]
+        blockGeoData = this.blockGeoDataArray[key]
 
         let offsetStack = JSON.parse(JSON.stringify(Array.from(blockGeoData.offsets)))
 
@@ -508,10 +607,13 @@ class App extends mixin(EventEmitter, Component) {
 
             let remove = shortestEdgeLength / 2
 
+            context.shadowBlur = 25
+            context.shadowColor = 'white'
+
             context.beginPath()
             context.moveTo(scaledMerkleX, scaledMerkleZ)
             context.lineWidth = this.merkleLineWidth
-            context.strokeStyle = 'rgba(255,255,255,0.5)'
+            context.strokeStyle = 'rgba(255,255,255,0.20)'
 
             if (shortestEdge === 'X') {
               context.lineTo(
@@ -558,12 +660,14 @@ class App extends mixin(EventEmitter, Component) {
             context.stroke()
 
             context.beginPath()
+            context.strokeStyle = 'rgba(255,255,255,0.50)'
             context.arc(scaledMerkleX, scaledMerkleZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
             context.lineWidth = this.merkleLineWidth + 1.0
 
             context.stroke()
 
             context.beginPath()
+            context.strokeStyle = 'rgba(255,255,255,0.40)'
             context.arc(scaledOffsetX, scaledOffsetZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
 
             context.stroke()
@@ -571,6 +675,14 @@ class App extends mixin(EventEmitter, Component) {
         }
       }
     }
+
+    context.translate(canvas.width / 2, canvas.height / 2)
+    context.scale(-1, 1)
+    context.font = '25pt Calibri'
+    context.lineWidth = 0
+    context.fillStyle = 'rgba(255,255,255,0.50)'
+    context.fillText('BLOCK #' + blockGeoData.blockData.height + '  HASH: ' + blockGeoData.blockData.hash, -2000, -1980)
+    context.scale(-1, 1)
 
     context.rotate(Math.PI / 6)
 
@@ -618,7 +730,9 @@ class App extends mixin(EventEmitter, Component) {
   renderFrame () {
     this.controls.update()
 
-    this.crystalGenerator.update()
+    if (this.blockReady) {
+      this.crystalGenerator.update(window.performance.now() - this.blockReadyTime)
+    }
 
     // this.renderer.render(this.scene, this.camera)
     this.composer.render()
@@ -678,7 +792,8 @@ class App extends mixin(EventEmitter, Component) {
    */
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
-      antialias: this.config.scene.antialias,
+      // antialias: this.config.scene.antialias,
+      antialias: false,
       logarithmicDepthBuffer: true,
       canvas: document.getElementById(this.config.scene.canvasID)
       // alpha: true
@@ -741,7 +856,8 @@ class App extends mixin(EventEmitter, Component) {
       8: 4,
       4: 3,
       2: 2,
-      1: 1
+      1: 1,
+      0: 1
     }
 
     let merkleYOffsetMap = {
@@ -757,30 +873,32 @@ class App extends mixin(EventEmitter, Component) {
       8: 122,
       4: 155,
       2: 212,
-      1: 212
+      1: 212,
+      0: 212
     }
 
     let merkleLineWidthMap = {
-      4096: 2.0,
-      2048: 2.5,
-      1024: 3.0,
-      512: 3.5,
-      256: 4.0,
-      128: 5.0,
-      64: 6.0,
-      32: 10.0,
-      16: 12.0,
-      8: 14.0,
-      4: 16.5,
-      2: 18.0,
-      1: 20.0
+      4096: 1.0,
+      2048: 1.25,
+      1024: 1.5,
+      512: 2.5,
+      256: 2.0,
+      128: 2.5,
+      64: 3.0,
+      32: 5.0,
+      16: 6.0,
+      8: 7.0,
+      4: 8.25,
+      2: 9.0,
+      1: 10.0,
+      0: 10.0
     }
 
     let merkleNodeRadiusMap = {
-      4096: 5.0,
-      2048: 6.5,
-      1024: 7.0,
-      512: 8.5,
+      4096: 4.0,
+      2048: 5.0,
+      1024: 5.5,
+      512: 5.5,
       256: 9.0,
       128: 12.0,
       64: 14.0,
@@ -789,7 +907,8 @@ class App extends mixin(EventEmitter, Component) {
       8: 20.0,
       4: 23.0,
       2: 24.0,
-      1: 25.0
+      1: 25.0,
+      0: 25.0
     }
 
     this.merkleYOffset = merkleYOffsetMap[nTX]

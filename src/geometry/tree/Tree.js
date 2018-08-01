@@ -15,6 +15,16 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
+    this.cubeMap = new THREE.CubeTextureLoader()
+      .setPath('assets/images/textures/cubemaps/playa-full/')
+      .load([
+        '0004.png',
+        '0002.png',
+        '0006.png',
+        '0005.png',
+        '0001.png',
+        '0003.png'
+      ])
     this.material = new TreeMaterial({
       // flatShading: true,
       color: 0xffffff,
@@ -22,7 +32,7 @@ export default class Tree extends Base {
       emissive: 0x000000,
       metalness: 0.8,
       roughness: 0.2,
-      // transparent: true,
+      transparent: true,
       // side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,

@@ -20,6 +20,7 @@ varying float vTopVertex;
 varying float vBottomVertex;
 varying float vCenterTopVertex;
 varying float vCenterBottomVertex;
+varying float vEnvelope;
 
 #ifndef STANDARD
 	uniform float clearCoat;
@@ -46,12 +47,12 @@ varying float vSpentRatio;
 #include <aomap_pars_fragment>
 #include <lightmap_pars_fragment>
 #include <emissivemap_pars_fragment>
-#include <envmap_pars_fragment>
-#include <fog_pars_fragment>
 #include <bsdfs>
 #include <cube_uv_reflection_fragment>
+#include <envmap_pars_fragment>
+#include <envmap_physical_pars_fragment>
+#include <fog_pars_fragment>
 #include <lights_pars_begin>
-#include <lights_pars_maps>
 #include <lights_physical_pars_fragment>
 #include <shadowmap_pars_fragment>
 #include <bumpmap_pars_fragment>
@@ -96,29 +97,37 @@ void main() {
 	// modulation
 	#include <aomap_fragment>
 
+		 
+	float spentRatio = clamp(vSpentRatio, 0.0, 1.0);
+	totalEmissiveRadiance += (1.0 - spentRatio);
+	totalEmissiveRadiance *= 0.5;
+
+	totalEmissiveRadiance =clamp(totalEmissiveRadiance + (vEnvelope), 0.0, 0.7);
+
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	float spentRatio = clamp(vSpentRatio, 0.0, 1.0);
 
-	outgoingLight += (1.0 - spentRatio);
-	outgoingLight *= 0.5;
 
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 10.0), uTime * 0.002)) * 0.1;
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 20.0), uTime * 0.00025)) * 0.1;
+
+	
 
 	outgoingLight += edgeAmount;
 	outgoingLight += noiseAmount;
 
-	outgoingLight.b += 0.1;
-	outgoingLight.g += 0.05;
+	 outgoingLight += 0.02;
 
-	vec2 st = (vec2((vUv.x *  vScale * 5.0), vTransformed.y) * 0.5);
+	 outgoingLight.b += 0.08;
+	 outgoingLight.g += 0.04;
+
+	vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 1.0);
     vec2 ipos = floor(st);  // integer
     vec2 fpos = fract(st);  // fraction
 
-    vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.0005);
+    vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.00005);
 
 	// Maze
 	float color = 0.0;
@@ -148,6 +157,9 @@ void main() {
 	outgoingLight.g += (color * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
 	//outgoingLight *= 0.9;
+
+	
+
 	
 	// gl_FragColor = vec4( outgoingLight, diffuseColor.a * clamp(noiseAmount + 0.9, 0.0, 1.0) );
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);

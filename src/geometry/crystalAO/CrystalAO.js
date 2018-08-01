@@ -29,7 +29,7 @@ export default class CrystalAO extends Base {
     })
   }
 
-  async getMultiple (blockGeoDataArray) {
+  async getMultiple (blockGeoDataArray, times) {
     this.instanceCount = 0
 
     let blockHeightsArray = []
@@ -52,9 +52,9 @@ export default class CrystalAO extends Base {
         object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
 
-        this.instanceCount += blockGeoData.scales.length
+        this.instanceCount += blockGeoData.blockData.tx.length
 
-        for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
+        for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
           let x = blockGeoData.offsets[i * 2 + 0]
           let y = 0
           let z = blockGeoData.offsets[i * 2 + 1]
@@ -113,6 +113,7 @@ export default class CrystalAO extends Base {
     let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
     let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
+    let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(times), 1)
 
     for (let i = 0; i < this.instanceCount; i++) {
       if (typeof txArray[i] === 'undefined') {
@@ -162,6 +163,7 @@ export default class CrystalAO extends Base {
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
+    this.geometry.addAttribute('txTime', txTimes)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

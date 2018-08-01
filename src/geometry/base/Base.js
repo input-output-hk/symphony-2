@@ -11,7 +11,7 @@ export default class Base {
     this.uTime = 0
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa-full/')
+      .setPath('assets/images/textures/cubemaps/playa2/')
       .load([
         '0004.png',
         '0002.png',

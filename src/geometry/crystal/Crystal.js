@@ -113,7 +113,7 @@ export default class Crystal extends Base {
         }
       }
 
-      this.instanceCount = voronoiDiagram.cells.length
+      this.instanceCount = blockData.tx.length
 
       let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount * 2), 2)
       let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
@@ -177,11 +177,12 @@ export default class Crystal extends Base {
     })
   }
 
-  async getMultiple (blockGeoDataArray) {
+  async getMultiple (blockGeoDataArray, times) {
     this.instanceCount = 0
 
     let blockHeightsArray = []
     let offsetsArray = []
+    let idsArray = []
 
     let planeOffsetsArray = []
     let scalesArray = []
@@ -200,9 +201,9 @@ export default class Crystal extends Base {
         object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
         object.lookAt(0, 0, 0)
 
-        this.instanceCount += blockGeoData.scales.length
+        this.instanceCount += blockGeoData.blockData.tx.length
 
-        for (let i = 0; i < blockGeoData.offsets.length / 2; i++) {
+        for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
           let x = blockGeoData.offsets[i * 2 + 0]
           let y = 0
           let z = blockGeoData.offsets[i * 2 + 1]
@@ -225,6 +226,8 @@ export default class Crystal extends Base {
           quatArray.push(object.quaternion.y)
           quatArray.push(object.quaternion.z)
           quatArray.push(object.quaternion.w)
+
+          idsArray.push(i)
         }
 
         blockGeoData.scales.forEach((scale) => {
@@ -254,11 +257,13 @@ export default class Crystal extends Base {
     // attributes
     let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
     let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 3)
+    let ids = new THREE.InstancedBufferAttribute(new Float32Array(idsArray), 1)
     let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
     let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
     let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
+    let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(times), 1)
 
     console.log('this.instanceCount: ' + this.instanceCount)
 
@@ -306,6 +311,7 @@ export default class Crystal extends Base {
       )
     }
 
+    this.geometry.addAttribute('id', ids)
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('planeOffset', planeOffsets)
@@ -313,6 +319,7 @@ export default class Crystal extends Base {
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
+    this.geometry.addAttribute('txTime', txTimes)
 
     const positionAttrib = this.geometry.getAttribute('position')
 
@@ -480,9 +487,8 @@ export default class Crystal extends Base {
     return this.mesh
   }
 
-  update (args) {
-    this.uTime++
-    this.material.uniforms.uTime.value = this.uTime
+  update (time) {
+    this.material.uniforms.uTime.value = time
   }
 }
 

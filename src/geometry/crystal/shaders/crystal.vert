@@ -6,6 +6,7 @@
 
 uniform float uTime;
 
+attribute float id;
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
@@ -17,6 +18,7 @@ attribute float centerTopVertex;
 attribute float centerBottomVertex;
 attribute float txValue;
 attribute vec4 quaternion;
+attribute float txTime;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
@@ -29,6 +31,7 @@ varying float vTopVertex;
 varying float vBottomVertex;
 varying float vCenterTopVertex;
 varying float vCenterBottomVertex;
+varying float vEnvelope;
 
 #ifndef FLAT_SHADED
 
@@ -68,21 +71,51 @@ void main() {
 
 	#include <begin_vertex>
 
+	// envelope
+	float attack = smoothstep(txTime, txTime + 5.0, uTime * 0.001);
+	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uTime * 0.001));
+
+	vEnvelope = attack * release;
+
+	vec3 originalTransform = transformed.xyz;
+
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-    transformed.xz *= scale;
+	//float timeMod = (uTime - id > 0.0) ? uTime - id : 0.0;
+
+	//float scaledTime = (timeMod * 0.002);
+
+  	transformed.xz *= (scale * attack);
+ 	transformed.y *= (offset.y * attack);
+
+	//if (timeMod < 500.0) {
+    	//transformed.xz *= (scale * scaledTime);
+//	} else {
+  //  	transformed.xz *= scale;
+//	}
+
 	
-    transformed.y *= offset.y;
-    transformed.y += offset.y * 0.5;
+	// if (timeMod < 500.0 && offset.y > 0.0) {
+    // 	transformed.y *= (scaledTime * offset.y);
+	// 	transformed.y += (scaledTime * offset.y) * 0.5;
+	// } else {
+    // 	transformed.y *= offset.y;
+
+	// }
+
+    //transformed.y *= offset.y;
     transformed.xz += offset.xz;
 
-	transformed.x += (random(transformed.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-	transformed.z += (random(transformed.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
+	//transformed.x += (random(originalTransform.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
+	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
-	transformed.y += (random(transformed.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
+	transformed.y += (random(originalTransform.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
 	transformed.y += (offset.y * 0.03) * centerTopVertex;
 
-	transformed.y -= 9.0 * centerBottomVertex;
+	transformed.y -= (offset.y * 0.03) * centerBottomVertex;
+
+
+
 	//transformed.y -= offset.y * 0.25 * centerBottomVertex;*/
 
 	vTransformed = transformed;
