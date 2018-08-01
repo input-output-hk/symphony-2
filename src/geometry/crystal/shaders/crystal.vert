@@ -5,6 +5,8 @@
 #define PHYSICAL
 
 uniform float uTime;
+uniform float uAudioTime;
+uniform float uFirstLoop;
 
 attribute float id;
 attribute vec3 offset;
@@ -72,8 +74,8 @@ void main() {
 	#include <begin_vertex>
 
 	// envelope
-	float attack = smoothstep(txTime, txTime + 5.0, uTime * 0.001);
-	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uTime * 0.001));
+	float attack = smoothstep(txTime, txTime + 5.0, uAudioTime * 0.001);
+	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uAudioTime * 0.001));
 
 	vEnvelope = attack * release;
 
@@ -85,8 +87,13 @@ void main() {
 
 	//float scaledTime = (timeMod * 0.002);
 
-  	transformed.xz *= (scale * attack);
- 	transformed.y *= (offset.y * attack);
+	if (uFirstLoop == 1.0) {
+		transformed.xz *= (scale * attack);
+		transformed.y *= (offset.y * attack);
+	} else {
+		transformed.xz *= (scale);
+		transformed.y *= (offset.y);
+	}
 
 	//if (timeMod < 500.0) {
     	//transformed.xz *= (scale * scaledTime);

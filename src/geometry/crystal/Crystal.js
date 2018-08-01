@@ -487,8 +487,10 @@ export default class Crystal extends Base {
     return this.mesh
   }
 
-  update (time) {
+  update (time, audioTime, firstLoop) {
     this.material.uniforms.uTime.value = time
+    this.material.uniforms.uAudioTime.value = audioTime
+    this.material.uniforms.uFirstLoop.value = firstLoop
   }
 }
 
@@ -502,6 +504,16 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uTime = {
       type: 'f',
       value: 0.0
+    }
+
+    this.uniforms.uAudioTime = {
+      type: 'f',
+      value: 0.0
+    }
+
+    this.uniforms.uFirstLoop = {
+      type: 'f',
+      value: 1.0
     }
 
     this.vertexShader = vertexShader

@@ -408,6 +408,13 @@ class App extends mixin(EventEmitter, Component) {
         }
 
         this.audio.generate(blockGeoData.blockData)
+
+        this.audio.on('loopend', () => {
+          this.blockReadyTime = window.performance.now()
+          this.firstLoop = false
+        })
+
+        this.firstLoop = true
         this.blockReady = true
         this.blockReadyTime = window.performance.now()
 
@@ -731,7 +738,8 @@ class App extends mixin(EventEmitter, Component) {
     this.controls.update()
 
     if (this.blockReady) {
-      this.crystalGenerator.update(window.performance.now() - this.blockReadyTime)
+      this.crystalGenerator.update(window.performance.now(), window.performance.now() - this.blockReadyTime, this.firstLoop)
+      this.crystalAOGenerator.update(window.performance.now(), window.performance.now() - this.blockReadyTime, this.firstLoop)
     }
 
     // this.renderer.render(this.scene, this.camera)

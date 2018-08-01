@@ -1,10 +1,10 @@
-
+import EventEmitter from 'eventemitter3'
 import { map } from '../utils/math'
-
 import GPU from 'gpu.js'
 
-export default class Audio {
+export default class Audio extends EventEmitter {
   constructor (args) {
+    super(args)
     this.gpu = new GPU()
     this.sampleRate = 44100
     this.soundDuration = 40 // (seconds)
@@ -282,9 +282,6 @@ export default class Audio {
       }
     }
 
-    console.log(this.times)
-    console.log(spent)
-
     // keep standard js happy
     let custom_smoothstep = () => {}
     let custom_step = () => {}
@@ -400,6 +397,17 @@ export default class Audio {
 
     biquadFilter.connect(lsFilter)
     lsFilter.connect(audioContext.destination)
+
+    src.loop = true
+
+    let loop = () => {
+      setTimeout(function () {
+        this.emit('loopend')
+        loop()
+      }.bind(this), this.soundDuration * 1000)
+    }
+
+    loop()
 
     src.start()
   }

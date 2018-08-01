@@ -3,6 +3,8 @@
 #define PHYSICAL
 
 uniform float uTime;
+uniform float uAudioTime;
+uniform float uFirstLoop;
 
 attribute vec3 offset;
 attribute vec2 planeOffset;
@@ -57,12 +59,16 @@ void main() {
 	#include <begin_vertex>
 	
 	// envelope
-	float attack = smoothstep(txTime, txTime + 5.0, uTime * 0.001);
-	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uTime * 0.001));
+	float attack = smoothstep(txTime, txTime + 5.0, uAudioTime * 0.001);
+	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uAudioTime * 0.001));
 
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-    transformed.xz *= (scale * attack);
+	if (uFirstLoop == 1.0) {
+    	transformed.xz *= (scale * attack);
+	} else {
+	    transformed.xz *= (scale);
+	}
     
     transformed.xz += offset.xz;
 

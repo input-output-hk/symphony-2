@@ -172,9 +172,10 @@ export default class CrystalAO extends Base {
     return this.mesh
   }
 
-  update (args) {
-    this.uTime++
-    this.material.uniforms.uTime.value = this.uTime
+  update (time, audioTime, firstLoop) {
+    this.material.uniforms.uTime.value = time
+    this.material.uniforms.uAudioTime.value = audioTime
+    this.material.uniforms.uFirstLoop.value = firstLoop
   }
 }
 
@@ -186,6 +187,16 @@ class CrystalAOMaterial extends THREE.MeshStandardMaterial {
     this.uniforms = THREE.ShaderLib.standard.uniforms
 
     this.uniforms.uTime = {
+      type: 'f',
+      value: 0.0
+    }
+
+    this.uniforms.uFirstLoop = {
+      type: 'f',
+      value: 1.0
+    }
+
+    this.uniforms.uAudioTime = {
       type: 'f',
       value: 0.0
     }
