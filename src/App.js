@@ -149,7 +149,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // res, strength, radius, threshold
     // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.01, 0.75)
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.4, 0.97)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.3, 0.97)
     // this.bloomPass.renderToScreen = true
     this.composer.addPass(this.bloomPass)
 
@@ -802,14 +802,14 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa-blue/')
+      .setPath('assets/images/textures/cubemaps/saturn/')
       .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
+        'px.png', // right
+        'nx.png', // left
+        'py.png', // top
+        'ny.png', // bottom
+        'pz.png', // front
+        'nz.png' // back
       ])
 
     // this.scene.background = new THREE.Color(Config.scene.bgColor)
