@@ -23,9 +23,7 @@ export default class CrystalAO extends Base {
       map: this.map,
       opacity: 0.4,
       depthTest: true,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -4
+      depthWrite: false
     })
   }
 
@@ -80,7 +78,7 @@ export default class CrystalAO extends Base {
         }
 
         blockGeoData.scales.forEach((scale) => {
-          scale *= 2.8
+          scale *= 2.5
 
           scalesArray.push(scale)
           // blockHeightsArray.push(block.block.height)

@@ -120,7 +120,7 @@ export default class Tree extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
     this.geometry.computeVertexNormals()
-    this.geometry.translate(0, -387, 0)
+    this.geometry.translate(0, -381, 0)
 
     let blockIndex = 0
     for (const hash in blockGeoDataArray) {

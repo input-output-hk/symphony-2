@@ -25,7 +25,7 @@ export default class Plane extends Base {
       roughness: 0.1,
       opacity: 0.6,
       transparent: true,
-      // side: THREE.DoubleSide,
+      side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2
@@ -43,12 +43,12 @@ export default class Plane extends Base {
     let quatArray = []
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 8, 1, 1, 1)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 2, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
     this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -4.1, 0)
+    this.geometry.translate(0, -1, 0)
 
     for (const hash in blockGeoDataArray) {
       if (blockGeoDataArray.hasOwnProperty(hash)) {

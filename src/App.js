@@ -418,31 +418,32 @@ class App extends mixin(EventEmitter, Component) {
         this.blockReady = true
         this.blockReadyTime = window.performance.now()
 
-        let crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray, this.audio.times)
-        crystal.renderOrder = 2
-        this.scene.add(crystal)
+        this.crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray, this.audio.times)
+        this.crystal.renderOrder = 2
+        this.scene.add(this.crystal)
 
         let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray, this.audio.times)
         crystalAO.renderOrder = 2
+        crystalAO.translateY(0.1)
         this.scene.add(crystalAO)
 
-        let plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray, undersideTexture)
-        plane.renderOrder = 2
-        this.scene.add(plane)
+        this.plane = await this.planeGenerator.getMultiple(this.blockGeoDataArray, undersideTexture)
+        // this.plane.renderOrder = 2
+        this.scene.add(this.plane)
 
         let quat = new THREE.Quaternion(
-          plane.geometry.attributes.quaternion.array[0],
-          plane.geometry.attributes.quaternion.array[1],
-          plane.geometry.attributes.quaternion.array[2],
-          plane.geometry.attributes.quaternion.array[3]
+          this.plane.geometry.attributes.quaternion.array[0],
+          this.plane.geometry.attributes.quaternion.array[1],
+          this.plane.geometry.attributes.quaternion.array[2],
+          this.plane.geometry.attributes.quaternion.array[3]
         )
 
         let tree = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
         tree.renderOrder = 1
         this.scene.add(tree)
 
-        let planeX = plane.geometry.attributes.planeOffset.array[0]
-        let planeZ = plane.geometry.attributes.planeOffset.array[1]
+        let planeX = this.plane.geometry.attributes.planeOffset.array[0]
+        let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
 
         undersideTexture.minFilter = THREE.LinearMipMapLinearFilter
         let undersideGeometry = new THREE.PlaneBufferGeometry(this.planeSize + 10, this.planeSize + 10, 1)
@@ -461,10 +462,25 @@ class App extends mixin(EventEmitter, Component) {
         underside.applyQuaternion(quat)
         underside.rotateX(Math.PI / 2)
         underside.scale.set(1.0, -1.0, 1.0)
-        underside.translateZ(8.3)
+
         underside.updateMatrix()
 
         this.scene.add(underside)
+
+        let topsideMaterial = new THREE.MeshStandardMaterial({
+          side: THREE.BackSide,
+          transparent: true,
+          map: undersideTexture,
+          bumpMap: undersideTexture
+        })
+        let topside = underside.clone()
+        topside.material = topsideMaterial
+        topside.renderOrder = 3
+
+        topside.translateZ(-0.1)
+        underside.translateZ(2.1)
+
+        this.scene.add(topside)
 
         // box occluder
         let boxGeo = new THREE.BoxBufferGeometry()
@@ -517,24 +533,24 @@ class App extends mixin(EventEmitter, Component) {
         // boxGeo.addAttribute('uv', uvs)
 
         // let boxGeo = new THREE.BoxBufferGeometry(510, 510, 510)
-        let boxMesh = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+        this.occluder = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
           color: new THREE.Color(0xffffff),
           side: THREE.DoubleSide,
           colorWrite: false,
           transparent: true
         }))
 
-        boxMesh.scale.set(509.0, 509.0, 610.0)
-        boxMesh.frustumCulled = false
+        this.occluder.scale.set(509.0, 509.0, 610.0)
+        this.occluder.frustumCulled = false
 
-        boxMesh.renderOrder = 1
-        boxMesh.translateY(-305.1)
-        boxMesh.translateX(planeX)
-        boxMesh.translateZ(planeZ)
-        boxMesh.applyQuaternion(quat)
-        boxMesh.rotateX(Math.PI / 2)
-        boxMesh.updateMatrix()
-        this.scene.add(boxMesh)
+        this.occluder.renderOrder = 1
+        this.occluder.translateY(-305.1)
+        this.occluder.translateX(planeX)
+        this.occluder.translateZ(planeZ)
+        this.occluder.applyQuaternion(quat)
+        this.occluder.rotateX(Math.PI / 2)
+        this.occluder.updateMatrix()
+        this.scene.add(this.occluder)
 
         this.camera.position.x = planeX + 300
         this.camera.position.z = planeZ - 400
@@ -736,6 +752,36 @@ class App extends mixin(EventEmitter, Component) {
 
   renderFrame () {
     this.controls.update()
+
+    if (this.plane) {
+      if (this.camera.position.y < 0) {
+        this.plane.renderOrder = 1
+      } else {
+        this.plane.renderOrder = 2
+      }
+    }
+
+    // check if camera is inside occluder
+    if (this.occluder) {
+      // this.occluder.updateMatrixWorld(true)
+      let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
+      let inverseBox = this.occluder.clone()
+      // this.camera.updateMatrixWorld()
+      // this.camera.updateMatrix()
+      let inversePoint = this.camera.position.clone()
+      inverseBox.applyMatrix(boxMatrixInverse)
+      inversePoint.applyMatrix4(boxMatrixInverse)
+      let boundingBox = new THREE.Box3().setFromObject(inverseBox)
+
+      boundingBox.expandByScalar(0.015)
+      boundingBox.translate(new THREE.Vector3(0, 0, 0.015))
+
+      if (boundingBox.containsPoint(inversePoint)) {
+        this.crystal.visible = false
+      } else {
+        this.crystal.visible = true
+      }
+    }
 
     if (this.blockReady) {
       this.crystalGenerator.update(window.performance.now(), window.performance.now() - this.blockReadyTime, this.firstLoop)
