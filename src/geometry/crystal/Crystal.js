@@ -146,6 +146,16 @@ export default class Crystal extends Base {
 
         let radius = Math.sqrt(minDistToSite) * 0.5
 
+        let planeXEdgeDist = (this.planeSize / 2) - Math.abs(site.x)
+        let planeYEdgeDist = (this.planeSize / 2) - Math.abs(site.y)
+
+        if (planeXEdgeDist < radius) {
+          radius = planeXEdgeDist
+        }
+        if (planeYEdgeDist < radius) {
+          radius = planeYEdgeDist
+        }
+
         offsets.setXY(
           i,
           site.x,

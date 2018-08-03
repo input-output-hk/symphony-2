@@ -196,18 +196,18 @@ export default class Audio extends EventEmitter {
     let modeIndex = total % Object.keys(this.modes).length
     this.mode = this.modes[Object.keys(this.modes)[modeIndex]]
 
-    let minTime = Number.MAX_SAFE_INTEGER
-    let maxTime = 0
-
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
 
-    for (let index = 0; index < blockData.tx.length; index++) {
-      const transaction = blockData.tx[index]
-      minTime = Math.min(transaction.time, minTime)
-      maxTime = Math.max(transaction.time, maxTime)
-      minOutput = Math.min(transaction.value, minOutput)
-      maxOutput = Math.max(transaction.value, maxOutput)
+    if (blockData.tx.length === 1) {
+      minOutput = 0
+      maxOutput = blockData.tx[0].value * 2
+    } else {
+      for (let index = 0; index < blockData.tx.length; index++) {
+        const transaction = blockData.tx[index]
+        minOutput = Math.min(transaction.value, minOutput)
+        maxOutput = Math.max(transaction.value, maxOutput)
+      }
     }
 
     minOutput = Math.log(minOutput + 1.0)
@@ -227,9 +227,6 @@ export default class Audio extends EventEmitter {
 
     console.log(blockData.tx.length)
 
-    let limit = 4000
-    let counter = 0
-
     let audioContext = new window.AudioContext()
     let audioBuffer = audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
 
@@ -239,9 +236,7 @@ export default class Audio extends EventEmitter {
 
     let health = (blockData.fee / blockData.outputTotal) * 2000 // 0 == healthy
 
-    if (health > 1.0) {
-      health = 1.0
-    }
+    health = 1.0
 
     console.log({health})
 
@@ -249,34 +244,30 @@ export default class Audio extends EventEmitter {
 
     for (const txKey in blockData.tx) {
       if (blockData.tx.hasOwnProperty(txKey)) {
-        counter++
+        const tx = blockData.tx[txKey]
 
-        if (counter < limit) {
-          const tx = blockData.tx[txKey]
+        let txTime = map(txKey, 0, Object.keys(blockData.tx).length, 0, 30)
+        this.times.push(txTime)
 
-          let txTime = map(txKey, 0, Object.keys(blockData.tx).length, 0, 30)
-          this.times.push(txTime)
+        let spentCount = 0
+        for (let index = 0; index < tx.out.length; index++) {
+          spentCount += tx.out[index].spent
+        }
 
-          let spentCount = 0
-          for (let index = 0; index < tx.out.length; index++) {
-            spentCount += tx.out[index].spent
-          }
+        let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 16.0, 1.0)
 
-          let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 16.0, 1.0)
+        spent.push(mappedSpentRatio)
 
-          spent.push(mappedSpentRatio)
+        let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, Object.keys(filteredNotes).length, 0))
 
-          let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, Object.keys(filteredNotes).length, 0))
-
-          let i = 0
-          for (const frequency in filteredNotes) {
-            if (filteredNotes.hasOwnProperty(frequency)) {
-              if (pitchIndex === i) {
-                frequencies.push(parseFloat(frequency))
-                break
-              }
-              i++
+        let i = 0
+        for (const frequency in filteredNotes) {
+          if (filteredNotes.hasOwnProperty(frequency)) {
+            if (pitchIndex === i) {
+              frequencies.push(parseFloat(frequency))
+              break
             }
+            i++
           }
         }
       }
@@ -430,11 +421,11 @@ export default class Audio extends EventEmitter {
   }
 
   getVol (frequencies) {
-    let noteLength = 2.5
+    let noteLength = 3.0
     let vol = (this.soundDuration / noteLength) / frequencies
 
-    if (vol > 1) {
-      return 1
+    if (vol > 0.5) {
+      return 0.5
     } else {
       return vol
     }
