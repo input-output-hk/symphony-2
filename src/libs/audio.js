@@ -290,14 +290,15 @@ export default class Audio extends EventEmitter {
     const sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, channel) {
       let sum = 0
       let PI = 3.14159265359
-      let currentTime = this.thread.x / this.constants.sampleRate
+      let currentTime = (this.thread.x / this.constants.sampleRate)
 
       for (var i = 0; i < this.constants.size; i++) {
         let ANGULAR_FREQUENCY = frequencies[i] * 2.0 * PI
-        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(channel + currentTime * 0.01) * 0.05 - 0.025)) * 2.0 * PI
+
+        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(channel + currentTime * (custom_random(ANGULAR_FREQUENCY + channel) * 0.1)) * health * 2 - health)) * 2.0 * PI
 
         let currentAngle = currentTime * ANGULAR_FREQUENCY
-        let currentAngleMod = currentTime * ANGULAR_FREQUENCY
+        let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
 
         let time = times[i]
         let spentRatio = spent[i]
@@ -306,24 +307,41 @@ export default class Audio extends EventEmitter {
         let attack = custom_smoothstep(time, time + 5.0, currentTime)
         let release = (1.0 - custom_smoothstep(time + 5.0, time + 10.0, currentTime))
 
-        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0 + channel) * health))) * custom_step(1.0, spentRatio) +
-                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 2.0 + channel) * health))) * custom_step(2.0, spentRatio) +
-                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 3.0 + channel) * health))) * custom_step(3.0, spentRatio) +
-                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 4.0 + channel) * health))) * custom_step(4.0, spentRatio) +
-                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 5.0 + channel) * health))) * custom_step(5.0, spentRatio) +
-                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 6.0 + channel) * health))) * custom_step(6.0, spentRatio) +
-                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 7.0 + channel) * health))) * custom_step(7.0, spentRatio) +
-                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 8.0 + channel) * health))) * custom_step(8.0, spentRatio) +
-                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 9.0 + channel) * health))) * custom_step(9.0, spentRatio) +
-                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 10.0 + channel) * health))) * custom_step(10.0, spentRatio) +
-                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 11.0 + channel) * health))) * custom_step(11.0, spentRatio) +
-                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 12.0 + channel) * health))) * custom_step(12.0, spentRatio) +
-                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 13.0 + channel) * health))) * custom_step(13.0, spentRatio) +
-                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 14.0 + channel) * health))) * custom_step(14.0, spentRatio) +
-                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 15.0 + channel) * health))) * custom_step(15.0, spentRatio) +
-                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY_MOD * 16.0 + channel) * health))) * custom_step(16.0, spentRatio)
+        let spent1 = custom_step(1.0, spentRatio)
+        let spent2 = custom_step(2.0, spentRatio)
+        let spent3 = custom_step(3.0, spentRatio)
+        let spent4 = custom_step(4.0, spentRatio)
+        let spent5 = custom_step(5.0, spentRatio)
+        let spent6 = custom_step(6.0, spentRatio)
+        let spent7 = custom_step(7.0, spentRatio)
+        let spent8 = custom_step(8.0, spentRatio)
+        let spent9 = custom_step(9.0, spentRatio)
+        let spent10 = custom_step(10.0, spentRatio)
+        let spent11 = custom_step(11.0, spentRatio)
+        let spent12 = custom_step(12.0, spentRatio)
+        let spent13 = custom_step(13.0, spentRatio)
+        let spent14 = custom_step(14.0, spentRatio)
+        let spent15 = custom_step(15.0, spentRatio)
+        let spent16 = custom_step(16.0, spentRatio)
 
-        wave /= 2
+        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0 + channel) * health))) * spent1 +
+                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0 + channel) * health))) * spent2 +
+                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0 + channel) * health))) * spent3 +
+                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0 + channel) * health))) * spent4 +
+                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0 + channel) * health))) * spent5 +
+                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0 + channel) * health))) * spent6 +
+                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0 + channel) * health))) * spent7 +
+                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0 + channel) * health))) * spent8 +
+                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0 + channel) * health))) * spent9 +
+                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0 + channel) * health))) * spent10 +
+                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0 + channel) * health))) * spent11 +
+                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0 + channel) * health))) * spent12 +
+                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0 + channel) * health))) * spent13 +
+                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0 + channel) * health))) * spent14 +
+                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0 + channel) * health))) * spent15 +
+                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0 + channel) * health))) * spent16
+
+        wave /= 16
 
         sum += wave * attack * release * vol
       }
@@ -348,8 +366,8 @@ export default class Audio extends EventEmitter {
         return fract(sin(n) * 43758.5453123);
     }`)
 
-    let sineArrayL = sineBank(frequencies, this.times, spent, 1 / frequencies.length, health, 0)
-    let sineArrayR = sineBank(frequencies, this.times, spent, 1 / frequencies.length, health, 1)
+    let sineArrayL = sineBank(frequencies, this.times, spent, this.getVol(frequencies.length), health, 0)
+    let sineArrayR = sineBank(frequencies, this.times, spent, this.getVol(frequencies.length), health, 1)
 
     let lArray = audioBuffer.getChannelData(0)
     let rArray = audioBuffer.getChannelData(1)
@@ -362,11 +380,11 @@ export default class Audio extends EventEmitter {
     src.buffer = audioBuffer
 
     let compressor = audioContext.createDynamicsCompressor()
-    compressor.threshold.setValueAtTime(-40, audioContext.currentTime)
+    compressor.threshold.setValueAtTime(-30, audioContext.currentTime)
     compressor.knee.setValueAtTime(40, audioContext.currentTime)
-    compressor.ratio.setValueAtTime(12, audioContext.currentTime)
+    compressor.ratio.setValueAtTime(5, audioContext.currentTime)
     compressor.attack.setValueAtTime(0, audioContext.currentTime)
-    compressor.release.setValueAtTime(0.5, audioContext.currentTime)
+    compressor.release.setValueAtTime(1.0, audioContext.currentTime)
 
     const getImpulseBuffer = (audioContext, impulseUrl) => {
       return window.fetch(impulseUrl)
@@ -377,26 +395,25 @@ export default class Audio extends EventEmitter {
     let convolver = audioContext.createConvolver()
     convolver.buffer = await getImpulseBuffer(audioContext, './assets/sounds/IR/EchoBridge.wav')
 
-    let biquadFilter = audioContext.createBiquadFilter()
+    /* let biquadFilter = audioContext.createBiquadFilter()
     biquadFilter.type = 'notch'
     biquadFilter.frequency.setValueAtTime(2000, audioContext.currentTime)
     biquadFilter.gain.setValueAtTime(-20, audioContext.currentTime)
-    biquadFilter.Q.setValueAtTime(300, audioContext.currentTime)
+    biquadFilter.Q.setValueAtTime(300, audioContext.currentTime) */
 
-    let lsFilter = audioContext.createBiquadFilter()
+    /* let lsFilter = audioContext.createBiquadFilter()
     lsFilter.type = 'lowshelf'
     lsFilter.frequency.setValueAtTime(250, audioContext.currentTime)
     lsFilter.gain.setValueAtTime(10, audioContext.currentTime)
-    lsFilter.Q.setValueAtTime(300, audioContext.currentTime)
+    lsFilter.Q.setValueAtTime(300, audioContext.currentTime) */
 
-    src.connect(convolver)
+    src.connect(compressor)
+    // convolver.connect(biquadFilter)
+    compressor.connect(convolver)
+    convolver.connect(audioContext.destination)
 
-    convolver.connect(compressor)
-
-    compressor.connect(biquadFilter)
-
-    biquadFilter.connect(lsFilter)
-    lsFilter.connect(audioContext.destination)
+    // convolver.connect(audioContext.destination)
+    // lsFilter.connect(audioContext.destination)
 
     src.loop = true
 
@@ -410,5 +427,16 @@ export default class Audio extends EventEmitter {
     loop()
 
     src.start()
+  }
+
+  getVol (frequencies) {
+    let noteLength = 2.5
+    let vol = (this.soundDuration / noteLength) / frequencies
+
+    if (vol > 1) {
+      return 1
+    } else {
+      return vol
+    }
   }
 }
