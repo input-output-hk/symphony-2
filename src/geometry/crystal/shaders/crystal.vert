@@ -91,10 +91,16 @@ void main() {
 		transformed.xz *= (scale * attack);
 		transformed.y *= (offset.y * attack);
 	} else {
+
+
+
 		transformed.xz *= (scale);
 		transformed.y *= (offset.y);
+
 	}
 
+		transformed.y += offset.y * 0.5;
+		
 	//if (timeMod < 500.0) {
     	//transformed.xz *= (scale * scaledTime);
 //	} else {

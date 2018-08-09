@@ -201,60 +201,56 @@ export default class Crystal extends Base {
 
     let blockIndex = 0
 
-    for (const hash in blockGeoDataArray) {
-      if (blockGeoDataArray.hasOwnProperty(hash)) {
-        let blockGeoData = blockGeoDataArray[hash]
+    blockGeoDataArray.forEach((blockGeoData, height) => {
+      let blockPosition = blockGeoData.blockData.pos
 
-        let blockPosition = this.getBlockPosition(blockGeoData.blockData.height)
+      let object = new THREE.Object3D()
+      object.position.set(blockPosition.x, 0, blockPosition.z)
+      object.lookAt(0, 0, 0)
 
-        let object = new THREE.Object3D()
-        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
-        object.lookAt(0, 0, 0)
+      this.instanceCount += blockGeoData.blockData.tx.length
 
-        this.instanceCount += blockGeoData.blockData.tx.length
+      for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
+        let x = blockGeoData.offsets[i * 2 + 0]
+        let y = 0
+        let z = blockGeoData.offsets[i * 2 + 1]
 
-        for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-          let x = blockGeoData.offsets[i * 2 + 0]
-          let y = 0
-          let z = blockGeoData.offsets[i * 2 + 1]
+        let vector = new THREE.Vector3(x, y, z)
 
-          let vector = new THREE.Vector3(x, y, z)
+        vector.applyQuaternion(object.quaternion)
 
-          vector.applyQuaternion(object.quaternion)
+        vector.x += blockPosition.x
+        vector.z += blockPosition.z
 
-          vector.x += blockPosition.xOffset
-          vector.z += blockPosition.zOffset
+        offsetsArray.push(vector.x)
+        offsetsArray.push(vector.y)
+        offsetsArray.push(vector.z)
 
-          offsetsArray.push(vector.x)
-          offsetsArray.push(vector.y)
-          offsetsArray.push(vector.z)
+        planeOffsetsArray.push(blockPosition.x)
+        planeOffsetsArray.push(blockPosition.z)
 
-          planeOffsetsArray.push(blockPosition.xOffset)
-          planeOffsetsArray.push(blockPosition.zOffset)
+        quatArray.push(object.quaternion.x)
+        quatArray.push(object.quaternion.y)
+        quatArray.push(object.quaternion.z)
+        quatArray.push(object.quaternion.w)
 
-          quatArray.push(object.quaternion.x)
-          quatArray.push(object.quaternion.y)
-          quatArray.push(object.quaternion.z)
-          quatArray.push(object.quaternion.w)
-
-          idsArray.push(i)
-        }
-
-        blockGeoData.scales.forEach((scale) => {
-          scalesArray.push(scale)
-          // blockHeightsArray.push(block.block.height)
-          blockHeightsArray.push(blockIndex)
-        })
-
-        blockGeoData.blockData.tx.forEach((tx) => {
-          txArray.push(tx)
-        })
-
-        console.log('block at height: ' + blockGeoData.blockData.height + ' added')
-
-        blockIndex++
+        idsArray.push(i)
       }
-    }
+
+      blockGeoData.scales.forEach((scale) => {
+        scalesArray.push(scale)
+        // blockHeightsArray.push(block.block.height)
+        blockHeightsArray.push(blockIndex)
+      })
+
+      blockGeoData.blockData.tx.forEach((tx) => {
+        txArray.push(tx)
+      })
+
+      console.log('block at height: ' + blockGeoData.blockData.height + ' added')
+
+      blockIndex++
+    })
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
@@ -329,7 +325,7 @@ export default class Crystal extends Base {
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
-    this.geometry.addAttribute('txTime', txTimes)
+    // this.geometry.addAttribute('txTime', txTimes)
 
     const positionAttrib = this.geometry.getAttribute('position')
 

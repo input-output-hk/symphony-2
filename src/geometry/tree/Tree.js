@@ -87,24 +87,21 @@ export default class Tree extends Base {
   }
 
   async getMultiple (blockGeoDataArray) {
-    this.instanceCount = 0
-
     let blockHeightsArray = []
     let planeOffsetsArray = []
     let quatArray = []
 
-    let nTX = 0
-    for (const key in blockGeoDataArray) {
-      if (blockGeoDataArray.hasOwnProperty(key)) {
-        const blockGeoData = blockGeoDataArray[key]
-
-        nTX = Object.keys(blockGeoData.blockData.tx).length
-        break
-      }
-    }
+    // let nTX = 0
+    // for (const key in blockGeoDataArray) {
+    //   if (blockGeoDataArray.hasOwnProperty(key)) {
+    //     const blockGeoData = blockGeoDataArray[key]
+    //     nTX = Object.keys(blockGeoData.blockData.tx).length
+    //     break
+    //   }
+    // }
 
     // set up base geometry
-    let treeMesh = await this.loadTreeModel(nTX)
+    let treeMesh = await this.loadTreeModel(64)
 
     let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
     let tubeMesh = new THREE.Mesh(tubeGeo)
@@ -122,14 +119,12 @@ export default class Tree extends Base {
     this.geometry.computeVertexNormals()
     this.geometry.translate(0, -381, 0)
 
-    let blockIndex = 0
-    for (const hash in blockGeoDataArray) {
-      if (blockGeoDataArray.hasOwnProperty(hash)) {
-        let blockGeoData = blockGeoDataArray[hash]
-        let blockPosition = this.getBlockPosition(blockGeoData.blockData.height)
+    blockGeoDataArray.forEach((blockGeoData, height) => {
+      if (blockGeoData !== null) {
+        let blockPosition = blockGeoData.blockData.pos
 
         let object = new THREE.Object3D()
-        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
+        object.position.set(blockPosition.x, 0, blockPosition.z)
         object.lookAt(0, 0, 0)
 
         quatArray.push(object.quaternion.x)
@@ -137,17 +132,10 @@ export default class Tree extends Base {
         quatArray.push(object.quaternion.z)
         quatArray.push(object.quaternion.w)
 
-        planeOffsetsArray.push(blockPosition.xOffset)
-        planeOffsetsArray.push(blockPosition.zOffset)
-
-        // blockHeightsArray.push(block.block.height)
-        blockHeightsArray.push(blockIndex)
-
-        // console.log('tree at height: ' + blockGeoData.blockData.height + ' added')
-
-        blockIndex++
+        planeOffsetsArray.push(blockPosition.x)
+        planeOffsetsArray.push(blockPosition.z)
       }
-    }
+    })
 
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
@@ -156,6 +144,57 @@ export default class Tree extends Base {
 
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('blockHeight', blockHeights)
+    this.geometry.addAttribute('quaternion', quaternions)
+
+    this.mesh = new THREE.Mesh(this.geometry, this.material)
+
+    this.mesh.frustumCulled = false
+
+    return this.mesh
+  }
+
+  async get (blockData) {
+    let planeOffsetsArray = []
+    let quatArray = []
+
+    // set up base geometry
+    let treeMesh = await this.loadTreeModel(Object.keys(blockData.tx).length)
+
+    let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
+    let tubeMesh = new THREE.Mesh(tubeGeo)
+    tubeMesh.rotateZ(Math.PI / 2)
+
+    let singleGeometry = new THREE.Geometry()
+    tubeMesh.updateMatrix()
+    singleGeometry.merge(tubeMesh.geometry, tubeMesh.matrix)
+    treeMesh.updateMatrix()
+    let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
+    singleGeometry.merge(treeGeo, treeMesh.matrix)
+    let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
+    this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
+
+    this.geometry.computeVertexNormals()
+    this.geometry.translate(0, -381, 0)
+
+    let blockPosition = blockData.pos
+
+    let object = new THREE.Object3D()
+    object.position.set(blockPosition.x, 0, blockPosition.z)
+    object.lookAt(0, 0, 0)
+
+    quatArray.push(object.quaternion.x)
+    quatArray.push(object.quaternion.y)
+    quatArray.push(object.quaternion.z)
+    quatArray.push(object.quaternion.w)
+
+    planeOffsetsArray.push(blockPosition.x)
+    planeOffsetsArray.push(blockPosition.z)
+
+    // attributes
+    let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
+    let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
+
+    this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('quaternion', quaternions)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)

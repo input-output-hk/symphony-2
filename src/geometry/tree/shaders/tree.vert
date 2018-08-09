@@ -4,7 +4,6 @@
 
 attribute vec3 offset;
 attribute vec2 planeOffset;
-attribute float blockHeight;
 attribute vec4 quaternion;
 
 varying vec3 vViewPosition;

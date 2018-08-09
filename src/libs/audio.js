@@ -6,6 +6,31 @@ export default class Audio extends EventEmitter {
   constructor (args) {
     super(args)
     this.gpu = new GPU()
+    this.audioContext = new window.AudioContext()
+    this.masterBus = this.audioContext.createGain()
+
+    this.compressor = this.audioContext.createDynamicsCompressor()
+    this.compressor.threshold.setValueAtTime(-30, this.audioContext.currentTime)
+    this.compressor.knee.setValueAtTime(40, this.audioContext.currentTime)
+    this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
+    this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
+    this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
+
+    const getImpulseBuffer = (audioContext, impulseUrl) => {
+      return window.fetch(impulseUrl)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+    }
+
+    this.convolver = this.audioContext.createConvolver()
+
+    getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
+      this.convolver.buffer = buffer
+      this.masterBus.connect(this.compressor)
+      this.compressor.connect(this.convolver)
+      this.convolver.connect(this.audioContext.destination)
+    })
+
     this.sampleRate = 44100
     this.soundDuration = 40 // (seconds)
     this.notes = {
@@ -111,56 +136,56 @@ export default class Audio extends EventEmitter {
     }
 
     this.modes = {
-      'ionian': [
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'A',
-        'B',
-        'C'
-      ],
-      'dorian': [
-        'C',
-        'D',
-        'D#',
-        'F',
-        'G',
-        'A',
-        'A#',
-        'C'
-      ],
-      'phrygian': [
-        'C',
-        'C#',
-        'D#',
-        'F',
-        'G',
-        'G#',
-        'A#',
-        'C'
-      ],
-      'lydian': [
-        'C',
-        'D',
-        'E',
-        'F#',
-        'G',
-        'A',
-        'B',
-        'C'
-      ],
-      'mixolydian': [
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'A',
-        'A#',
-        'C'
-      ],
+      // 'ionian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'B',
+      //   'C'
+      // ],
+      // 'dorian': [
+      //   'C',
+      //   'D',
+      //   'D#',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'phrygian': [
+      //   'C',
+      //   'C#',
+      //   'D#',
+      //   'F',
+      //   'G',
+      //   'G#',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'lydian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F#',
+      //   'G',
+      //   'A',
+      //   'B',
+      //   'C'
+      // ],
+      // 'mixolydian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'A#',
+      //   'C'
+      // ],
       'aeolian': [
         'C',
         'D',
@@ -170,18 +195,22 @@ export default class Audio extends EventEmitter {
         'G#',
         'A#',
         'C'
-      ],
-      'locrian': [
-        'C',
-        'C#',
-        'D#',
-        'F',
-        'F#',
-        'G#',
-        'A#',
-        'C'
       ]
+      // 'locrian': [
+      //   'C',
+      //   'C#',
+      //   'D#',
+      //   'F',
+      //   'F#',
+      //   'G#',
+      //   'A#',
+      //   'C'
+      // ]
     }
+    this.buffers = []
+    this.gainNodes = []
+    this.audioSources = []
+    this.loops = []
   }
 
   async generate (blockData) {
@@ -227,16 +256,13 @@ export default class Audio extends EventEmitter {
 
     console.log(blockData.tx.length)
 
-    let audioContext = new window.AudioContext()
-    let audioBuffer = audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
+    this.buffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
 
     let frequencies = []
 
     this.times = []
 
     let health = (blockData.fee / blockData.outputTotal) * 2000 // 0 == healthy
-
-    health = 1.0
 
     console.log({health})
 
@@ -357,34 +383,23 @@ export default class Audio extends EventEmitter {
         return fract(sin(n) * 43758.5453123);
     }`)
 
-    let sineArrayL = sineBank(frequencies, this.times, spent, this.getVol(frequencies.length), health, 0)
-    let sineArrayR = sineBank(frequencies, this.times, spent, this.getVol(frequencies.length), health, 1)
+    let vol = this.getVol(frequencies.length)
+    console.time('sineBank')
+    let sineArrayL = sineBank(frequencies, this.times, spent, vol, health, 0)
+    let sineArrayR = sineBank(frequencies, this.times, spent, vol, health, 1)
+    console.timeEnd('sineBank')
 
-    let lArray = audioBuffer.getChannelData(0)
-    let rArray = audioBuffer.getChannelData(1)
+    console.time('fillBuffer')
+    let lArray = this.buffers[blockData.height].getChannelData(0)
+    let rArray = this.buffers[blockData.height].getChannelData(1)
     for (let index = 0; index < sineArrayL.length; index++) {
       lArray[index] = sineArrayL[index]
       rArray[index] = sineArrayR[index]
     }
+    console.timeEnd('fillBuffer')
 
-    let src = audioContext.createBufferSource()
-    src.buffer = audioBuffer
-
-    let compressor = audioContext.createDynamicsCompressor()
-    compressor.threshold.setValueAtTime(-30, audioContext.currentTime)
-    compressor.knee.setValueAtTime(40, audioContext.currentTime)
-    compressor.ratio.setValueAtTime(5, audioContext.currentTime)
-    compressor.attack.setValueAtTime(0, audioContext.currentTime)
-    compressor.release.setValueAtTime(1.0, audioContext.currentTime)
-
-    const getImpulseBuffer = (audioContext, impulseUrl) => {
-      return window.fetch(impulseUrl)
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-    }
-
-    let convolver = audioContext.createConvolver()
-    convolver.buffer = await getImpulseBuffer(audioContext, './assets/sounds/IR/EchoBridge.wav')
+    this.audioSources[blockData.height] = this.audioContext.createBufferSource()
+    this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
 
     /* let biquadFilter = audioContext.createBiquadFilter()
     biquadFilter.type = 'notch'
@@ -398,18 +413,16 @@ export default class Audio extends EventEmitter {
     lsFilter.gain.setValueAtTime(10, audioContext.currentTime)
     lsFilter.Q.setValueAtTime(300, audioContext.currentTime) */
 
-    src.connect(compressor)
-    // convolver.connect(biquadFilter)
-    compressor.connect(convolver)
-    convolver.connect(audioContext.destination)
+    this.gainNodes[blockData.height] = this.audioContext.createGain()
 
-    // convolver.connect(audioContext.destination)
-    // lsFilter.connect(audioContext.destination)
+    this.audioSources[blockData.height].connect(this.gainNodes[blockData.height])
 
-    src.loop = true
+    this.gainNodes[blockData.height].connect(this.masterBus)
+
+    this.audioSources[blockData.height].loop = true
 
     let loop = () => {
-      setTimeout(function () {
+      this.loops[blockData.height] = setTimeout(function () {
         this.emit('loopend')
         loop()
       }.bind(this), this.soundDuration * 1000)
@@ -417,7 +430,7 @@ export default class Audio extends EventEmitter {
 
     loop()
 
-    src.start()
+    this.audioSources[blockData.height].start()
   }
 
   getVol (frequencies) {

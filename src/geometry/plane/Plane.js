@@ -21,7 +21,7 @@ export default class Plane extends Base {
       flatShading: true,
       color: 0xffffff,
       emissive: 0x333333,
-      // metalness: 0.9,
+      metalness: 0.9,
       roughness: 0.1,
       opacity: 0.6,
       transparent: true,
@@ -50,28 +50,22 @@ export default class Plane extends Base {
     this.geometry.rotateY(Math.PI / 2)
     this.geometry.translate(0, -1, 0)
 
-    for (const hash in blockGeoDataArray) {
-      if (blockGeoDataArray.hasOwnProperty(hash)) {
-        let blockGeoData = blockGeoDataArray[hash]
+    blockGeoDataArray.forEach((blockGeoData, height) => {
+      let blockPosition = blockGeoData.blockData.pos
 
-        let blockHeight = blockGeoData.blockData.height
+      let object = new THREE.Object3D()
+      object.position.set(blockPosition.x, 0, blockPosition.z)
+      object.lookAt(0, 0, 0)
+      // object.rotateY(1 / (blockHeight + 20))
 
-        let blockPosition = this.getBlockPosition(blockHeight)
+      quatArray.push(object.quaternion.x)
+      quatArray.push(object.quaternion.y)
+      quatArray.push(object.quaternion.z)
+      quatArray.push(object.quaternion.w)
 
-        let object = new THREE.Object3D()
-        object.position.set(blockPosition.xOffset, 0, blockPosition.zOffset)
-        object.lookAt(0, 0, 0)
-        // object.rotateY(1 / (blockHeight + 20))
-
-        quatArray.push(object.quaternion.x)
-        quatArray.push(object.quaternion.y)
-        quatArray.push(object.quaternion.z)
-        quatArray.push(object.quaternion.w)
-
-        planeOffsetsArray.push(blockPosition.xOffset)
-        planeOffsetsArray.push(blockPosition.zOffset)
-      }
-    }
+      planeOffsetsArray.push(blockPosition.x)
+      planeOffsetsArray.push(blockPosition.z)
+    })
 
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
