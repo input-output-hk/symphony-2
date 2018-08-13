@@ -17,15 +17,17 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
+    this.instanceTotal = 100
+
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
       emissive: 0x333333,
       metalness: 0.9,
       roughness: 0.1,
-      opacity: 0.6,
+      opacity: 0.9,
       transparent: true,
-      side: THREE.DoubleSide,
+      // side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2
@@ -36,40 +38,36 @@ export default class Plane extends Base {
     })
   }
 
-  async getMultiple (blockGeoDataArray) {
-    this.instanceCount = 0
-
-    let planeOffsetsArray = []
-    let quatArray = []
+  async init (blockGeoData) {
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
+    this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 2, 1, 1, 1)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 8, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
     this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -1, 0)
+    this.geometry.translate(0, -4, 0)
 
-    blockGeoDataArray.forEach((blockGeoData, height) => {
-      let blockPosition = blockGeoData.blockData.pos
+    let blockPosition = blockGeoData.blockData.pos
 
-      let object = new THREE.Object3D()
-      object.position.set(blockPosition.x, 0, blockPosition.z)
-      object.lookAt(0, 0, 0)
-      // object.rotateY(1 / (blockHeight + 20))
+    let object = new THREE.Object3D()
+    object.position.set(blockPosition.x, 0, blockPosition.z)
+    object.lookAt(0, 0, 0)
+    // object.rotateY(1 / (blockHeight + 20))
 
-      quatArray.push(object.quaternion.x)
-      quatArray.push(object.quaternion.y)
-      quatArray.push(object.quaternion.z)
-      quatArray.push(object.quaternion.w)
+    this.quatArray[0] = object.quaternion.x
+    this.quatArray[1] = object.quaternion.y
+    this.quatArray[2] = object.quaternion.z
+    this.quatArray[3] = object.quaternion.w
 
-      planeOffsetsArray.push(blockPosition.x)
-      planeOffsetsArray.push(blockPosition.z)
-    })
+    this.planeOffsetsArray[0] = blockPosition.x
+    this.planeOffsetsArray[1] = blockPosition.z
 
     // attributes
-    let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
-    let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
+    let planeOffsets = new THREE.InstancedBufferAttribute(this.planeOffsetsArray, 2)
+    let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
 
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('quaternion', quaternions)
@@ -79,6 +77,24 @@ export default class Plane extends Base {
     this.mesh.frustumCulled = false
 
     return this.mesh
+  }
+
+  async updateGeometry (blockGeoData, index) {
+    let blockPosition = blockGeoData.blockData.pos
+
+    let object = new THREE.Object3D()
+    object.position.set(blockPosition.x, 0, blockPosition.z)
+    object.lookAt(0, 0, 0)
+
+    this.geometry.attributes.quaternion.array[index * 4 + 0] = object.quaternion.x
+    this.geometry.attributes.quaternion.array[index * 4 + 1] = object.quaternion.y
+    this.geometry.attributes.quaternion.array[index * 4 + 2] = object.quaternion.z
+    this.geometry.attributes.quaternion.array[index * 4 + 3] = object.quaternion.w
+    this.geometry.attributes.quaternion.needsUpdate = true
+
+    this.geometry.attributes.planeOffset.array[index * 2 + 0] = blockPosition.x
+    this.geometry.attributes.planeOffset.array[index * 2 + 1] = blockPosition.z
+    this.geometry.attributes.planeOffset.needsUpdate = true
   }
 }
 

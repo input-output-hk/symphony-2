@@ -17,13 +17,16 @@ export default class Crystal extends Base {
   constructor (args) {
     super(args)
     this.firebaseDB = args.firebaseDB
-    this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
+    this.docRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    // this.normalMap.magFilter = THREE.NearestFilter
 
     this.voronoi = new Voronoi()
+
+    this.instanceTotal = 100 * 2000
+
+    this.txCount = 0
 
     this.uTime = 0
 
@@ -113,12 +116,10 @@ export default class Crystal extends Base {
         }
       }
 
-      this.instanceCount = blockData.tx.length
+      let offsets = new THREE.InstancedBufferAttribute(new Float32Array(blockData.tx.length * 2), 2)
+      let scales = new THREE.InstancedBufferAttribute(new Float32Array(blockData.tx.length), 1)
 
-      let offsets = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount * 2), 2)
-      let scales = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-
-      for (let i = 0; i < this.instanceCount; i++) {
+      for (let i = 0; i < blockData.tx.length; i++) {
         if (typeof blockData.tx[i] === 'undefined') {
           continue
         }
@@ -187,145 +188,52 @@ export default class Crystal extends Base {
     })
   }
 
-  async getMultiple (blockGeoDataArray, times) {
-    this.instanceCount = 0
+  async init (blockGeoData, times) {
+    this.offsetsArray = new Float32Array(this.instanceTotal * 3)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
+    this.scalesArray = new Float32Array(this.instanceTotal)
+    this.quatArray = new Float32Array(this.instanceTotal * 4)
+    this.timesArray = new Float32Array(times)
 
-    let blockHeightsArray = []
-    let offsetsArray = []
-    let idsArray = []
-
-    let planeOffsetsArray = []
-    let scalesArray = []
-    let txArray = []
-    let quatArray = []
-
-    let blockIndex = 0
-
-    blockGeoDataArray.forEach((blockGeoData, height) => {
-      let blockPosition = blockGeoData.blockData.pos
-
-      let object = new THREE.Object3D()
-      object.position.set(blockPosition.x, 0, blockPosition.z)
-      object.lookAt(0, 0, 0)
-
-      this.instanceCount += blockGeoData.blockData.tx.length
-
-      for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-        let x = blockGeoData.offsets[i * 2 + 0]
-        let y = 0
-        let z = blockGeoData.offsets[i * 2 + 1]
-
-        let vector = new THREE.Vector3(x, y, z)
-
-        vector.applyQuaternion(object.quaternion)
-
-        vector.x += blockPosition.x
-        vector.z += blockPosition.z
-
-        offsetsArray.push(vector.x)
-        offsetsArray.push(vector.y)
-        offsetsArray.push(vector.z)
-
-        planeOffsetsArray.push(blockPosition.x)
-        planeOffsetsArray.push(blockPosition.z)
-
-        quatArray.push(object.quaternion.x)
-        quatArray.push(object.quaternion.y)
-        quatArray.push(object.quaternion.z)
-        quatArray.push(object.quaternion.w)
-
-        idsArray.push(i)
-      }
-
-      blockGeoData.scales.forEach((scale) => {
-        scalesArray.push(scale)
-        // blockHeightsArray.push(block.block.height)
-        blockHeightsArray.push(blockIndex)
-      })
-
-      blockGeoData.blockData.tx.forEach((tx) => {
-        txArray.push(tx)
-      })
-
-      console.log('block at height: ' + blockGeoData.blockData.height + ' added')
-
-      blockIndex++
-    })
+    let blockPosition = blockGeoData.blockData.pos
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-    // tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.03, 0))
-
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
-
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
 
     // attributes
-    let blockHeights = new THREE.InstancedBufferAttribute(new Float32Array(blockHeightsArray), 1)
-    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(offsetsArray), 3)
-    let ids = new THREE.InstancedBufferAttribute(new Float32Array(idsArray), 1)
-    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-    let planeOffsets = new THREE.InstancedBufferAttribute(new Float32Array(planeOffsetsArray), 2)
-    let scales = new THREE.InstancedBufferAttribute(new Float32Array(scalesArray), 1)
-    let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceCount), 1)
-    let quaternions = new THREE.InstancedBufferAttribute(new Float32Array(quatArray), 4)
-    let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(times), 1)
+    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
+    let planeOffsets = new THREE.InstancedBufferAttribute(this.planeOffsetsArray, 2)
+    let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
+    let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
 
-    console.log('this.instanceCount: ' + this.instanceCount)
+    let object = new THREE.Object3D()
+    object.position.set(blockPosition.x, 0, blockPosition.z)
+    object.lookAt(0, 0, 0)
 
-    for (let i = 0; i < this.instanceCount; i++) {
-      if (typeof txArray[i] === 'undefined') {
-        continue
-      }
-      let tx = txArray[i]
+    this.setTxAttributes(
+      object,
+      blockGeoData,
+      offsets,
+      planeOffsets,
+      quaternions,
+      scales,
+      txValues,
+      spentRatios,
+      txTimes
+    )
 
-      let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
-      }
-      if (txValue < 1) {
-        txValue = 1
-      }
-
-      txValues.setX(
-        i,
-        txValue
-      )
-
-      offsets.setY(
-        i,
-        txValue
-      )
-
-      let spentCount = 0
-      tx.out.forEach(function (el, index) {
-        if (el.spent === 1) {
-          spentCount++
-        }
-      })
-
-      let spentRatio = 1
-      if (spentCount !== 0) {
-        spentRatio = spentCount / tx.out.length
-      } else {
-        spentRatio = 0.0
-      }
-
-      spentRatios.setX(
-        i,
-        spentRatio
-      )
-    }
-
-    this.geometry.addAttribute('id', ids)
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
-    this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
-    // this.geometry.addAttribute('txTime', txTimes)
+    this.geometry.addAttribute('txTime', txTimes)
 
     const positionAttrib = this.geometry.getAttribute('position')
 
@@ -486,11 +394,139 @@ export default class Crystal extends Base {
     const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
     this.geometry.addAttribute('topVertex', TVAttribute)
 
+    this.txCount += blockGeoData.blockData.tx.length
+
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 
     this.mesh.frustumCulled = false
 
     return this.mesh
+  }
+
+  setTxAttributes (
+    object,
+    blockGeoData,
+    offsets,
+    planeOffsets,
+    quaternions,
+    scales,
+    txValues,
+    spentRatios,
+    txTimes
+  ) {
+    let txArray = []
+    blockGeoData.blockData.tx.forEach((tx) => {
+      txArray.push(tx)
+    })
+
+    let blockPosition = blockGeoData.blockData.pos
+
+    for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
+      if (typeof txArray[i] === 'undefined') {
+        continue
+      }
+
+      let x = blockGeoData.offsets[i * 2 + 0]
+      let y = 0
+      let z = blockGeoData.offsets[i * 2 + 1]
+
+      let vector = new THREE.Vector3(x, y, z)
+
+      vector.applyQuaternion(object.quaternion)
+
+      vector.x += blockPosition.x
+      vector.z += blockPosition.z
+
+      offsets.array[(this.txCount + i) * 3 + 0] = vector.x
+      offsets.array[(this.txCount + i) * 3 + 1] = vector.y
+      offsets.array[(this.txCount + i) * 3 + 2] = vector.z
+
+      planeOffsets.array[(this.txCount + i) * 2 + 0] = blockPosition.x
+      planeOffsets.array[(this.txCount + i) * 2 + 1] = blockPosition.z
+
+      quaternions.array[(this.txCount + i) * 4 + 0] = object.quaternion.x
+      quaternions.array[(this.txCount + i) * 4 + 1] = object.quaternion.y
+      quaternions.array[(this.txCount + i) * 4 + 2] = object.quaternion.z
+      quaternions.array[(this.txCount + i) * 4 + 3] = object.quaternion.w
+
+      blockGeoData.scales.forEach((scale, i) => {
+        scales.array[this.txCount + i] = scale
+      })
+
+      let tx = txArray[i]
+
+      let txValue = (tx.value * 0.00000001)
+      if (txValue > 1000) {
+        txValue = 1000
+      }
+      if (txValue < 1) {
+        txValue = 1
+      }
+
+      txValues.setX(
+        this.txCount + i,
+        txValue
+      )
+
+      offsets.setY(
+        this.txCount + i,
+        txValue
+      )
+
+      let spentCount = 0
+      tx.out.forEach(function (el, index) {
+        if (el.spent === 1) {
+          spentCount++
+        }
+      })
+
+      let spentRatio = 1
+      if (spentCount !== 0) {
+        spentRatio = spentCount / tx.out.length
+      } else {
+        spentRatio = 0.0
+      }
+
+      spentRatios.setX(
+        this.txCount + i,
+        spentRatio
+      )
+    }
+
+    txTimes.needsUpdate = true
+    spentRatios.needsUpdate = true
+    txValues.needsUpdate = true
+    scales.needsUpdate = true
+    offsets.needsUpdate = true
+    quaternions.needsUpdate = true
+    planeOffsets.needsUpdate = true
+  }
+
+  async updateGeometry (blockGeoData) {
+    let blockPosition = blockGeoData.blockData.pos
+
+    let object = new THREE.Object3D()
+    object.position.set(blockPosition.x, 0, blockPosition.z)
+    object.lookAt(0, 0, 0)
+
+    let txArray = []
+    blockGeoData.blockData.tx.forEach((tx) => {
+      txArray.push(tx)
+    })
+
+    this.setTxAttributes(
+      object,
+      blockGeoData,
+      this.geometry.attributes.offset,
+      this.geometry.attributes.planeOffset,
+      this.geometry.attributes.quaternion,
+      this.geometry.attributes.scale,
+      this.geometry.attributes.txValue,
+      this.geometry.attributes.spentRatio,
+      this.geometry.attributes.txTime
+    )
+
+    this.txCount += blockGeoData.blockData.tx.length
   }
 
   update (time, audioTime, firstLoop) {

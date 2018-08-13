@@ -174,7 +174,7 @@ export default class Tree extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
     this.geometry.computeVertexNormals()
-    this.geometry.translate(0, -381, 0)
+    this.geometry.translate(0, -386.8, 0)
 
     let blockPosition = blockData.pos
 

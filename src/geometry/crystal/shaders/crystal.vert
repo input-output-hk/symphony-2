@@ -8,12 +8,10 @@ uniform float uTime;
 uniform float uAudioTime;
 uniform float uFirstLoop;
 
-attribute float id;
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
 attribute float spentRatio;
-attribute float blockHeight;
 attribute vec3 barycentric;
 attribute float topVertex;
 attribute float centerTopVertex;
@@ -83,21 +81,20 @@ void main() {
 
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-	//float timeMod = (uTime - id > 0.0) ? uTime - id : 0.0;
 
 	//float scaledTime = (timeMod * 0.002);
 
-	if (uFirstLoop == 1.0) {
-		transformed.xz *= (scale * attack);
-		transformed.y *= (offset.y * attack);
-	} else {
+	// if (uFirstLoop == 1.0) {
+	// 	transformed.xz *= (scale * attack);
+	// 	transformed.y *= (offset.y * attack);
+	// } else {
 
 
 
 		transformed.xz *= (scale);
 		transformed.y *= (offset.y);
 
-	}
+	// }
 
 		transformed.y += offset.y * 0.5;
 		
@@ -125,11 +122,9 @@ void main() {
 	transformed.y += (random(originalTransform.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
 	transformed.y += (offset.y * 0.03) * centerTopVertex;
 
-	transformed.y -= (offset.y * 0.03) * centerBottomVertex;
+	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;
 
-
-
-	//transformed.y -= offset.y * 0.25 * centerBottomVertex;*/
+	transformed.y -= 8.4 * centerBottomVertex;
 
 	vTransformed = transformed;
 	vOffset = offset;
