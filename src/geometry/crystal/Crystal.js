@@ -30,6 +30,17 @@ export default class Crystal extends Base {
 
     this.uTime = 0
 
+    // this.cubeMap = new THREE.CubeTextureLoader()
+    //   .setPath('assets/images/textures/cubemaps/playa-full/')
+    //   .load([
+    //     '0004.png',
+    //     '0002.png',
+    //     '0006.png',
+    //     '0005.png',
+    //     '0001.png',
+    //     '0003.png'
+    //   ])
+
     this.material = new CrystalMaterial({
       flatShading: true,
       opacity: 0.9,

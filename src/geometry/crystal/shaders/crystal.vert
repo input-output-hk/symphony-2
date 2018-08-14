@@ -124,7 +124,7 @@ void main() {
 
 	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;
 
-	transformed.y -= 8.4 * centerBottomVertex;
+	transformed.y -= 5.0 * centerBottomVertex;
 
 	vTransformed = transformed;
 	vOffset = offset;

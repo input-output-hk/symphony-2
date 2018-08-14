@@ -74,7 +74,7 @@ class App extends mixin(EventEmitter, Component) {
     this.topside = null
     this.closestBlockReadyForUpdate = false
     this.sceneReady = false
-    this.shouldDrawUnderside = true
+    this.shouldDrawUnderside = false
     this.firstLoop = false
     this.geoAdded = false
   }
@@ -285,7 +285,7 @@ class App extends mixin(EventEmitter, Component) {
         }
       }
 
-      shouldCache = true
+      // shouldCache = true
 
       if (!shouldCache) {
         console.log('Block data for: ' + hash + ' returned from cache')
@@ -433,7 +433,7 @@ class App extends mixin(EventEmitter, Component) {
 
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
-          if (addCount < 100) {
+          if (addCount < 10) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
             // let minHeight = Number.MAX_SAFE_INTEGER
@@ -442,10 +442,6 @@ class App extends mixin(EventEmitter, Component) {
             // })
 
             // this.closestBlock = this.blockGeoDataArray[ minHeight ]
-
-            // this.crystal = await this.crystalGenerator.getMultiple(this.blockGeoDataArray)
-            // this.crystal.renderOrder = 2
-            // this.scene.add(this.crystal)
 
             // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
             // crystalAO.renderOrder = 2
@@ -456,14 +452,15 @@ class App extends mixin(EventEmitter, Component) {
               this.crystal = await this.crystalGenerator.init(blockGeoData)
               this.scene.add(this.crystal)
 
+              this.trees = await this.treeGenerator.init(blockGeoData)
+              this.scene.add(this.trees)
+
               this.plane = await this.planeGenerator.init(blockGeoData)
-              // this.plane.renderOrder = 2
+              this.plane.renderOrder = 1
               this.scene.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
               let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
-
-              // this.addClosestBlockDetail()
 
               this.camera.position.x = planeX + 300
               this.camera.position.z = planeZ - 400
@@ -473,13 +470,10 @@ class App extends mixin(EventEmitter, Component) {
               this.geoAdded = true
               this.blockReady = true
             } else {
-              await this.planeGenerator.updateGeometry(blockGeoData, addCount)
-              await this.crystalGenerator.updateGeometry(blockGeoData)
+              this.planeGenerator.updateGeometry(blockGeoData, addCount)
+              this.treeGenerator.updateGeometry(blockGeoData, addCount)
+              this.crystalGenerator.updateGeometry(blockGeoData)
             }
-
-            // this.trees = await this.treeGenerator.getMultiple(this.blockGeoDataArray)
-            // this.trees.renderOrder = 1
-            // this.scene.add(this.trees)
           }
           addCount++
         })
@@ -510,10 +504,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.setControlsSettings()
     this.setCameraSettings()
-
-    if (this.FDG && this.FDG.active === true) {
-      this.FDG.triggerUpdate()
-    }
   }
 
   animate () {
@@ -632,25 +622,6 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    // create new array not including closest block
-    this.instanced = []
-    this.blockGeoDataArray.forEach((blockGeoData, height) => {
-      if (blockGeoData.blockData.hash !== this.closestBlock.blockData.hash) {
-        this.instanced[height] = blockGeoData
-      }
-    })
-
-    let trees = await this.treeGenerator.getMultiple(this.instanced)
-    trees.renderOrder = 1
-    this.scene.remove(this.trees)
-    this.trees = trees
-    this.scene.add(this.trees)
-
-    this.scene.remove(this.tree)
-
-    this.tree = await this.treeGenerator.get(this.closestBlock.blockData)
-    this.scene.add(this.tree)
-
     this.audio.audioSources.forEach((src, height) => {
       /*
 
@@ -709,7 +680,7 @@ class App extends mixin(EventEmitter, Component) {
       this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
       this.underside.frustumCulled = false
 
-      this.underside.renderOrder = 2
+      this.underside.renderOrder = 1
 
       this.underside.translateX(this.closestBlock.blockData.pos.x)
       this.underside.translateZ(this.closestBlock.blockData.pos.z)
@@ -734,13 +705,39 @@ class App extends mixin(EventEmitter, Component) {
 
       this.topside = this.underside.clone()
       this.topside.material = topsideMaterial
-      this.topside.renderOrder = 3
+      this.topside.renderOrder = 1
 
       this.topside.translateZ(-0.1)
-      this.underside.translateZ(8.1)
+      this.underside.translateZ(4.05)
 
       this.scene.add(this.topside)
     }
+
+    // create new array not including closest block
+    this.prevClosestIndex = this.closestIndex
+    this.closestIndex = 0
+
+    let index = 0
+    for (const height in this.blockGeoDataArray) {
+      if (this.blockGeoDataArray.hasOwnProperty(height)) {
+        const blockGeoData = this.blockGeoDataArray[height]
+        if (blockGeoData.blockData.hash === this.closestBlock.blockData.hash) {
+          this.closestIndex = index
+        }
+        if (index === this.prevClosestIndex) {
+          this.prevClosestBlock = blockGeoData
+        }
+        index++
+      }
+    }
+
+    this.treeGenerator.removeClosest(this.prevClosestBlock, this.closestIndex, this.prevClosestIndex)
+
+    let newTree = await this.treeGenerator.get(this.closestBlock.blockData)
+    this.scene.add(newTree)
+    this.scene.remove(this.tree)
+    this.tree = newTree
+    this.tree.renderOrder = 0
   }
 
   initScene () {
@@ -750,12 +747,12 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
       .load([
-        'px.png', // right
-        'nx.png', // left
-        'py.png', // top
-        'ny.png', // bottom
-        'pz.png', // front
-        'nz.png' // back
+        '_RT.png', // right
+        '_LF.png', // left
+        '_UP.png', // top
+        '_DN.png', // bottom
+        '_FT.png', // front
+        '_BK.png' // back
       ])
 
     // this.scene.background = new THREE.Color(Config.scene.bgColor)

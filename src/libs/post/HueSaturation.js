@@ -2,7 +2,7 @@ const HueSaturation = {
   uniforms: {
     tDiffuse: { value: null },
     hue: { value: 0 },
-    saturation: { value: 0.3 }
+    saturation: { value: 0.2 }
   },
   vertexShader: `
       varying vec2 vUv;

@@ -111,9 +111,7 @@ void main() {
   	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
 	float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 20.0), uTime * 0.00025)) * 0.1;
-
-	
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += edgeAmount;
 	outgoingLight += noiseAmount;
@@ -123,7 +121,7 @@ void main() {
 	 outgoingLight.b += 0.08;
 	 outgoingLight.g += 0.04;
 
-	vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 1.0);
+	vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 0.5);
     vec2 ipos = floor(st);  // integer
     vec2 fpos = fract(st);  // fraction
 
@@ -147,7 +145,7 @@ void main() {
 	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
 		    smoothstep(tile.y,tile.y-0.3,1.0);
 
-	color *= abs(noiseAmount * 15.0);
+	color *= abs(noiseAmount) * 15.0;
 
 	color = clamp(color, 0.0, 2.0);
 
