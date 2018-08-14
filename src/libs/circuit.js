@@ -7,165 +7,191 @@ import { map } from '../utils/math'
 export default class Circuit extends EventEmitter {
   constructor (args) {
     super(args)
+
+    this.FBStorageCircuitRef = args.FBStorageCircuitRef
+
     this.canvas = null
   }
 
-  draw (nTX, closestBlock) {
-    if (this.canvas) {
-      this.canvas.parentNode.removeChild(this.canvas)
-    }
-
-    this.canvas = document.createElement('canvas')
-    this.canvas.setAttribute('id', 'sketchboard')
-    document.getElementsByTagName('body')[0].appendChild(this.canvas)
-
-    let canvasSize = 1024
-    this.canvas.width = canvasSize
-    this.canvas.height = canvasSize
-
-    let context = this.canvas.getContext('2d')
-
-    let merklePositions = this.getMerklePositions(nTX)
-
-    let canvasOffset = canvasSize * 0.5
-    let scaleFactor = 4.015
-
-    let offsetStack = Array.from(closestBlock.offsets)
-
-    for (let index = 0; index < nTX * 2; index += 2) {
-      const merkleX = merklePositions[index + 0]
-      const merkleZ = merklePositions[index + 1]
-
-      let merkleVec = new THREE.Vector2(merkleX, merkleZ)
-
-      // find closest crystal position
-      let closestDist = Number.MAX_SAFE_INTEGER
-      let closestDistIndexes = []
-      for (let oIndex = 0; oIndex < offsetStack.length; oIndex += 2) {
-        let offsetX = offsetStack[oIndex + 0]
-        let offsetZ = offsetStack[oIndex + 1]
-
-        if (offsetX === 0 && offsetZ === 0) {
-          continue
-        }
-
-        const oElement = new THREE.Vector2(offsetX, offsetZ)
-        let distSq = oElement.distanceToSquared(merkleVec)
-
-        if (distSq < closestDist) {
-          closestDist = distSq
-          closestDistIndexes = [oIndex + 0, oIndex + 1]
-        }
+  async draw (nTX, closestBlock) {
+    return new Promise((resolve, reject) => {
+      if (this.canvas && this.canvas.parentNode) {
+        this.canvas.parentNode.removeChild(this.canvas)
       }
 
-      if (closestDistIndexes.length && typeof offsetStack[closestDistIndexes[0]] !== 'undefined') {
-        let closestOffsetPointX = offsetStack[closestDistIndexes[0]]
-        let closestOffsetPointZ = offsetStack[closestDistIndexes[1]]
+      // check storage
+      let existingCanvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
 
-        offsetStack.splice(closestDistIndexes[0], 1)
-        offsetStack.splice(closestDistIndexes[0], 1)
+      // Create a reference from a Google Cloud Storage URI
+      existingCanvasRef.getDownloadURL().then(function (url) {
+        let texture = new THREE.TextureLoader().load(url)
+        resolve(texture)
+      }).catch(function (error) {
+        console.log(error)
 
-        let scaledOffsetX = closestOffsetPointX * scaleFactor + canvasOffset
-        let scaledOffsetZ = closestOffsetPointZ * scaleFactor + canvasOffset
+        this.canvas = document.createElement('canvas')
+        this.canvas.setAttribute('id', 'sketchboard')
+        document.getElementsByTagName('body')[0].appendChild(this.canvas)
 
-        let scaledMerkleX = merkleX * scaleFactor + canvasOffset
-        let scaledMerkleZ = merkleZ * scaleFactor + canvasOffset
+        let canvasSize = 2048
+        this.canvas.width = canvasSize
+        this.canvas.height = canvasSize
 
-        let xEdge = scaledOffsetX - scaledMerkleX
-        let zEdge = scaledOffsetZ - scaledMerkleZ
-        let shortestEdgeLength = 0
-        let shortestEdge = 'X'
+        let context = this.canvas.getContext('2d')
 
-        if (Math.abs(xEdge) < Math.abs(zEdge)) {
-          shortestEdgeLength = xEdge
-        } else {
-          shortestEdgeLength = zEdge
-          shortestEdge = 'Z'
-        }
+        let merklePositions = this.getMerklePositions(nTX)
 
-        let remove = shortestEdgeLength * 0.5
+        let canvasOffset = canvasSize * 0.5
+        let scaleFactor = 4.015
 
-        context.shadowBlur = 25
-        context.shadowColor = 'white'
+        let offsetStack = Array.from(closestBlock.offsets)
 
-        context.beginPath()
-        context.moveTo(scaledMerkleX, scaledMerkleZ)
-        context.lineWidth = this.merkleLineWidth
-        context.strokeStyle = 'rgba(255,255,255,0.50)'
+        for (let index = 0; index < nTX * 2; index += 2) {
+          const merkleX = merklePositions[index + 0]
+          const merkleZ = merklePositions[index + 1]
 
-        if (shortestEdge === 'X') {
-          context.lineTo(
-            scaledOffsetX - remove,
-            scaledMerkleZ
-          )
+          let merkleVec = new THREE.Vector2(merkleX, merkleZ)
 
-          if (zEdge < 0) {
-            remove = Math.abs(remove) * -1
-          } else {
-            remove = Math.abs(remove)
+          // find closest crystal position
+          let closestDist = Number.MAX_SAFE_INTEGER
+          let closestDistIndexes = []
+          for (let oIndex = 0; oIndex < offsetStack.length; oIndex += 2) {
+            let offsetX = offsetStack[oIndex + 0]
+            let offsetZ = offsetStack[oIndex + 1]
+
+            if (offsetX === 0 && offsetZ === 0) {
+              continue
+            }
+
+            const oElement = new THREE.Vector2(offsetX, offsetZ)
+            let distSq = oElement.distanceToSquared(merkleVec)
+
+            if (distSq < closestDist) {
+              closestDist = distSq
+              closestDistIndexes = [oIndex + 0, oIndex + 1]
+            }
           }
 
-          context.lineTo(
-            scaledOffsetX,
-            scaledMerkleZ + remove
-          )
-          context.lineTo(
-            scaledOffsetX,
-            scaledOffsetZ
-          )
-        } else {
-          context.lineTo(
-            scaledMerkleX,
-            scaledOffsetZ - remove
-          )
+          if (closestDistIndexes.length && typeof offsetStack[closestDistIndexes[0]] !== 'undefined') {
+            let closestOffsetPointX = offsetStack[closestDistIndexes[0]]
+            let closestOffsetPointZ = offsetStack[closestDistIndexes[1]]
 
-          if (xEdge < 0) {
-            remove = Math.abs(remove) * -1
-          } else {
-            remove = Math.abs(remove)
+            offsetStack.splice(closestDistIndexes[0], 1)
+            offsetStack.splice(closestDistIndexes[0], 1)
+
+            let scaledOffsetX = closestOffsetPointX * scaleFactor + canvasOffset
+            let scaledOffsetZ = closestOffsetPointZ * scaleFactor + canvasOffset
+
+            let scaledMerkleX = merkleX * scaleFactor + canvasOffset
+            let scaledMerkleZ = merkleZ * scaleFactor + canvasOffset
+
+            let xEdge = scaledOffsetX - scaledMerkleX
+            let zEdge = scaledOffsetZ - scaledMerkleZ
+            let shortestEdgeLength = 0
+            let shortestEdge = 'X'
+
+            if (Math.abs(xEdge) < Math.abs(zEdge)) {
+              shortestEdgeLength = xEdge
+            } else {
+              shortestEdgeLength = zEdge
+              shortestEdge = 'Z'
+            }
+
+            let remove = shortestEdgeLength * 0.5
+
+            context.shadowBlur = 25
+            context.shadowColor = 'white'
+
+            context.beginPath()
+            context.moveTo(scaledMerkleX, scaledMerkleZ)
+            context.lineWidth = this.merkleLineWidth
+            context.strokeStyle = 'rgba(255,255,255,0.50)'
+
+            if (shortestEdge === 'X') {
+              context.lineTo(
+                scaledOffsetX - remove,
+                scaledMerkleZ
+              )
+
+              if (zEdge < 0) {
+                remove = Math.abs(remove) * -1
+              } else {
+                remove = Math.abs(remove)
+              }
+
+              context.lineTo(
+                scaledOffsetX,
+                scaledMerkleZ + remove
+              )
+              context.lineTo(
+                scaledOffsetX,
+                scaledOffsetZ
+              )
+            } else {
+              context.lineTo(
+                scaledMerkleX,
+                scaledOffsetZ - remove
+              )
+
+              if (xEdge < 0) {
+                remove = Math.abs(remove) * -1
+              } else {
+                remove = Math.abs(remove)
+              }
+
+              context.lineTo(
+                scaledMerkleX + remove,
+                scaledOffsetZ
+              )
+              context.lineTo(
+                scaledOffsetX,
+                scaledOffsetZ
+              )
+            }
+            context.lineJoin = 'round'
+            context.stroke()
+
+            context.beginPath()
+            context.strokeStyle = 'rgba(255,255,255,0.50)'
+            context.arc(scaledMerkleX, scaledMerkleZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
+            context.lineWidth = this.merkleLineWidth + 1.0
+
+            context.stroke()
+
+            context.beginPath()
+            context.strokeStyle = 'rgba(255,255,255,0.40)'
+            context.arc(scaledOffsetX, scaledOffsetZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
+
+            context.stroke()
           }
-
-          context.lineTo(
-            scaledMerkleX + remove,
-            scaledOffsetZ
-          )
-          context.lineTo(
-            scaledOffsetX,
-            scaledOffsetZ
-          )
         }
-        context.lineJoin = 'round'
-        context.stroke()
 
-        context.beginPath()
-        context.strokeStyle = 'rgba(255,255,255,0.50)'
-        context.arc(scaledMerkleX, scaledMerkleZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
-        context.lineWidth = this.merkleLineWidth + 1.0
+        context.translate(this.canvas.width / 2, this.canvas.height / 2)
+        context.scale(-1, 1)
+        context.font = '12.5pt Calibri'
+        context.lineWidth = 0
+        context.fillStyle = 'rgba(255,255,255,0.50)'
+        context.fillText('BLOCK #' + closestBlock.blockData.height + '  HASH: ' + closestBlock.blockData.hash, -1000, -990)
+        context.scale(-1, 1)
 
-        context.stroke()
+        context.rotate(Math.PI / 6)
 
-        context.beginPath()
-        context.strokeStyle = 'rgba(255,255,255,0.40)'
-        context.arc(scaledOffsetX, scaledOffsetZ, this.merkleNodeRadius, 0, 2 * Math.PI, false)
-
-        context.stroke()
-      }
-    }
-
-    context.translate(this.canvas.width / 2, this.canvas.height / 2)
-    context.scale(-1, 1)
-    context.font = '12.5pt Calibri'
-    context.lineWidth = 0
-    context.fillStyle = 'rgba(255,255,255,0.50)'
-    context.fillText('BLOCK #' + closestBlock.blockData.height + '  HASH: ' + closestBlock.blockData.hash, -1000, -990)
-    context.scale(-1, 1)
-
-    context.rotate(Math.PI / 6)
-
-    let texture = new THREE.Texture(this.canvas)
-    texture.needsUpdate = true
-
-    return texture
+        this.canvas.toBlob((blob) => {
+          let canvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
+          console.log('writing....  ')
+          try {
+            canvasRef.put(blob).then(function (snapshot) {
+              console.log('saved circuit to storage')
+              let texture = new THREE.Texture(this.canvas)
+              texture.needsUpdate = true
+              resolve(texture)
+            }.bind(this))
+          } catch (error) {
+            console.log(error)
+          }
+        })
+      }.bind(this))
+    })
   }
 
   getMerklePositions (nTX) {

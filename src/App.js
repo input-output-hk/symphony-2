@@ -9,6 +9,7 @@ import mixin from 'mixin'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
+import 'firebase/storage'
 import moment from 'moment'
 import { map } from './utils/math'
 
@@ -60,7 +61,7 @@ class App extends mixin(EventEmitter, Component) {
     this.coils = 1000
     this.radius = 100000
     this.ObjectLoader = new THREE.ObjectLoader()
-    this.circuit = new Circuit()
+
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataArray = []
     this.hashes = []
@@ -74,7 +75,7 @@ class App extends mixin(EventEmitter, Component) {
     this.topside = null
     this.closestBlockReadyForUpdate = false
     this.sceneReady = false
-    this.shouldDrawUnderside = false
+    this.shouldDrawUnderside = true
     this.firstLoop = false
     this.geoAdded = false
   }
@@ -115,6 +116,10 @@ class App extends mixin(EventEmitter, Component) {
 
   async initStage () {
     await this.initFirebase()
+
+  
+
+    this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef})
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
@@ -230,6 +235,11 @@ class App extends mixin(EventEmitter, Component) {
 
       const settings = {timestampsInSnapshots: true}
       firebase.firestore().settings(settings)
+      this.FBStorage = firebase.storage()
+      this.FBStorageRef = this.FBStorage.ref()
+
+      // Create a child reference
+      this.FBStorageCircuitRef = this.FBStorageRef.child('circuits')
 
       // await firebase.firestore().enablePersistence()
     } catch (error) {
@@ -651,7 +661,7 @@ class App extends mixin(EventEmitter, Component) {
 
     if (this.shouldDrawUnderside) {
       const nTX = Object.keys(this.closestBlock.blockData.tx).length
-      let undersideTexture = this.circuit.draw(nTX, this.closestBlock)
+      let undersideTexture = await this.circuit.draw(nTX, this.closestBlock)
 
       let minHeight = Number.MAX_SAFE_INTEGER
       this.blockGeoDataArray.forEach((blockGeoData, height) => {
