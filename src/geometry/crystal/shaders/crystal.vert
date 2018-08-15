@@ -77,7 +77,7 @@ void main() {
 
 	vEnvelope = attack * release;
 
-	vec3 originalTransform = transformed.xyz;
+	//vec3 originalTransform = transformed.xyz;
 
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
@@ -119,7 +119,7 @@ void main() {
 	//transformed.x += (random(originalTransform.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
-	transformed.y += (random(originalTransform.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
+	transformed.y += (random(transformed.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
 	transformed.y += (offset.y * 0.03) * centerTopVertex;
 
 	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;

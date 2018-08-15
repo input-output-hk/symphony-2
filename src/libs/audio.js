@@ -5,6 +5,9 @@ import GPU from 'gpu.js'
 export default class Audio extends EventEmitter {
   constructor (args) {
     super(args)
+
+    this.FBStorageAudioRef = args.FBStorageAudioRef
+
     this.gpu = new GPU()
     this.audioContext = new window.AudioContext()
     this.masterBus = this.audioContext.createGain()
@@ -15,6 +18,17 @@ export default class Audio extends EventEmitter {
     this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
     this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
     this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
+
+    this.biquadFilter = this.audioContext.createBiquadFilter()
+    this.biquadFilter.type = 'notch'
+    this.biquadFilter.frequency.setValueAtTime(700, this.audioContext.currentTime)
+    this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
+    this.biquadFilter.Q.setValueAtTime(0.5, this.audioContext.currentTime)
+
+    this.lowShelf = this.audioContext.createBiquadFilter()
+    this.lowShelf.type = 'lowshelf'
+    this.lowShelf.frequency.setValueAtTime(250, this.audioContext.currentTime)
+    this.lowShelf.gain.setValueAtTime(6.0, this.audioContext.currentTime)
 
     const getImpulseBuffer = (audioContext, impulseUrl) => {
       return window.fetch(impulseUrl)
@@ -28,7 +42,9 @@ export default class Audio extends EventEmitter {
       this.convolver.buffer = buffer
       this.masterBus.connect(this.compressor)
       this.compressor.connect(this.convolver)
-      this.convolver.connect(this.audioContext.destination)
+      this.convolver.connect(this.biquadFilter)
+      this.biquadFilter.connect(this.lowShelf)
+      this.lowShelf.connect(this.audioContext.destination)
     })
 
     this.sampleRate = 44100
@@ -138,6 +154,41 @@ export default class Audio extends EventEmitter {
     this.modes = {
       // 'ionian': [
       //   'C',
+      //   'E',
+      //   'G'
+      // ],
+      // 'dorian': [
+      //   'F',
+      //   'A',
+      //   'C'
+      // ],
+      // 'phrygian': [
+      //   'E',
+      //   'G',
+      //   'B'
+      // ],
+      // 'lydian': [
+      //   'A',
+      //   'C',
+      //   'E'
+      // ],
+      // 'mixolydian': [
+      //   'G',
+      //   'B',
+      //   'D'
+      // ],
+      // 'aeolian': [
+      //   'D',
+      //   'F',
+      //   'A'
+      // ],
+      // 'locrian': [
+      //   'B',
+      //   'D',
+      //   'F'
+      // ]
+      // 'ionian': [
+      //   'C',
       //   'D',
       //   'E',
       //   'F',
@@ -175,7 +226,7 @@ export default class Audio extends EventEmitter {
       //   'A',
       //   'B',
       //   'C'
-      // ],
+      // ]
       // 'mixolydian': [
       //   'C',
       //   'D',
@@ -400,18 +451,6 @@ export default class Audio extends EventEmitter {
 
     this.audioSources[blockData.height] = this.audioContext.createBufferSource()
     this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
-
-    /* let biquadFilter = audioContext.createBiquadFilter()
-    biquadFilter.type = 'notch'
-    biquadFilter.frequency.setValueAtTime(2000, audioContext.currentTime)
-    biquadFilter.gain.setValueAtTime(-20, audioContext.currentTime)
-    biquadFilter.Q.setValueAtTime(300, audioContext.currentTime) */
-
-    /* let lsFilter = audioContext.createBiquadFilter()
-    lsFilter.type = 'lowshelf'
-    lsFilter.frequency.setValueAtTime(250, audioContext.currentTime)
-    lsFilter.gain.setValueAtTime(10, audioContext.currentTime)
-    lsFilter.Q.setValueAtTime(300, audioContext.currentTime) */
 
     this.gainNodes[blockData.height] = this.audioContext.createGain()
 

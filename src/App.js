@@ -48,11 +48,14 @@ import Circuit from './libs/circuit'
 // CSS
 import './App.css'
 
+import FlyControls from './libs/FlyControls'
+
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
-    this.OrbitControls = OrbitConstructor(THREE)
+    // this.OrbitControls = OrbitConstructor(THREE)
+
     this.planeSize = 500
     this.planeOffsetMultiplier = 100
     this.planeMargin = 100
@@ -67,7 +70,7 @@ class App extends mixin(EventEmitter, Component) {
     this.hashes = []
     this.timestampToLoad = this.setTimestampToLoad()
     this.merkleYOffset = 0
-    this.audio = new Audio()
+
     this.blockPositions = []
     this.closestBlock = null
     this.prevClosestBlock = null
@@ -76,8 +79,9 @@ class App extends mixin(EventEmitter, Component) {
     this.closestBlockReadyForUpdate = false
     this.sceneReady = false
     this.shouldDrawUnderside = true
-    this.firstLoop = false
+    this.firstLoop = true
     this.geoAdded = false
+    this.clock = new THREE.Clock()
   }
 
   componentDidMount () {
@@ -117,9 +121,8 @@ class App extends mixin(EventEmitter, Component) {
   async initStage () {
     await this.initFirebase()
 
-  
-
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef})
+    this.audio = new Audio({FBStorageAudioRef: this.FBStorageAudioRef})
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
@@ -238,8 +241,8 @@ class App extends mixin(EventEmitter, Component) {
       this.FBStorage = firebase.storage()
       this.FBStorageRef = this.FBStorage.ref()
 
-      // Create a child reference
-      this.FBStorageCircuitRef = this.FBStorageRef.child('circuits')
+      this.FBStorageCircuitRef = this.FBStorageRef.child('bitcoin_circuits')
+      this.FBStorageAudioRef = this.FBStorageRef.child('bitcoin_block_audio')
 
       // await firebase.firestore().enablePersistence()
     } catch (error) {
@@ -443,7 +446,7 @@ class App extends mixin(EventEmitter, Component) {
 
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
-          if (addCount < 10) {
+          if (addCount < 20) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
             // let minHeight = Number.MAX_SAFE_INTEGER
@@ -472,13 +475,14 @@ class App extends mixin(EventEmitter, Component) {
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
               let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
 
-              this.camera.position.x = planeX + 300
-              this.camera.position.z = planeZ - 400
+              this.camera.position.x = planeX
+              this.camera.position.z = planeZ
 
               this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
-              this.controls.update()
+              // this.controls.update()
               this.geoAdded = true
               this.blockReady = true
+              this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -501,8 +505,15 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initControls () {
-    this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
-    this.setControlsSettings()
+    this.controls = new FlyControls(this.camera)
+    this.controls.movementSpeed = 40
+    this.controls.domElement = this.renderer.domElement
+    this.controls.rollSpeed = Math.PI / 24
+    this.controls.autoForward = false
+    this.controls.dragToLook = false
+
+    // this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
+    // this.setControlsSettings()
   }
 
   setControlsSettings () {
@@ -572,7 +583,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   renderFrame () {
-    this.controls.update()
+    let delta = this.clock.getDelta()
+
+    this.controls.update(delta)
 
     this.getClosestBlock()
 
@@ -632,20 +645,20 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    this.audio.audioSources.forEach((src, height) => {
-      /*
+    for (const height in this.audio.audioSources) {
+      if (this.audio.audioSources.hasOwnProperty(height)) {
+        /*
 
-      src.stop()
-      delete this.audio.audioSources[height]
-      delete this.audio.buffers[height]
-      delete this.audio.gainNodes[height]
+        src.stop()
+        delete this.audio.audioSources[height]
+        delete this.audio.buffers[height]
+        delete this.audio.gainNodes[height]
 
-      */
+        */
 
-      clearTimeout(this.audio.loops[height])
-    })
-
-    console.log(this.audio)
+        clearTimeout(this.audio.loops[height])
+      }
+    }
 
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
@@ -664,9 +677,12 @@ class App extends mixin(EventEmitter, Component) {
       let undersideTexture = await this.circuit.draw(nTX, this.closestBlock)
 
       let minHeight = Number.MAX_SAFE_INTEGER
-      this.blockGeoDataArray.forEach((blockGeoData, height) => {
-        minHeight = Math.min(height, minHeight)
-      })
+
+      for (const height in this.blockGeoDataArray) {
+        if (this.blockGeoDataArray.hasOwnProperty(height)) {
+          minHeight = Math.min(height, minHeight)
+        }
+      }
 
       let quat = new THREE.Quaternion(
         this.plane.geometry.attributes.quaternion.array[(this.closestBlock.blockData.height - minHeight) * 4 + 0],
@@ -690,7 +706,7 @@ class App extends mixin(EventEmitter, Component) {
       this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
       this.underside.frustumCulled = false
 
-      this.underside.renderOrder = 1
+      this.underside.renderOrder = 2
 
       this.underside.translateX(this.closestBlock.blockData.pos.x)
       this.underside.translateZ(this.closestBlock.blockData.pos.z)
@@ -715,7 +731,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.topside = this.underside.clone()
       this.topside.material = topsideMaterial
-      this.topside.renderOrder = 1
+      this.topside.renderOrder = 2
 
       this.topside.translateZ(-0.1)
       this.underside.translateZ(4.05)
@@ -741,13 +757,13 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    this.treeGenerator.removeClosest(this.prevClosestBlock, this.closestIndex, this.prevClosestIndex)
+    /* this.treeGenerator.removeClosest(this.prevClosestBlock, this.closestIndex, this.prevClosestIndex)
 
     let newTree = await this.treeGenerator.get(this.closestBlock.blockData)
     this.scene.add(newTree)
     this.scene.remove(this.tree)
     this.tree = newTree
-    this.tree.renderOrder = 0
+    this.tree.renderOrder = 0 */
   }
 
   initScene () {

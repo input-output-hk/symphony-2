@@ -27,7 +27,7 @@ export default class Plane extends Base {
       roughness: 0.1,
       opacity: 0.8,
       transparent: true,
-      // side: THREE.DoubleSide,
+      side: THREE.DoubleSide,
       envMap: this.cubeMap,
       // bumpMap: this.bumpMap,
       // bumpScale: 0.2
