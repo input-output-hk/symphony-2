@@ -425,18 +425,9 @@ export default class Crystal extends Base {
     spentRatios,
     txTimes
   ) {
-    // let txArray = []
-    // blockGeoData.blockData.tx.forEach((tx) => {
-    //   txArray.push(tx)
-    // })
-
     let blockPosition = blockGeoData.blockData.pos
 
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-      // if (typeof txArray[i] === 'undefined') {
-      //   continue
-      // }
-
       const tx = blockGeoData.blockData.tx[i]
 
       let x = blockGeoData.offsets[i * 2 + 0]
@@ -515,7 +506,7 @@ export default class Crystal extends Base {
     planeOffsets.needsUpdate = true
   }
 
-  async updateGeometry (blockGeoData) {
+  async updateGeometry (blockGeoData, txTimes) {
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()

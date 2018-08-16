@@ -3619,9 +3619,9 @@ got@^6.7.1:
     unzip-response "^2.0.1"
     url-parse-lax "^1.0.0"
 
-gpu.js@^1.5.5:
-  version "1.5.5"
-  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.5.5.tgz#6cbb2cb422faa8e8980742dca210b851b55d4878"
+gpu.js@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.6.0.tgz#6846a0ad0784625cd588487822f6abc977f8bc77"
   dependencies:
     acorn "^5.1.1"
 
