@@ -30,6 +30,8 @@ export default class Crystal extends Base {
 
     this.uTime = 0
 
+    this.txIndexOffsets = {}
+
     // this.cubeMap = new THREE.CubeTextureLoader()
     //   .setPath('assets/images/textures/cubemaps/playa-full/')
     //   .load([
@@ -199,12 +201,11 @@ export default class Crystal extends Base {
     })
   }
 
-  async init (blockGeoData, times) {
+  async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
     this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
-    this.timesArray = new Float32Array(times)
 
     let blockPosition = blockGeoData.blockData.pos
 
@@ -221,6 +222,7 @@ export default class Crystal extends Base {
     let planeOffsets = new THREE.InstancedBufferAttribute(this.planeOffsetsArray, 2)
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
+    let blockStartTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
 
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
@@ -238,6 +240,8 @@ export default class Crystal extends Base {
       txTimes
     )
 
+    console.log(blockStartTimes)
+
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('planeOffset', planeOffsets)
@@ -245,6 +249,7 @@ export default class Crystal extends Base {
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('quaternion', quaternions)
     this.geometry.addAttribute('txTime', txTimes)
+    this.geometry.addAttribute('blockStartTime', blockStartTimes)
 
     const positionAttrib = this.geometry.getAttribute('position')
 
@@ -414,21 +419,39 @@ export default class Crystal extends Base {
     return this.mesh
   }
 
+  updateBlockStartTimes (blockData) {
+    const txIndexOffset = this.txIndexOffsets[blockData.height]
+    const offsetTime = window.performance.now()
+
+    for (let i = 0; i < blockData.tx.length; i++) {
+      this.geometry.attributes.blockStartTime.array[txIndexOffset + i] = offsetTime
+    }
+
+    this.geometry.attributes.blockStartTime.needsUpdate = true
+  }
+
   setTxAttributes (
     object,
     blockGeoData,
-    offsets,
-    planeOffsets,
-    quaternions,
-    scales,
-    txValues,
-    spentRatios,
-    txTimes
+    offsetsAttr,
+    planeOffsetsAttr,
+    quaternionsAttr,
+    scalesAttr,
+    txValuesAttr,
+    spentRatiosAttr,
+    txTimesAttr
   ) {
     let blockPosition = blockGeoData.blockData.pos
+    const txTimes = blockGeoData.blockData.txTimes
+
+    this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount
 
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
       const tx = blockGeoData.blockData.tx[i]
+
+      const txIndexOffset = this.txCount + i
+
+      const txTime = txTimes[i]
 
       let x = blockGeoData.offsets[i * 2 + 0]
       let y = 0
@@ -441,23 +464,21 @@ export default class Crystal extends Base {
       vector.x += blockPosition.x
       vector.z += blockPosition.z
 
-      offsets.array[(this.txCount + i) * 3 + 0] = vector.x
-      offsets.array[(this.txCount + i) * 3 + 1] = vector.y
-      offsets.array[(this.txCount + i) * 3 + 2] = vector.z
+      offsetsAttr.array[txIndexOffset * 3 + 0] = vector.x
+      offsetsAttr.array[txIndexOffset * 3 + 1] = vector.y
+      offsetsAttr.array[txIndexOffset * 3 + 2] = vector.z
 
-      planeOffsets.array[(this.txCount + i) * 2 + 0] = blockPosition.x
-      planeOffsets.array[(this.txCount + i) * 2 + 1] = blockPosition.z
+      planeOffsetsAttr.array[txIndexOffset * 2 + 0] = blockPosition.x
+      planeOffsetsAttr.array[txIndexOffset * 2 + 1] = blockPosition.z
 
-      quaternions.array[(this.txCount + i) * 4 + 0] = object.quaternion.x
-      quaternions.array[(this.txCount + i) * 4 + 1] = object.quaternion.y
-      quaternions.array[(this.txCount + i) * 4 + 2] = object.quaternion.z
-      quaternions.array[(this.txCount + i) * 4 + 3] = object.quaternion.w
+      quaternionsAttr.array[txIndexOffset * 4 + 0] = object.quaternion.x
+      quaternionsAttr.array[txIndexOffset * 4 + 1] = object.quaternion.y
+      quaternionsAttr.array[txIndexOffset * 4 + 2] = object.quaternion.z
+      quaternionsAttr.array[txIndexOffset * 4 + 3] = object.quaternion.w
 
-      blockGeoData.scales.forEach((scale, i) => {
-        scales.array[this.txCount + i] = scale
-      })
-
-      // let tx = txArray[i]
+      for (let scalesIndex = 0; scalesIndex < blockGeoData.scales.length; scalesIndex++) {
+        scalesAttr.array[this.txCount + scalesIndex] = blockGeoData.scales[scalesIndex]
+      }
 
       let txValue = (tx.value * 0.00000001)
       if (txValue > 1000) {
@@ -467,22 +488,29 @@ export default class Crystal extends Base {
         txValue = 1
       }
 
-      txValues.setX(
-        this.txCount + i,
+      txValuesAttr.setX(
+        txIndexOffset,
         txValue
       )
 
-      offsets.setY(
-        this.txCount + i,
+      offsetsAttr.setY(
+        txIndexOffset,
         txValue
+      )
+
+      txTimesAttr.setX(
+        txIndexOffset,
+        txTime
       )
 
       let spentCount = 0
-      tx.out.forEach(function (el, index) {
+
+      for (let outIndex = 0; outIndex < tx.out.length; outIndex++) {
+        const el = tx.out[outIndex]
         if (el.spent === 1) {
           spentCount++
         }
-      })
+      }
 
       let spentRatio = 1
       if (spentCount !== 0) {
@@ -491,22 +519,22 @@ export default class Crystal extends Base {
         spentRatio = 0.0
       }
 
-      spentRatios.setX(
-        this.txCount + i,
+      spentRatiosAttr.setX(
+        txIndexOffset,
         spentRatio
       )
     }
 
-    txTimes.needsUpdate = true
-    spentRatios.needsUpdate = true
-    txValues.needsUpdate = true
-    scales.needsUpdate = true
-    offsets.needsUpdate = true
-    quaternions.needsUpdate = true
-    planeOffsets.needsUpdate = true
+    spentRatiosAttr.needsUpdate = true
+    txValuesAttr.needsUpdate = true
+    scalesAttr.needsUpdate = true
+    offsetsAttr.needsUpdate = true
+    quaternionsAttr.needsUpdate = true
+    planeOffsetsAttr.needsUpdate = true
+    txTimesAttr.needsUpdate = true
   }
 
-  async updateGeometry (blockGeoData, txTimes) {
+  async updateGeometry (blockGeoData) {
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()

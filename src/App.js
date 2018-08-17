@@ -214,10 +214,10 @@ class App extends mixin(EventEmitter, Component) {
     // this.FilmShaderPass.renderToScreen = true
     this.composer.addPass(this.FilmShaderPass)
 
-    this.FXAAPass = new ShaderPass(FXAA)
-    this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
-    this.FXAAPass.renderToScreen = true
-    this.composer.addPass(this.FXAAPass)
+    // this.FXAAPass = new ShaderPass(FXAA)
+    // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
+    // this.FXAAPass.renderToScreen = true
+    // this.composer.addPass(this.FXAAPass)
 
     // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
     // this.ssaaRenderPass.renderToScreen = true
@@ -227,9 +227,9 @@ class App extends mixin(EventEmitter, Component) {
     // this.copyPass.renderToScreen = true
     // this.composer.addPass(this.copyPass)
 
-    // this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
-    // this.SMAAPass.renderToScreen = true
-    // this.composer.addPass(this.SMAAPass)
+    this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
+    this.SMAAPass.renderToScreen = true
+    this.composer.addPass(this.SMAAPass)
   }
 
   async initFirebase () {
@@ -328,7 +328,14 @@ class App extends mixin(EventEmitter, Component) {
 
           let outputTotal = 0
           let transactions = []
-          block.tx.forEach((tx) => {
+
+          const txCount = block.tx.length
+
+          block.txTimes = []
+
+          for (let i = 0; i < block.tx.length; i++) {
+            const tx = block.tx[i]
+
             let out = []
             tx.out.forEach((output) => {
               out.push({
@@ -348,7 +355,10 @@ class App extends mixin(EventEmitter, Component) {
             })
 
             outputTotal += tx.value
-          })
+
+            let txTime = map(i, 0, txCount, 0, 30)
+            block.txTimes.push(txTime)
+          }
 
           block.outputTotal = outputTotal
           block.tx = transactions
@@ -394,6 +404,38 @@ class App extends mixin(EventEmitter, Component) {
     this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
     this.pointLight.position.set(0, 2000, 0)
     this.scene.add(this.pointLight)
+
+    this.planetMap = new THREE.CubeTextureLoader()
+      .setPath('assets/images/textures/cubemaps/playa2/')
+      .load([
+        '0004.png',
+        '0002.png',
+        '0006.png',
+        '0005.png',
+        '0001.png',
+        '0003.png'
+      ])
+
+    this.planetGeo = new THREE.SphereBufferGeometry(55000, 50, 50)
+    this.planetMat = new THREE.MeshStandardMaterial({
+      // flatShading: true,
+      color: 0xffffff,
+      // color: 0x87ffd9,
+      emissive: 0x000000,
+      metalness: 0.8,
+      roughness: 0.2,
+      // side: THREE.DoubleSide,
+      envMap: this.planetMap
+      // bumpMap: this.bumpMap,
+      // bumpScale: 0.2
+      /* roughnessMap: this.roughnessMap,
+      metalnessMap: this.roughnessMap, */
+      /* normalMap: this.normalMap,
+      normalScale: new THREE.Vector2(0.03, 0.03) */
+    })
+
+    this.planetMesh = new THREE.Mesh(this.planetGeo, this.planetMat)
+    this.scene.add(this.planetMesh)
   }
 
   async asyncForEach (array, callback) {
@@ -446,7 +488,7 @@ class App extends mixin(EventEmitter, Component) {
 
         let addCount = 0
         await this.asyncForEach(this.hashes, async (hash) => {
-          if (addCount < 20) {
+          if (addCount < 200) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
             // let minHeight = Number.MAX_SAFE_INTEGER
@@ -622,8 +664,8 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     if (this.blockReady) {
-      this.crystalGenerator.update(window.performance.now(), window.performance.now() - this.blockReadyTime, this.firstLoop)
-      this.crystalAOGenerator.update(window.performance.now(), window.performance.now() - this.blockReadyTime, this.firstLoop)
+      this.crystalGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
+      this.crystalAOGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
     }
 
     // this.renderer.render(this.scene, this.camera)
@@ -638,6 +680,10 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.resize()
+
+    this.audio.on('loopend', (blockData) => {
+      this.crystalGenerator.updateBlockStartTimes(blockData)
+    })
   }
 
   async addClosestBlockDetail () {
@@ -663,10 +709,7 @@ class App extends mixin(EventEmitter, Component) {
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
 
-      this.audio.on('loopend', () => {
-        this.blockReadyTime = window.performance.now()
-        this.firstLoop = false
-      })
+      this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
     this.blockReady = true
@@ -843,7 +886,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height, false)
 
-    this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
+    // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
 
     this.composer.setSize(this.width, this.height)
   }

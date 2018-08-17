@@ -261,7 +261,7 @@ export default class Audio extends EventEmitter {
     this.buffers = []
     this.gainNodes = []
     this.audioSources = []
-    this.loops = []
+    this.loops = {}
 
     this.times = []
 
@@ -311,8 +311,6 @@ export default class Audio extends EventEmitter {
       }
     }
 
-    console.log(blockData.tx.length)
-
     this.buffers[blockData.height] = this.audioContext.createBuffer(1, this.sampleRate * this.soundDuration, this.sampleRate)
 
     let frequencies = []
@@ -327,9 +325,6 @@ export default class Audio extends EventEmitter {
 
     for (let i = 0; i < blockData.tx.length; i++) {
       const tx = blockData.tx[i]
-
-      let txTime = map(i, 0, Object.keys(blockData.tx).length, 0, 30)
-      this.times[this.txCount + i] = txTime
 
       let spentCount = 0
       for (let index = 0; index < tx.out.length; index++) {
@@ -437,7 +432,7 @@ export default class Audio extends EventEmitter {
 
     let vol = this.getVol(frequencies.length)
     console.time('sineBank')
-    let sineArrayL = sineBank(frequencies, this.times, spent, vol, health, frequencies.length)
+    let sineArrayL = sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
     console.timeEnd('sineBank')
 
     console.time('fillBuffer')
@@ -458,14 +453,14 @@ export default class Audio extends EventEmitter {
 
     this.audioSources[blockData.height].loop = true
 
-    let loop = () => {
-      this.loops[blockData.height] = setTimeout(function () {
-        this.emit('loopend')
-        loop()
+    this.loops[blockData.height] = () => {
+      setTimeout(function () {
+        this.emit('loopend', blockData)
+        this.loops[blockData.height](blockData)
       }.bind(this), this.soundDuration * 1000)
     }
 
-    loop()
+    this.loops[blockData.height](blockData)
 
     this.audioSources[blockData.height].start()
   }

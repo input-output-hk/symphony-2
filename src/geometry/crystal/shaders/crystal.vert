@@ -19,6 +19,7 @@ attribute float centerBottomVertex;
 attribute float txValue;
 attribute vec4 quaternion;
 attribute float txTime;
+attribute float blockStartTime;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
@@ -71,11 +72,15 @@ void main() {
 
 	#include <begin_vertex>
 
-	// envelope
-	float attack = smoothstep(txTime, txTime + 5.0, uAudioTime * 0.001);
-	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, uAudioTime * 0.001));
+	float offsetTime = uAudioTime - blockStartTime;
 
-	vEnvelope = attack * release;
+	// envelope
+	float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
+	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
+
+	float blockActive = (blockStartTime == 0.0) ? 0.0 : 1.0;
+
+	vEnvelope = (attack * release) * blockActive;
 
 	//vec3 originalTransform = transformed.xyz;
 
@@ -84,17 +89,15 @@ void main() {
 
 	//float scaledTime = (timeMod * 0.002);
 
-	// if (uFirstLoop == 1.0) {
-	// 	transformed.xz *= (scale * attack);
-	// 	transformed.y *= (offset.y * attack);
-	// } else {
-
-
+	 //if (uFirstLoop == 1.0) {
+//	 	transformed.xz *= (scale * attack);
+//	 	transformed.y *= (offset.y * attack);
+//	 } else {
 
 		transformed.xz *= (scale);
 		transformed.y *= (offset.y);
 
-	// }
+//	 }
 
 		transformed.y += offset.y * 0.5;
 		
