@@ -2,7 +2,7 @@ const BrightnessContrast = {
   uniforms: {
     'tDiffuse': { value: null },
     'brightness': { value: 0.0 },
-    'contrast': { value: 0.15 }
+    'contrast': { value: 0.08 }
   },
 
   vertexShader: `

@@ -203,7 +203,7 @@ export default class Crystal extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
+    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(0)
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
@@ -219,7 +219,7 @@ export default class Crystal extends Base {
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
-    let planeOffsets = new THREE.InstancedBufferAttribute(this.planeOffsetsArray, 2)
+    let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
     let blockStartTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)

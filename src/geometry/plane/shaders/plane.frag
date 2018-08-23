@@ -12,6 +12,7 @@ uniform float opacity;
 #endif
 
 varying vec3 vViewPosition;
+varying vec2 vPlaneOffset;
 
 #ifndef FLAT_SHADED
 
@@ -45,7 +46,19 @@ varying vec3 vViewPosition;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
+float circle(in float dist, in float radius) {
+	return 1.0 - smoothstep(
+		radius - (radius * 2.0),
+		radius + (radius * 0.00001),
+        dot(dist, dist) * 4.0
+	);
+}
+
 void main() {
+
+	if (vPlaneOffset.x == 999999.) {
+		discard;
+	}
 
 	#include <clipping_planes_fragment>
 

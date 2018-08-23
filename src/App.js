@@ -25,7 +25,7 @@ import {
 
 import HueSaturation from './libs/post/HueSaturation'
 import BrightnessContrast from './libs/post/BrightnessContrast'
-import FXAA from './libs/post/FXAA'
+// import FXAA from './libs/post/FXAA'
 import VignetteShader from './libs/post/Vignette'
 // import CopyShader from './libs/post/CopyShader'
 import FilmShader from './libs/post/Film'
@@ -38,6 +38,7 @@ import Crystal from './geometry/crystal/Crystal'
 import CrystalAO from './geometry/crystalAO/CrystalAO'
 import Plane from './geometry/plane/Plane'
 import Tree from './geometry/tree/Tree'
+import Disk from './geometry/disk/Disk'
 
 // Audio
 import Audio from './libs/audio'
@@ -54,15 +55,15 @@ class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
-    // this.OrbitControls = OrbitConstructor(THREE)
+    this.OrbitControls = OrbitConstructor(THREE)
 
     this.planeSize = 500
-    this.planeOffsetMultiplier = 100
+    this.planeOffsetMultiplier = 500
     this.planeMargin = 100
     this.blockReady = false
     this.blockReadyTime = 0
-    this.coils = 1000
-    this.radius = 100000
+    this.coils = 100
+    this.radius = 1000000
     this.ObjectLoader = new THREE.ObjectLoader()
 
     this.gltfLoader = new GLTFLoader()
@@ -158,10 +159,17 @@ class App extends mixin(EventEmitter, Component) {
       radius: this.radius
     })
 
+    this.diskGenerator = new Disk({
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin,
+      coils: this.coils,
+      radius: this.radius
+    })
+
     this.initScene()
     this.initCamera()
     this.initRenderer()
-    this.initPost()
+    // this.initPost()
     this.initControls()
     this.initLights()
     this.initGeometry()
@@ -190,10 +198,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setPostSettings () {
-    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
-    // this.ssaaRenderPass.renderToScreen = false
-    // this.composer.addPass(this.ssaaRenderPass)
-
     this.HueSaturationPass = new ShaderPass(HueSaturation)
     this.composer.addPass(this.HueSaturationPass)
 
@@ -219,15 +223,11 @@ class App extends mixin(EventEmitter, Component) {
     // this.FXAAPass.renderToScreen = true
     // this.composer.addPass(this.FXAAPass)
 
-    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
-    // this.ssaaRenderPass.renderToScreen = true
-    // this.composer.addPass(this.ssaaRenderPass)
-
     // this.copyPass = new ShaderPass(CopyShader)
     // this.copyPass.renderToScreen = true
     // this.composer.addPass(this.copyPass)
 
-    this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
+    this.SMAAPass = new SMAAPass(window.innerWidth, window.innerHeight)
     this.SMAAPass.renderToScreen = true
     this.composer.addPass(this.SMAAPass)
   }
@@ -364,7 +364,8 @@ class App extends mixin(EventEmitter, Component) {
           block.tx = transactions
           block.cacheTime = new Date()
 
-          block.pos = this.getBlockPosition(block.height)
+          // block.pos = this.getBlockPosition(block.height)
+          block.pos = this.blockPositions[block.height]
 
           // save to firebase
           this.docRef.doc(block.hash).set(
@@ -401,9 +402,9 @@ class App extends mixin(EventEmitter, Component) {
     // this.scene.add(light)
 
     // this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
-    this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
-    this.pointLight.position.set(0, 2000, 0)
-    this.scene.add(this.pointLight)
+    // this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
+    // this.pointLight.position.set(0, 2000, 0)
+    // this.scene.add(this.pointLight)
 
     this.planetMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
@@ -416,7 +417,7 @@ class App extends mixin(EventEmitter, Component) {
         '0003.png'
       ])
 
-    this.planetGeo = new THREE.SphereBufferGeometry(55000, 50, 50)
+    this.planetGeo = new THREE.SphereBufferGeometry(195000, 50, 50)
     this.planetMat = new THREE.MeshStandardMaterial({
       // flatShading: true,
       color: 0xffffff,
@@ -435,7 +436,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.planetMesh = new THREE.Mesh(this.planetGeo, this.planetMat)
-    this.scene.add(this.planetMesh)
   }
 
   async asyncForEach (array, callback) {
@@ -486,17 +486,44 @@ class App extends mixin(EventEmitter, Component) {
           this.hashes.push(block.hash)
         })
 
+        let thetaMax = this.coils * (Math.PI * 2)
+        let awayStep = (this.radius / thetaMax)
+        let chord = this.planeSize + this.planeMargin
+
+        let xOffset
+        let zOffset
+
+        let offset = this.planeSize * this.planeOffsetMultiplier
+
+        let theta = (this.planeSize + offset) / awayStep
+
+        console.time('posLoop')
+        for (let addCount = 0; addCount < 600000; addCount++) {
+          let away = awayStep * theta
+          xOffset = Math.cos(theta) * away
+          zOffset = Math.sin(theta) * away
+          this.blockPositions[addCount] = {
+            x: xOffset,
+            z: zOffset
+          }
+
+          theta += chord / away
+
+          let blockGeoData = {}
+          blockGeoData.blockData = {
+            pos: {
+              x: this.blockPositions[addCount].x,
+              z: this.blockPositions[addCount].z
+            }
+          }
+        }
+        console.timeEnd('posLoop')
+
         let addCount = 0
+
         await this.asyncForEach(this.hashes, async (hash) => {
           if (addCount < 200) {
             let blockGeoData = await this.getGeometry(hash, addCount)
-
-            // let minHeight = Number.MAX_SAFE_INTEGER
-            // this.blockGeoDataArray.forEach((blockGeoData, height) => {
-            //   minHeight = Math.min(height, minHeight)
-            // })
-
-            // this.closestBlock = this.blockGeoDataArray[ minHeight ]
 
             // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
             // crystalAO.renderOrder = 2
@@ -504,6 +531,12 @@ class App extends mixin(EventEmitter, Component) {
             // this.scene.add(crystalAO)
 
             if (!this.geoAdded) {
+              this.scene.add(this.planetMesh)
+
+              this.disk = await this.diskGenerator.init(blockGeoData)
+              this.disk.renderOrder = 3
+              this.scene.add(this.disk)
+
               this.crystal = await this.crystalGenerator.init(blockGeoData)
               this.scene.add(this.crystal)
 
@@ -521,10 +554,10 @@ class App extends mixin(EventEmitter, Component) {
               this.camera.position.z = planeZ
 
               this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
-              // this.controls.update()
+              this.controls.update()
               this.geoAdded = true
               this.blockReady = true
-              this.addClosestBlockDetail()
+            // this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -547,15 +580,15 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initControls () {
-    this.controls = new FlyControls(this.camera)
-    this.controls.movementSpeed = 40
-    this.controls.domElement = this.renderer.domElement
-    this.controls.rollSpeed = Math.PI / 24
-    this.controls.autoForward = false
-    this.controls.dragToLook = false
+    // this.controls = new FlyControls(this.camera)
+    // this.controls.movementSpeed = 40
+    // this.controls.domElement = this.renderer.domElement
+    // this.controls.rollSpeed = Math.PI / 24
+    // this.controls.autoForward = false
+    // this.controls.dragToLook = false
 
-    // this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
-    // this.setControlsSettings()
+    this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
+    this.setControlsSettings()
   }
 
   setControlsSettings () {
@@ -629,7 +662,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.controls.update(delta)
 
-    this.getClosestBlock()
+    // this.getClosestBlock()
 
     // if (this.plane) {
     //   if (this.camera.position.y < 0) {
@@ -664,12 +697,16 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     if (this.blockReady) {
+      this.diskGenerator.update()
+
       this.crystalGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
       this.crystalAOGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
     }
 
-    // this.renderer.render(this.scene, this.camera)
-    this.composer.render()
+    // this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
+
+    this.renderer.render(this.scene, this.camera)
+    // this.composer.render()
   }
 
   addEvents () {
@@ -859,7 +896,7 @@ class App extends mixin(EventEmitter, Component) {
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
       // antialias: this.config.scene.antialias,
-      antialias: false,
+      antialias: true,
       logarithmicDepthBuffer: true,
       canvas: document.getElementById(this.config.scene.canvasID)
       // alpha: true
@@ -888,7 +925,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
 
-    this.composer.setSize(this.width, this.height)
+    // this.composer.setSize(this.width, this.height)
   }
 
   render () {

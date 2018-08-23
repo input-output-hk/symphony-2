@@ -17,7 +17,7 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 100
+    this.instanceTotal = 200
 
     this.material = new PlaneMaterial({
       flatShading: true,
@@ -39,11 +39,11 @@ export default class Plane extends Base {
   }
 
   async init (blockGeoData) {
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(999999)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 4, 1, 1, 1)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize, this.planeSize, 4, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)

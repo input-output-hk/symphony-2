@@ -9,6 +9,7 @@ attribute vec4 quaternion;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
+varying vec2 vPlaneOffset;
 
 #ifndef FLAT_SHADED
 
@@ -29,6 +30,8 @@ varying vec3 vOffset;
 #include <clipping_planes_pars_vertex>
 
 void main() {
+
+	vPlaneOffset = planeOffset;
 
 	#include <uv_vertex>
 	#include <uv2_vertex>

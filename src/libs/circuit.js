@@ -2,7 +2,6 @@
 import * as THREE from 'three'
 
 import EventEmitter from 'eventemitter3'
-import { map } from '../utils/math'
 
 export default class Circuit extends EventEmitter {
   constructor (args) {

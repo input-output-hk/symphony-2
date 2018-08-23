@@ -12,6 +12,7 @@ uniform float opacity;
 #endif
 
 varying vec3 vViewPosition;
+varying vec2 vPlaneOffset;
 
 #ifndef FLAT_SHADED
 
@@ -46,6 +47,11 @@ varying vec3 vViewPosition;
 #include <clipping_planes_pars_fragment>
 
 void main() {
+
+	if (vPlaneOffset.x == 999999.) {
+		discard;
+	}
+
 
 	#include <clipping_planes_fragment>
 

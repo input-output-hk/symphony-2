@@ -15,7 +15,7 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 100
+    this.instanceTotal = 200
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -89,7 +89,7 @@ export default class Tree extends Base {
   }
 
   async init (blockGeoData) {
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
+    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(999999)
     let quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry

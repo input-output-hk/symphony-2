@@ -24,6 +24,7 @@ attribute float blockStartTime;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
+varying vec2 vPlaneOffset;
 varying float vScale;
 varying float vSpentRatio;
 varying vec3 vBarycentric;
@@ -53,6 +54,8 @@ varying float vEnvelope;
 #include <clipping_planes_pars_vertex>
 
 void main() {
+
+	vPlaneOffset = planeOffset;
 
 	#include <uv_vertex>
 	#include <uv2_vertex>
