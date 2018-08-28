@@ -51,6 +51,8 @@ import './App.css'
 
 import FlyControls from './libs/FlyControls'
 
+let geoAddCount = 0
+
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
@@ -172,6 +174,8 @@ class App extends mixin(EventEmitter, Component) {
     // this.initPost()
     this.initControls()
     this.initLights()
+    this.initPositions()
+    this.initEnvironment()
     this.initGeometry()
     this.addEvents()
     this.animate()
@@ -401,10 +405,10 @@ class App extends mixin(EventEmitter, Component) {
     // let light = new THREE.AmbientLight(0xffffff)
     // this.scene.add(light)
 
-    // this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
+    this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
     // this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
-    // this.pointLight.position.set(0, 2000, 0)
-    // this.scene.add(this.pointLight)
+    this.pointLight.position.set(0, 2000, 0)
+    this.scene.add(this.pointLight)
 
     this.planetMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
@@ -417,7 +421,7 @@ class App extends mixin(EventEmitter, Component) {
         '0003.png'
       ])
 
-    this.planetGeo = new THREE.SphereBufferGeometry(195000, 50, 50)
+    this.planetGeo = new THREE.SphereBufferGeometry(240000, 50, 50)
     this.planetMat = new THREE.MeshStandardMaterial({
       // flatShading: true,
       color: 0xffffff,
@@ -478,6 +482,49 @@ class App extends mixin(EventEmitter, Component) {
     return this.blockGeoDataArray[height]
   }
 
+  async initEnvironment () {
+    this.scene.add(this.planetMesh)
+
+    this.disk = await this.diskGenerator.init()
+    this.disk.renderOrder = 3
+    this.scene.add(this.disk)
+  }
+
+  initPositions () {
+    let thetaMax = this.coils * (Math.PI * 2)
+    let awayStep = (this.radius / thetaMax)
+    let chord = this.planeSize + this.planeMargin
+
+    let xOffset
+    let zOffset
+
+    let offset = this.planeSize * this.planeOffsetMultiplier
+
+    let theta = (this.planeSize + offset) / awayStep
+
+    console.time('posLoop')
+    for (let addCount = 0; addCount < 600000; addCount++) {
+      let away = awayStep * theta
+      xOffset = Math.cos(theta) * away
+      zOffset = Math.sin(theta) * away
+      this.blockPositions[addCount] = {
+        x: xOffset,
+        z: zOffset
+      }
+
+      theta += chord / away
+
+      let blockGeoData = {}
+      blockGeoData.blockData = {
+        pos: {
+          x: this.blockPositions[addCount].x,
+          z: this.blockPositions[addCount].z
+        }
+      }
+    }
+    console.timeEnd('posLoop')
+  }
+
   async initGeometry () {
     window.fetch('https://blockchain.info/blocks/' + this.timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
       .then((resp) => resp.json())
@@ -486,44 +533,13 @@ class App extends mixin(EventEmitter, Component) {
           this.hashes.push(block.hash)
         })
 
-        let thetaMax = this.coils * (Math.PI * 2)
-        let awayStep = (this.radius / thetaMax)
-        let chord = this.planeSize + this.planeMargin
-
-        let xOffset
-        let zOffset
-
-        let offset = this.planeSize * this.planeOffsetMultiplier
-
-        let theta = (this.planeSize + offset) / awayStep
-
-        console.time('posLoop')
-        for (let addCount = 0; addCount < 600000; addCount++) {
-          let away = awayStep * theta
-          xOffset = Math.cos(theta) * away
-          zOffset = Math.sin(theta) * away
-          this.blockPositions[addCount] = {
-            x: xOffset,
-            z: zOffset
-          }
-
-          theta += chord / away
-
-          let blockGeoData = {}
-          blockGeoData.blockData = {
-            pos: {
-              x: this.blockPositions[addCount].x,
-              z: this.blockPositions[addCount].z
-            }
-          }
-        }
-        console.timeEnd('posLoop')
-
         let addCount = 0
 
         await this.asyncForEach(this.hashes, async (hash) => {
-          if (addCount < 200) {
+          if (addCount < 1) {
             let blockGeoData = await this.getGeometry(hash, addCount)
+
+            this.maxHeight = blockGeoData.blockData.height
 
             // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
             // crystalAO.renderOrder = 2
@@ -531,11 +547,11 @@ class App extends mixin(EventEmitter, Component) {
             // this.scene.add(crystalAO)
 
             if (!this.geoAdded) {
-              this.scene.add(this.planetMesh)
+            // this.scene.add(this.planetMesh)
 
-              this.disk = await this.diskGenerator.init(blockGeoData)
-              this.disk.renderOrder = 3
-              this.scene.add(this.disk)
+            // this.disk = await this.diskGenerator.init(blockGeoData)
+            // this.disk.renderOrder = 3
+            // this.scene.add(this.disk)
 
               this.crystal = await this.crystalGenerator.init(blockGeoData)
               this.scene.add(this.crystal)
@@ -557,7 +573,7 @@ class App extends mixin(EventEmitter, Component) {
               this.controls.update()
               this.geoAdded = true
               this.blockReady = true
-            // this.addClosestBlockDetail()
+              this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -632,7 +648,7 @@ class App extends mixin(EventEmitter, Component) {
           // clearTimeout(this.audio.loops[height])
 
             let vol = map((blockDist * 0.001), 0, 500, 1.0, 0.0)
-            if (vol < 0) {
+            if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
             this.audio.gainNodes[height].gain.value = vol
@@ -657,12 +673,150 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  async loadNearestBlocks () {
+    if (this.camera.position.y < 15000) {
+      let loadNew = false
+
+      if (typeof this.lastLoadPos === 'undefined') {
+        this.lastLoadPos = {
+          x: this.camera.position.x,
+          z: this.camera.position.z
+        }
+        loadNew = true
+      }
+
+      if (
+        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 5000 ||
+        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 5000
+      ) {
+        loadNew = true
+      }
+
+      // loadNew = false
+
+      if (loadNew) {
+        this.lastLoadPos = {
+          x: this.camera.position.x,
+          z: this.camera.position.z
+        }
+
+        let closestDist = Number.MAX_SAFE_INTEGER
+        let closestHeight = 0
+
+        let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
+
+        console.time('closest')
+        this.blockPositions.forEach((pos, height) => {
+          let posVec = new THREE.Vector2(pos.x, pos.z)
+          let dist = posVec.distanceToSquared(camVec)
+          if (dist < closestDist) {
+            closestDist = dist
+            closestHeight = height
+          }
+        })
+        console.timeEnd('closest')
+
+        console.log({closestHeight})
+
+        let closestBlocksData = []
+        let closestBlocksGeoData = []
+
+        let blockData = this.docRef
+          .where('height', '>=', closestHeight - 5)
+          .where('height', '<=', closestHeight + 5)
+          .orderBy('height', 'asc')
+          .limit(100)
+
+        let querySnapshot = await blockData.get()
+
+        querySnapshot.forEach(snapshot => {
+          let data = snapshot.data()
+          if (typeof this.blockGeoDataArray[data.height] === 'undefined') {
+            closestBlocksData.push(data)
+          }
+        })
+
+        let blockGeoData = this.docRefGeo
+          .where('height', '>=', closestHeight - 5)
+          .where('height', '<=', closestHeight + 5)
+          .orderBy('height', 'asc')
+          .limit(100)
+
+        let geoSnapshot = await blockGeoData.get()
+
+        geoSnapshot.forEach(snapshot => {
+          let data = snapshot.data()
+
+          if (typeof this.blockGeoDataArray[data.height] === 'undefined') {
+            let offsetJSON = JSON.parse(data.offsets)
+            let offsetsArray = Object.values(offsetJSON)
+
+            let scalesJSON = JSON.parse(data.scales)
+            let scalesArray = Object.values(scalesJSON)
+
+            let blockData1 = data
+
+            blockData1.offsets = offsetsArray
+            blockData1.scales = scalesArray
+
+            closestBlocksGeoData.push(data)
+          }
+        })
+
+        closestBlocksGeoData.forEach(async (blockGeoData, i) => {
+          if (typeof this.blockGeoDataArray[blockGeoData.height] === 'undefined') {
+            geoAddCount++
+            if (typeof closestBlocksData[i] !== 'undefined') {
+              blockGeoData.blockData = closestBlocksData[i]
+
+              this.blockGeoDataArray[blockGeoData.height] = blockGeoData
+
+              console.log({geoAddCount})
+              this.planeGenerator.updateGeometry(blockGeoData, geoAddCount)
+              this.treeGenerator.updateGeometry(blockGeoData, geoAddCount)
+              this.crystalGenerator.updateGeometry(blockGeoData)
+            }
+          }
+        })
+
+        let heights = []
+        for (let height = closestHeight - 5; height < closestHeight + 5; height++) {
+          if (typeof this.blockGeoDataArray[height] === 'undefined') {
+            if (height <= this.maxHeight) {
+              heights.push(height)
+            }
+          }
+        }
+
+        await this.asyncForEach(heights, async (height) => {
+          let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          let blockDataJSON = await blockData.json()
+
+          console.log(blockDataJSON)
+
+          // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
+          // let blockDataSimpleJSON = await blockDataSimple.json()
+
+          geoAddCount++
+
+          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, geoAddCount)
+          // let blockGeoData = await this.getGeometry(blockDataSimpleJSON.hash, geoAddCount)
+          this.planeGenerator.updateGeometry(blockGeoData, geoAddCount)
+          this.treeGenerator.updateGeometry(blockGeoData, geoAddCount)
+          this.crystalGenerator.updateGeometry(blockGeoData)
+        })
+      }
+    }
+  }
+
   renderFrame () {
     let delta = this.clock.getDelta()
 
     this.controls.update(delta)
 
-    // this.getClosestBlock()
+    this.loadNearestBlocks()
+    this.getClosestBlock()
 
     // if (this.plane) {
     //   if (this.camera.position.y < 0) {

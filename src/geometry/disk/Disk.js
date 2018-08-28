@@ -40,7 +40,7 @@ export default class Disk extends Base {
     this.mesh.frustumCulled = false
 
     this.mesh.rotateY(Math.PI)
-    this.mesh.translateY(-4)
+    this.mesh.translateY(-10)
 
     return this.mesh
   }

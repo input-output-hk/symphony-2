@@ -24,7 +24,7 @@ export default class Crystal extends Base {
 
     this.voronoi = new Voronoi()
 
-    this.instanceTotal = 100 * 2000
+    this.instanceTotal = 200 * 2000
 
     this.txCount = 0
 
@@ -239,8 +239,6 @@ export default class Crystal extends Base {
       spentRatios,
       txTimes
     )
-
-    console.log(blockStartTimes)
 
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('txValue', txValues)
