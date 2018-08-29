@@ -187,56 +187,56 @@ export default class Audio extends EventEmitter {
       //   'D',
       //   'F'
       // ]
-      // 'ionian': [
-      //   'C',
-      //   'D',
-      //   'E',
-      //   'F',
-      //   'G',
-      //   'A',
-      //   'B',
-      //   'C'
-      // ],
-      // 'dorian': [
-      //   'C',
-      //   'D',
-      //   'D#',
-      //   'F',
-      //   'G',
-      //   'A',
-      //   'A#',
-      //   'C'
-      // ],
-      // 'phrygian': [
-      //   'C',
-      //   'C#',
-      //   'D#',
-      //   'F',
-      //   'G',
-      //   'G#',
-      //   'A#',
-      //   'C'
-      // ],
-      // 'lydian': [
-      //   'C',
-      //   'D',
-      //   'E',
-      //   'F#',
-      //   'G',
-      //   'A',
-      //   'B',
-      //   'C'
-      // ]
-      // 'mixolydian': [
-      //   'C',
-      //   'D',
-      //   'E',
-      //   'F',
-      //   'G',
-      //   'A',
-      //   'A#',
-      //   'C'
-      // ],
+      'ionian': [
+        'C',
+        'D',
+        'E',
+        'F',
+        'G',
+        'A',
+        'B',
+        'C'
+      ],
+      'dorian': [
+        'C',
+        'D',
+        'D#',
+        'F',
+        'G',
+        'A',
+        'A#',
+        'C'
+      ],
+      'phrygian': [
+        'C',
+        'C#',
+        'D#',
+        'F',
+        'G',
+        'G#',
+        'A#',
+        'C'
+      ],
+      'lydian': [
+        'C',
+        'D',
+        'E',
+        'F#',
+        'G',
+        'A',
+        'B',
+        'C'
+      ],
+      'mixolydian': [
+        'C',
+        'D',
+        'E',
+        'F',
+        'G',
+        'A',
+        'A#',
+        'C'
+      ],
       'aeolian': [
         'C',
         'D',
@@ -246,17 +246,17 @@ export default class Audio extends EventEmitter {
         'G#',
         'A#',
         'C'
+      ],
+      'locrian': [
+        'C',
+        'C#',
+        'D#',
+        'F',
+        'F#',
+        'G#',
+        'A#',
+        'C'
       ]
-      // 'locrian': [
-      //   'C',
-      //   'C#',
-      //   'D#',
-      //   'F',
-      //   'F#',
-      //   'G#',
-      //   'A#',
-      //   'C'
-      // ]
     }
     this.buffers = []
     this.gainNodes = []
@@ -469,7 +469,7 @@ export default class Audio extends EventEmitter {
   }
 
   getVol (frequencies) {
-    let noteLength = 5.0
+    let noteLength = 7.0
     let vol = (this.soundDuration / noteLength) / frequencies
 
     if (vol > 0.5) {

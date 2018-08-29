@@ -119,7 +119,7 @@ void main() {
 	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += edgeAmount;
-	outgoingLight += noiseAmount;
+	outgoingLight += noiseAmount * 0.5;
 
 	 outgoingLight += 0.02;
 

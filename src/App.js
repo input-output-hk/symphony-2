@@ -51,13 +51,13 @@ import './App.css'
 
 import FlyControls from './libs/FlyControls'
 
-let geoAddCount = 0
-
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
     this.OrbitControls = OrbitConstructor(THREE)
+
+    this.geoAddCount = 0
 
     this.planeSize = 500
     this.planeOffsetMultiplier = 500
@@ -171,7 +171,7 @@ class App extends mixin(EventEmitter, Component) {
     this.initScene()
     this.initCamera()
     this.initRenderer()
-    // this.initPost()
+    this.initPost()
     this.initControls()
     this.initLights()
     this.initPositions()
@@ -539,7 +539,7 @@ class App extends mixin(EventEmitter, Component) {
           if (addCount < 1) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
-            this.maxHeight = blockGeoData.blockData.height
+            this.maxHeight = 539051
 
             // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
             // crystalAO.renderOrder = 2
@@ -569,11 +569,11 @@ class App extends mixin(EventEmitter, Component) {
               this.camera.position.x = planeX
               this.camera.position.z = planeZ
 
-              this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
-              this.controls.update()
+              // this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
+              // this.controls.update()
               this.geoAdded = true
               this.blockReady = true
-              this.addClosestBlockDetail()
+              // this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -596,15 +596,15 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initControls () {
-    // this.controls = new FlyControls(this.camera)
-    // this.controls.movementSpeed = 40
-    // this.controls.domElement = this.renderer.domElement
-    // this.controls.rollSpeed = Math.PI / 24
-    // this.controls.autoForward = false
-    // this.controls.dragToLook = false
+    this.controls = new FlyControls(this.camera)
+    this.controls.movementSpeed = 100
+    this.controls.domElement = this.renderer.domElement
+    this.controls.rollSpeed = Math.PI / 24
+    this.controls.autoForward = false
+    this.controls.dragToLook = false
 
-    this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
-    this.setControlsSettings()
+    // this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
+    // this.setControlsSettings()
   }
 
   setControlsSettings () {
@@ -686,8 +686,8 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       if (
-        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 5000 ||
-        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 5000
+        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 2500 ||
+        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 2500
       ) {
         loadNew = true
       }
@@ -722,8 +722,8 @@ class App extends mixin(EventEmitter, Component) {
         let closestBlocksGeoData = []
 
         let blockData = this.docRef
-          .where('height', '>=', closestHeight - 5)
-          .where('height', '<=', closestHeight + 5)
+          .where('height', '>=', closestHeight - 10)
+          .where('height', '<=', closestHeight + 10)
           .orderBy('height', 'asc')
           .limit(100)
 
@@ -737,8 +737,8 @@ class App extends mixin(EventEmitter, Component) {
         })
 
         let blockGeoData = this.docRefGeo
-          .where('height', '>=', closestHeight - 5)
-          .where('height', '<=', closestHeight + 5)
+          .where('height', '>=', closestHeight - 10)
+          .where('height', '<=', closestHeight + 10)
           .orderBy('height', 'asc')
           .limit(100)
 
@@ -765,45 +765,57 @@ class App extends mixin(EventEmitter, Component) {
 
         closestBlocksGeoData.forEach(async (blockGeoData, i) => {
           if (typeof this.blockGeoDataArray[blockGeoData.height] === 'undefined') {
-            geoAddCount++
             if (typeof closestBlocksData[i] !== 'undefined') {
               blockGeoData.blockData = closestBlocksData[i]
 
               this.blockGeoDataArray[blockGeoData.height] = blockGeoData
 
-              console.log({geoAddCount})
-              this.planeGenerator.updateGeometry(blockGeoData, geoAddCount)
-              this.treeGenerator.updateGeometry(blockGeoData, geoAddCount)
+              this.geoAddCount++
+              this.planeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
+              this.treeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
               this.crystalGenerator.updateGeometry(blockGeoData)
             }
           }
         })
 
-        let heights = []
-        for (let height = closestHeight - 5; height < closestHeight + 5; height++) {
-          if (typeof this.blockGeoDataArray[height] === 'undefined') {
-            if (height <= this.maxHeight) {
-              heights.push(height)
+        this.heightsToLoad = []
+        if (typeof this.blockGeoDataArray[closestHeight] === 'undefined') {
+          this.heightsToLoad.push(closestHeight)
+        }
+
+        for (let height = 1; height < 10; height++) {
+          let next = closestHeight + height
+          let prev = closestHeight - height
+
+          if (typeof this.blockGeoDataArray[next] === 'undefined') {
+            if (next <= this.maxHeight && next >= 0) {
+              this.heightsToLoad.push(next)
+            }
+          }
+
+          if (typeof this.blockGeoDataArray[prev] === 'undefined') {
+            if (prev <= this.maxHeight && prev >= 0) {
+              this.heightsToLoad.push(prev)
             }
           }
         }
 
-        await this.asyncForEach(heights, async (height) => {
+        console.log(this.heightsToLoad)
+
+        await this.asyncForEach(this.heightsToLoad, async (height) => {
           let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           let blockDataJSON = await blockData.json()
 
-          console.log(blockDataJSON)
-
           // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
           // let blockDataSimpleJSON = await blockDataSimple.json()
 
-          geoAddCount++
+          this.geoAddCount++
 
-          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, geoAddCount)
-          // let blockGeoData = await this.getGeometry(blockDataSimpleJSON.hash, geoAddCount)
-          this.planeGenerator.updateGeometry(blockGeoData, geoAddCount)
-          this.treeGenerator.updateGeometry(blockGeoData, geoAddCount)
+          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, this.geoAddCount + 1)
+          //         let blockGeoData = await this.getGeometry(blockDataSimpleJSON.hash, this.geoAddCount)
+          this.planeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
+          this.treeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
           this.crystalGenerator.updateGeometry(blockGeoData)
         })
       }
@@ -815,7 +827,9 @@ class App extends mixin(EventEmitter, Component) {
 
     this.controls.update(delta)
 
-    this.loadNearestBlocks()
+    if (this.geoAdded) {
+      this.loadNearestBlocks()
+    }
     this.getClosestBlock()
 
     // if (this.plane) {
@@ -857,10 +871,10 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalAOGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
     }
 
-    // this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
+    this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
 
-    this.renderer.render(this.scene, this.camera)
-    // this.composer.render()
+    // this.renderer.render(this.scene, this.camera)
+    this.composer.render()
   }
 
   addEvents () {
@@ -910,19 +924,13 @@ class App extends mixin(EventEmitter, Component) {
       const nTX = Object.keys(this.closestBlock.blockData.tx).length
       let undersideTexture = await this.circuit.draw(nTX, this.closestBlock)
 
-      let minHeight = Number.MAX_SAFE_INTEGER
-
-      for (const height in this.blockGeoDataArray) {
-        if (this.blockGeoDataArray.hasOwnProperty(height)) {
-          minHeight = Math.min(height, minHeight)
-        }
-      }
+      let height = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
       let quat = new THREE.Quaternion(
-        this.plane.geometry.attributes.quaternion.array[(this.closestBlock.blockData.height - minHeight) * 4 + 0],
-        this.plane.geometry.attributes.quaternion.array[(this.closestBlock.blockData.height - minHeight) * 4 + 1],
-        this.plane.geometry.attributes.quaternion.array[(this.closestBlock.blockData.height - minHeight) * 4 + 2],
-        this.plane.geometry.attributes.quaternion.array[(this.closestBlock.blockData.height - minHeight) * 4 + 3]
+        this.crystal.geometry.attributes.quaternion.array[height * 4 + 0],
+        this.crystal.geometry.attributes.quaternion.array[height * 4 + 1],
+        this.crystal.geometry.attributes.quaternion.array[height * 4 + 2],
+        this.crystal.geometry.attributes.quaternion.array[height * 4 + 3]
       )
 
       undersideTexture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1050,7 +1058,7 @@ class App extends mixin(EventEmitter, Component) {
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
       // antialias: this.config.scene.antialias,
-      antialias: true,
+      antialias: false,
       logarithmicDepthBuffer: true,
       canvas: document.getElementById(this.config.scene.canvasID)
       // alpha: true
@@ -1079,7 +1087,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
 
-    // this.composer.setSize(this.width, this.height)
+    this.composer.setSize(this.width, this.height)
   }
 
   render () {
