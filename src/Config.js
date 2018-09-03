@@ -14,9 +14,7 @@ const Config = {
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
-    // fogDensity: 0.0001
-    // fogDensity: 0.000005
-    fogDensity: 0.00000000000000005
+    fogDensity: 0.001
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
@@ -32,7 +30,7 @@ const Config = {
   camera: {
     fov: 75,
     // initPos: {x: 57839.813340605964, y: 160332.14426821237, z: 12747.722993554034}
-    initPos: {x: 0.0, y: 1600.14426821237, z: 0.0}
+    initPos: {x: 0.0, y: 2000.14426821237, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
 }

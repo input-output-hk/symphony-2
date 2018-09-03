@@ -8,6 +8,8 @@ export default class Base {
     this.coils = args.coils
     this.radius = args.radius
 
+    this.index = 0
+
     this.uTime = 0
 
     this.cubeMap = new THREE.CubeTextureLoader()

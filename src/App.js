@@ -2,7 +2,7 @@
 import React, { Component } from 'react'
 import * as THREE from 'three'
 import GLTFLoader from 'three-gltf-loader'
-import OrbitConstructor from 'three-orbit-controls'
+// import OrbitConstructor from 'three-orbit-controls'
 import deepAssign from 'deep-assign'
 import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
@@ -12,6 +12,12 @@ import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
 import { map } from './utils/math'
+import FlyControls from './libs/FlyControls'
+import MapControls from './libs/MapControls'
+import Audio from './libs/audio'
+import Circuit from './libs/circuit'
+
+import blockchainInfo from 'blockchain.info/blockexplorer'
 
 // post
 import {
@@ -20,14 +26,11 @@ import {
   RenderPass,
   UnrealBloomPass,
   SMAAPass
-  // SSAARenderPass
 } from './libs/post/EffectComposer'
 
 import HueSaturation from './libs/post/HueSaturation'
 import BrightnessContrast from './libs/post/BrightnessContrast'
-// import FXAA from './libs/post/FXAA'
 import VignetteShader from './libs/post/Vignette'
-// import CopyShader from './libs/post/CopyShader'
 import FilmShader from './libs/post/Film'
 
 // Config
@@ -40,39 +43,26 @@ import Plane from './geometry/plane/Plane'
 import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
 
-// Audio
-import Audio from './libs/audio'
-
-// Circuit
-import Circuit from './libs/circuit'
-
 // CSS
 import './App.css'
-
-import FlyControls from './libs/FlyControls'
 
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
-    this.OrbitControls = OrbitConstructor(THREE)
-
-    this.geoAddCount = 0
+    // this.OrbitControls = OrbitConstructor(THREE)
 
     this.planeSize = 500
     this.planeOffsetMultiplier = 500
     this.planeMargin = 100
     this.blockReady = false
-    this.blockReadyTime = 0
     this.coils = 100
     this.radius = 1000000
-    this.ObjectLoader = new THREE.ObjectLoader()
 
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataArray = []
     this.hashes = []
     this.timestampToLoad = this.setTimestampToLoad()
-    this.merkleYOffset = 0
 
     this.blockPositions = []
     this.closestBlock = null
@@ -80,11 +70,16 @@ class App extends mixin(EventEmitter, Component) {
     this.underside = null
     this.topside = null
     this.closestBlockReadyForUpdate = false
-    this.sceneReady = false
     this.shouldDrawUnderside = true
     this.firstLoop = true
     this.geoAdded = false
     this.clock = new THREE.Clock()
+
+    this.loadedHeights = []
+
+    this.state = {
+      closestBlock: null
+    }
   }
 
   componentDidMount () {
@@ -174,7 +169,7 @@ class App extends mixin(EventEmitter, Component) {
     this.initPost()
     this.initControls()
     this.initLights()
-    this.initPositions()
+    await this.initPositions()
     this.initEnvironment()
     this.initGeometry()
     this.addEvents()
@@ -183,6 +178,7 @@ class App extends mixin(EventEmitter, Component) {
 
   setTimestampToLoad () {
     let timestampToLoad = moment().valueOf() // default to today's date
+
     if (typeof URLSearchParams !== 'undefined') {
       // get date from URL
       let urlParams = new URLSearchParams(window.location.search)
@@ -209,27 +205,16 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
-    // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.01, 0.75)
     this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.97)
-    // this.bloomPass.renderToScreen = true
+
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
-    // this.VignettePass.renderToScreen = true
+
     this.composer.addPass(this.VignettePass)
 
     this.FilmShaderPass = new ShaderPass(FilmShader)
-    // this.FilmShaderPass.renderToScreen = true
     this.composer.addPass(this.FilmShaderPass)
-
-    // this.FXAAPass = new ShaderPass(FXAA)
-    // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
-    // this.FXAAPass.renderToScreen = true
-    // this.composer.addPass(this.FXAAPass)
-
-    // this.copyPass = new ShaderPass(CopyShader)
-    // this.copyPass.renderToScreen = true
-    // this.composer.addPass(this.copyPass)
 
     this.SMAAPass = new SMAAPass(window.innerWidth, window.innerHeight)
     this.SMAAPass.renderToScreen = true
@@ -368,8 +353,9 @@ class App extends mixin(EventEmitter, Component) {
           block.tx = transactions
           block.cacheTime = new Date()
 
-          // block.pos = this.getBlockPosition(block.height)
           block.pos = this.blockPositions[block.height]
+
+          block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
 
           // save to firebase
           this.docRef.doc(block.hash).set(
@@ -406,7 +392,6 @@ class App extends mixin(EventEmitter, Component) {
     // this.scene.add(light)
 
     this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
-    // this.pointLight = new THREE.PointLight(0xffffff, 0.5, 0, 9999999)
     this.pointLight.position.set(0, 2000, 0)
     this.scene.add(this.pointLight)
 
@@ -423,20 +408,12 @@ class App extends mixin(EventEmitter, Component) {
 
     this.planetGeo = new THREE.SphereBufferGeometry(240000, 50, 50)
     this.planetMat = new THREE.MeshStandardMaterial({
-      // flatShading: true,
+      fog: false,
       color: 0xffffff,
-      // color: 0x87ffd9,
       emissive: 0x000000,
       metalness: 0.8,
       roughness: 0.2,
-      // side: THREE.DoubleSide,
       envMap: this.planetMap
-      // bumpMap: this.bumpMap,
-      // bumpScale: 0.2
-      /* roughnessMap: this.roughnessMap,
-      metalnessMap: this.roughnessMap, */
-      /* normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.03, 0.03) */
     })
 
     this.planetMesh = new THREE.Mesh(this.planetGeo, this.planetMat)
@@ -490,7 +467,17 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.add(this.disk)
   }
 
-  initPositions () {
+  async getMaxHeight () {
+    // BTC.getLatestBlock({this.config.blockchainInfo.apiCode}).then(({ hash }) => btc.getBlock(hash, {this.config.blockchainInfo.apiCode}))
+  }
+
+  async initPositions () {
+    let timestampToLoad = moment().valueOf() // default to today's date
+    let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    let latestBlockDataJSON = await latestBlockData.json()
+    this.maxHeight = latestBlockDataJSON.blocks[0].height
+    console.log(this.maxHeight)
+
     let thetaMax = this.coils * (Math.PI * 2)
     let awayStep = (this.radius / thetaMax)
     let chord = this.planeSize + this.planeMargin
@@ -503,7 +490,7 @@ class App extends mixin(EventEmitter, Component) {
     let theta = (this.planeSize + offset) / awayStep
 
     console.time('posLoop')
-    for (let addCount = 0; addCount < 600000; addCount++) {
+    for (let addCount = 0; addCount <= this.maxHeight; addCount++) {
       let away = awayStep * theta
       xOffset = Math.cos(theta) * away
       zOffset = Math.sin(theta) * away
@@ -539,8 +526,6 @@ class App extends mixin(EventEmitter, Component) {
           if (addCount < 1) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
-            this.maxHeight = 539051
-
             // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataArray)
             // crystalAO.renderOrder = 2
             // crystalAO.translateY(0.1)
@@ -569,11 +554,12 @@ class App extends mixin(EventEmitter, Component) {
               this.camera.position.x = planeX
               this.camera.position.z = planeZ
 
-              // this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
-              // this.controls.update()
+              this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
+              this.controls.update()
+
               this.geoAdded = true
               this.blockReady = true
-              // this.addClosestBlockDetail()
+              this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -596,19 +582,30 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initControls () {
-    this.controls = new FlyControls(this.camera)
-    this.controls.movementSpeed = 100
-    this.controls.domElement = this.renderer.domElement
-    this.controls.rollSpeed = Math.PI / 24
-    this.controls.autoForward = false
-    this.controls.dragToLook = false
+    // this.controls = new FlyControls(this.camera)
+    // this.controls.movementSpeed = 1000
+    // this.controls.domElement = this.renderer.domElement
+    // this.controls.rollSpeed = Math.PI / 24
+    // this.controls.autoForward = true
+    // this.controls.dragToLook = true
 
     // this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
     // this.setControlsSettings()
+
+    this.controls = new MapControls(this.camera)
+    this.controls.domElement = this.renderer.domElement
+    this.controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
+    this.controls.dampingFactor = 0.25
+    this.controls.screenSpacePanning = false
+    this.controls.minDistance = 100
+    this.controls.maxDistance = 1000000
+    this.controls.maxPolarAngle = Math.PI / 2
+    this.controls.rotateSpeed = 0.1
+    this.controls.panSpeed = 0.5
   }
 
   setControlsSettings () {
-    this.controls.zoomSpeed = 0.5
+    // this.controls.zoomSpeed = 0.5
   }
 
   setConfig (newConfig) {
@@ -647,7 +644,7 @@ class App extends mixin(EventEmitter, Component) {
           // delete this.audio.gainNodes[height]
           // clearTimeout(this.audio.loops[height])
 
-            let vol = map((blockDist * 0.001), 0, 500, 1.0, 0.0)
+            let vol = map((blockDist * 0.001), 0, 300, 1.0, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -686,8 +683,8 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       if (
-        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 2500 ||
-        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 2500
+        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 1000 ||
+        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 1000
       ) {
         loadNew = true
       }
@@ -716,16 +713,22 @@ class App extends mixin(EventEmitter, Component) {
         })
         console.timeEnd('closest')
 
+        if (this.loadedHeights.indexOf(closestHeight) !== -1) {
+          return
+        }
+
+        this.loadedHeights.push(closestHeight)
+
         console.log({closestHeight})
 
         let closestBlocksData = []
         let closestBlocksGeoData = []
 
         let blockData = this.docRef
-          .where('height', '>=', closestHeight - 10)
-          .where('height', '<=', closestHeight + 10)
+          .where('height', '>=', closestHeight - 100)
+          .where('height', '<=', closestHeight + 100)
           .orderBy('height', 'asc')
-          .limit(100)
+          // .limit(100)
 
         let querySnapshot = await blockData.get()
 
@@ -737,10 +740,10 @@ class App extends mixin(EventEmitter, Component) {
         })
 
         let blockGeoData = this.docRefGeo
-          .where('height', '>=', closestHeight - 10)
-          .where('height', '<=', closestHeight + 10)
+          .where('height', '>=', closestHeight - 100)
+          .where('height', '<=', closestHeight + 100)
           .orderBy('height', 'asc')
-          .limit(100)
+          // .limit(100)
 
         let geoSnapshot = await blockGeoData.get()
 
@@ -754,10 +757,10 @@ class App extends mixin(EventEmitter, Component) {
             let scalesJSON = JSON.parse(data.scales)
             let scalesArray = Object.values(scalesJSON)
 
-            let blockData1 = data
+            let blockData = data
 
-            blockData1.offsets = offsetsArray
-            blockData1.scales = scalesArray
+            blockData.offsets = offsetsArray
+            blockData.scales = scalesArray
 
             closestBlocksGeoData.push(data)
           }
@@ -768,11 +771,12 @@ class App extends mixin(EventEmitter, Component) {
             if (typeof closestBlocksData[i] !== 'undefined') {
               blockGeoData.blockData = closestBlocksData[i]
 
+              blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
+
               this.blockGeoDataArray[blockGeoData.height] = blockGeoData
 
-              this.geoAddCount++
-              this.planeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
-              this.treeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
+              this.planeGenerator.updateGeometry(blockGeoData)
+              this.treeGenerator.updateGeometry(blockGeoData)
               this.crystalGenerator.updateGeometry(blockGeoData)
             }
           }
@@ -783,7 +787,7 @@ class App extends mixin(EventEmitter, Component) {
           this.heightsToLoad.push(closestHeight)
         }
 
-        for (let height = 1; height < 10; height++) {
+        for (let height = 1; height < 200; height++) {
           let next = closestHeight + height
           let prev = closestHeight - height
 
@@ -802,7 +806,9 @@ class App extends mixin(EventEmitter, Component) {
 
         console.log(this.heightsToLoad)
 
-        await this.asyncForEach(this.heightsToLoad, async (height) => {
+        this.heightsToLoad.forEach(async (height) => {
+          // this.blockexplorer.getBlockHeight(height, options)
+
           let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           let blockDataJSON = await blockData.json()
@@ -810,12 +816,9 @@ class App extends mixin(EventEmitter, Component) {
           // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
           // let blockDataSimpleJSON = await blockDataSimple.json()
 
-          this.geoAddCount++
-
-          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, this.geoAddCount + 1)
-          //         let blockGeoData = await this.getGeometry(blockDataSimpleJSON.hash, this.geoAddCount)
-          this.planeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
-          this.treeGenerator.updateGeometry(blockGeoData, this.geoAddCount + 1)
+          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
+          this.planeGenerator.updateGeometry(blockGeoData)
+          this.treeGenerator.updateGeometry(blockGeoData)
           this.crystalGenerator.updateGeometry(blockGeoData)
         })
       }
@@ -865,7 +868,7 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     if (this.blockReady) {
-      this.diskGenerator.update()
+      // this.diskGenerator.update()
 
       this.crystalGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
       this.crystalAOGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
@@ -889,12 +892,30 @@ class App extends mixin(EventEmitter, Component) {
     this.audio.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
     })
+
+    // document.addEventListener('keydown', (event) => {
+    //   if (event.shiftKey) {
+    //     if (this.controls.movementSpeed < 1000) {
+    //       this.controls.movementSpeed += 10
+    //     }
+    //   }
+    // })
+
+    // document.addEventListener('keyup', (event) => {
+    //   if (!event.shiftKey) {
+    //     this.controls.movementSpeed = 100
+    //   }
+    // })
   }
 
   async addClosestBlockDetail () {
     if (!this.closestBlock) {
       return
     }
+
+    this.setState({
+      closestBlock: this.closestBlock
+    })
 
     for (const height in this.audio.audioSources) {
       if (this.audio.audioSources.hasOwnProperty(height)) {
@@ -918,7 +939,6 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.blockReady = true
-    this.blockReadyTime = window.performance.now()
 
     if (this.shouldDrawUnderside) {
       const nTX = Object.keys(this.closestBlock.blockData.tx).length
@@ -976,7 +996,7 @@ class App extends mixin(EventEmitter, Component) {
       this.topside.renderOrder = 2
 
       this.topside.translateZ(-0.1)
-      this.underside.translateZ(4.05)
+      this.underside.translateZ(4.2)
 
       this.scene.add(this.topside)
     }
@@ -1010,7 +1030,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.scene = new THREE.Scene()
-    this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
+    // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
@@ -1034,7 +1054,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camera = new THREE.PerspectiveCamera(
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
-      1,
+      1.0,
       1000000000
       // 10000
     )
@@ -1085,15 +1105,61 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height, false)
 
-    // this.FXAAPass.uniforms.resolution.value = new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight)
-
     this.composer.setSize(this.width, this.height)
+  }
+
+  UIBlockDetails () {
+    if (this.state.closestBlock) {
+      const health = this.state.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.state.closestBlock.blockData.healthRatio
+      const healthInv = (1.0 - health)
+
+      return (
+        <div>
+          <div className='cockpit-border' />
+          <div className='block-details'>
+            <h2>Block {this.state.closestBlock.blockData.hash}</h2>
+            <div><h3>Health</h3>
+              <div className='health-bar-container' title={healthInv}>
+                <div
+                  className='health-bar'
+                  style={{
+                    width: 100 * healthInv,
+                    background: 'rgba(' + 255 * health + ', ' + 255 * healthInv + ', 0.0, 1.0)'
+                  }}
+                />
+              </div>
+            </div>
+            <ul>
+              <li><h3>Date</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
+              <li><h3>Bits</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
+              <li><h3>Size</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
+              <li><h3>Transaction Fees</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
+            </ul>
+            <ul>
+              <li><h3>Height</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
+              <li><h3>Merkle Root</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
+              <li><h3>No. of Transactions</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
+              <li><h3>Output Total</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
+            </ul>
+          </div>
+        </div>
+      )
+    }
+  }
+
+  UI () {
+    return (
+      <div className='symphony-ui'>
+        {this.UIBlockDetails()}
+      </div>
+    )
   }
 
   render () {
     return (
       <div className='symphony'>
-        <canvas width={this.config.scene.width} height={this.config.scene.height} id={this.config.scene.canvasID} />
+        <canvas id={this.config.scene.canvasID} />
+        {this.UI()}
       </div>
     )
   }

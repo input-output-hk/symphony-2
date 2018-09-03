@@ -17,7 +17,18 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 200
+    this.instanceTotal = 10000
+
+    this.cubeMap = new THREE.CubeTextureLoader()
+      .setPath('assets/images/textures/cubemaps/walkoffame-e/')
+      .load([
+        '0004.png',
+        '0002.png',
+        '0006.png',
+        '0005.png',
+        '0001.png',
+        '0003.png'
+      ])
 
     this.material = new PlaneMaterial({
       flatShading: true,
@@ -76,25 +87,28 @@ export default class Plane extends Base {
 
     this.mesh.frustumCulled = false
 
+    this.index++
+
     return this.mesh
   }
 
-  async updateGeometry (blockGeoData, index) {
+  async updateGeometry (blockGeoData) {
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
     object.lookAt(0, 0, 0)
 
-    this.geometry.attributes.quaternion.array[index * 4 + 0] = object.quaternion.x
-    this.geometry.attributes.quaternion.array[index * 4 + 1] = object.quaternion.y
-    this.geometry.attributes.quaternion.array[index * 4 + 2] = object.quaternion.z
-    this.geometry.attributes.quaternion.array[index * 4 + 3] = object.quaternion.w
+    this.geometry.attributes.quaternion.array[this.index * 4 + 0] = object.quaternion.x
+    this.geometry.attributes.quaternion.array[this.index * 4 + 1] = object.quaternion.y
+    this.geometry.attributes.quaternion.array[this.index * 4 + 2] = object.quaternion.z
+    this.geometry.attributes.quaternion.array[this.index * 4 + 3] = object.quaternion.w
     this.geometry.attributes.quaternion.needsUpdate = true
 
-    this.geometry.attributes.planeOffset.array[index * 2 + 0] = blockPosition.x
-    this.geometry.attributes.planeOffset.array[index * 2 + 1] = blockPosition.z
+    this.geometry.attributes.planeOffset.array[this.index * 2 + 0] = blockPosition.x
+    this.geometry.attributes.planeOffset.array[this.index * 2 + 1] = blockPosition.z
     this.geometry.attributes.planeOffset.needsUpdate = true
+    this.index++
   }
 }
 

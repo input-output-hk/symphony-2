@@ -299,6 +299,11 @@ export default class Audio extends EventEmitter {
     minOutput = Math.log(minOutput + 1.0)
     maxOutput = Math.log(maxOutput + 1.0)
 
+    if (minOutput === maxOutput) {
+      minOutput -= (minOutput * 0.5)
+      maxOutput += (maxOutput * 0.5)
+    }
+
     // filter out notes not in mode
     let filteredNotes = {}
     for (const frequency in this.notes) {
@@ -315,13 +320,10 @@ export default class Audio extends EventEmitter {
 
     let frequencies = []
 
+    // let health = blockData.healthRatio
     let health = (blockData.fee / blockData.outputTotal) * 2000 // 0 == healthy
 
-    console.log({health})
-
     let spent = []
-
-    let currentTime = window.performance.now()
 
     for (let i = 0; i < blockData.tx.length; i++) {
       const tx = blockData.tx[i]
@@ -335,7 +337,9 @@ export default class Audio extends EventEmitter {
 
       spent.push(mappedSpentRatio)
 
-      let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, Object.keys(filteredNotes).length, 0))
+      const filteredNoteKeys = Object.keys(filteredNotes)
+
+      let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, filteredNoteKeys.length, 0))
 
       let j = 0
       for (const frequency in filteredNotes) {
@@ -356,7 +360,7 @@ export default class Audio extends EventEmitter {
     let custom_step = () => {}
     let custom_random = () => {}
 
-    const sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, length, channel) {
+    const sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, length) {
       let sum = 0
       let twoPI = 6.28318530718
       let currentTime = (this.thread.x / 44100)
@@ -364,7 +368,7 @@ export default class Audio extends EventEmitter {
       for (var i = 0; i < length; i++) {
         let ANGULAR_FREQUENCY = frequencies[i] * twoPI
 
-        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY + channel) * 0.1)) * health * 2 - health)) * twoPI
+        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI
 
         let currentAngle = currentTime * ANGULAR_FREQUENCY
         let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
@@ -393,22 +397,22 @@ export default class Audio extends EventEmitter {
         let spent15 = custom_step(15.0, spentRatio) * 1
         let spent16 = custom_step(16.0, spentRatio) * 1
 
-        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY + channel * 1.0) * health))) * spent1 +
-                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY + channel * 2.0) * health))) * spent2 +
-                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY + channel * 3.0) * health))) * spent3 +
-                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY + channel * 4.0) * health))) * spent4 +
-                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY + channel * 5.0) * health))) * spent5 +
-                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY + channel * 6.0) * health))) * spent6 +
-                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY + channel * 7.0) * health))) * spent7 +
-                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY + channel * 8.0) * health))) * spent8 +
-                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY + channel * 9.0) * health))) * spent9 +
-                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY + channel * 10.0) * health))) * spent10 +
-                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY + channel * 11.0) * health))) * spent11 +
-                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY + channel * 12.0) * health))) * spent12 +
-                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY + channel * 13.0) * health))) * spent13 +
-                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY + channel * 14.0) * health))) * spent14 +
-                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY + channel * 15.0) * health))) * spent15 +
-                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY + channel * 16.0) * health))) * spent16
+        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0) * health))) * spent1 +
+                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
+                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
+                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
+                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
+                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
+                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
+                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8 +
+                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0) * health))) * spent9 +
+                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0) * health))) * spent10 +
+                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0) * health))) * spent11 +
+                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0) * health))) * spent12 +
+                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0) * health))) * spent13 +
+                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0) * health))) * spent14 +
+                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
+                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
         wave *= 0.02777
 
@@ -432,16 +436,15 @@ export default class Audio extends EventEmitter {
 
     let vol = this.getVol(frequencies.length)
     console.time('sineBank')
-    let sineArrayL = sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length, 0)
-    let sineArrayR = sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length, 1)
+    let sineArray = sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
     console.timeEnd('sineBank')
 
     console.time('fillBuffer')
     let lArray = this.buffers[blockData.height].getChannelData(0)
     let rArray = this.buffers[blockData.height].getChannelData(1)
-    for (let index = 0; index < sineArrayL.length; index++) {
-      lArray[index] = sineArrayL[index]
-      rArray[index] = sineArrayR[index]
+    for (let index = 0; index < sineArray.length; index++) {
+      lArray[index] = sineArray[index]
+      rArray[index] = sineArray[Math.floor(index * 0.99)] // right channel slightly out of phase with left for stereo effect
     }
     console.timeEnd('fillBuffer')
 

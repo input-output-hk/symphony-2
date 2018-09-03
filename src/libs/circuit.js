@@ -202,7 +202,7 @@ export default class Circuit extends EventEmitter {
     nTX |= nTX >> 16
     nTX++
 
-    console.log(nTX)
+    console.log({nTX})
 
     let merkleMap = {
       4096: 13,
@@ -219,23 +219,6 @@ export default class Circuit extends EventEmitter {
       2: 2,
       1: 1,
       0: 1
-    }
-
-    let merkleYOffsetMap = {
-      4096: 71.4,
-      2048: 4.1,
-      1024: 72.3,
-      512: 73.3,
-      256: 75,
-      128: 78,
-      64: 82,
-      32: 90,
-      16: 102,
-      8: 122,
-      4: 155,
-      2: 212,
-      1: 212,
-      0: 212
     }
 
     let merkleLineWidthMap = {
@@ -272,7 +255,6 @@ export default class Circuit extends EventEmitter {
       0: 6.9
     }
 
-    this.merkleYOffset = merkleYOffsetMap[nTX]
     this.merkleLineWidth = merkleLineWidthMap[nTX]
     this.merkleNodeRadius = merkleNodeRadiusMap[nTX]
 

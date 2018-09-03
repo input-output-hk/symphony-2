@@ -442,6 +442,10 @@ export default class Crystal extends Base {
     let blockPosition = blockGeoData.blockData.pos
     const txTimes = blockGeoData.blockData.txTimes
 
+    if (typeof txTimes === 'undefined') {
+      return
+    }
+
     this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount
 
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
