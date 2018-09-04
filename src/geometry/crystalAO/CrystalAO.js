@@ -166,9 +166,9 @@ export default class CrystalAO extends Base {
     return this.mesh
   }
 
-  update (time, audioTime, firstLoop) {
+  update (time, firstLoop) {
     this.material.uniforms.uTime.value = time
-    this.material.uniforms.uAudioTime.value = audioTime
+    this.material.uniforms.uAudioTime.value = time
     this.material.uniforms.uFirstLoop.value = firstLoop
   }
 }

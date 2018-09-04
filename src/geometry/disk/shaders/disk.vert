@@ -1,7 +1,11 @@
 #include <common>
 	varying vec2 vUv;
+	uniform vec3 uCamPos;
 	uniform mat3 uvTransform;
 	uniform float uTime;
+
+	varying vec4 vWorldPosition;
+
 #include <uv2_pars_vertex>
 #include <envmap_pars_vertex>
 #include <color_pars_vertex>
@@ -34,6 +38,9 @@ void main() {
 	#include <logdepthbuf_vertex>
 
 	#include <worldpos_vertex>
+
+	vWorldPosition = worldPosition;
+
 	#include <clipping_planes_vertex>
 	#include <envmap_vertex>
 	#include <fog_vertex>

@@ -116,3 +116,8 @@ canvas#sketchboard {
   display: inline-block;
   width: 50%;
 }
+
+.toggle-cockpit-controls {
+  position: absolute;
+  z-index: 1;
+}

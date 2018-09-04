@@ -205,12 +205,22 @@ const MapControls = function (object, domElement) {
 
   this.dispose = function () {
     scope.domElement.removeEventListener('contextmenu', onContextMenu, false)
+    document.removeEventListener('contextmenu', onContextMenu, false)
+
     scope.domElement.removeEventListener('mousedown', onMouseDown, false)
+    document.removeEventListener('mousedown', onMouseDown, false)
+
     scope.domElement.removeEventListener('wheel', onMouseWheel, false)
+    document.removeEventListener('wheel', onMouseWheel, false)
 
     scope.domElement.removeEventListener('touchstart', onTouchStart, false)
+    document.removeEventListener('touchstart', onTouchStart, false)
+
     scope.domElement.removeEventListener('touchend', onTouchEnd, false)
+    document.removeEventListener('touchend', onTouchEnd, false)
+
     scope.domElement.removeEventListener('touchmove', onTouchMove, false)
+    document.removeEventListener('touchmove', onTouchMove, false)
 
     document.removeEventListener('mousemove', onMouseMove, false)
     document.removeEventListener('mouseup', onMouseUp, false)

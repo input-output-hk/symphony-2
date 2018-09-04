@@ -49,8 +49,9 @@ export default class Disk extends Base {
 
   }
 
-  update () {
-    this.material.uniforms.uTime.value = window.performance.now() * 0.001
+  update (args) {
+    this.material.uniforms.uTime.value = args.time * 0.001
+    this.material.uniforms.uCamPos.value = args.camPos
   }
 }
 
@@ -64,6 +65,11 @@ class DiskMaterial extends THREE.MeshBasicMaterial {
     this.uniforms.uTime = {
       type: 'f',
       value: 0.0
+    }
+
+    this.uniforms.uCamPos = {
+      type: 'v3',
+      value: new THREE.Vector3(0, 0, 0)
     }
 
     this.vertexShader = vertexShader

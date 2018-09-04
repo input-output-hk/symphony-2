@@ -17,8 +17,6 @@ import MapControls from './libs/MapControls'
 import Audio from './libs/audio'
 import Circuit from './libs/circuit'
 
-import blockchainInfo from 'blockchain.info/blockexplorer'
-
 // post
 import {
   EffectComposer,
@@ -78,7 +76,8 @@ class App extends mixin(EventEmitter, Component) {
     this.loadedHeights = []
 
     this.state = {
-      closestBlock: null
+      closestBlock: null,
+      controlType: ''
     }
   }
 
@@ -406,7 +405,7 @@ class App extends mixin(EventEmitter, Component) {
         '0003.png'
       ])
 
-    this.planetGeo = new THREE.SphereBufferGeometry(240000, 50, 50)
+    this.planetGeo = new THREE.SphereBufferGeometry(200000, 50, 50)
     this.planetMat = new THREE.MeshStandardMaterial({
       fog: false,
       color: 0xffffff,
@@ -539,13 +538,15 @@ class App extends mixin(EventEmitter, Component) {
             // this.scene.add(this.disk)
 
               this.crystal = await this.crystalGenerator.init(blockGeoData)
+              // this.crystal.renderOrder = 2
               this.scene.add(this.crystal)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
+              // this.trees.renderOrder = 0
               this.scene.add(this.trees)
 
               this.plane = await this.planeGenerator.init(blockGeoData)
-              this.plane.renderOrder = 1
+              // this.plane.renderOrder = 0
               this.scene.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
@@ -555,11 +556,13 @@ class App extends mixin(EventEmitter, Component) {
               this.camera.position.z = planeZ
 
               this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
-              this.controls.update()
 
               this.geoAdded = true
               this.blockReady = true
-              this.addClosestBlockDetail()
+
+              this.closestBlockReadyForUpdate = true
+
+              // this.addClosestBlockDetail()
             } else {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
@@ -582,30 +585,55 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initControls () {
-    // this.controls = new FlyControls(this.camera)
-    // this.controls.movementSpeed = 1000
-    // this.controls.domElement = this.renderer.domElement
-    // this.controls.rollSpeed = Math.PI / 24
-    // this.controls.autoForward = true
-    // this.controls.dragToLook = true
-
-    // this.controls = new this.OrbitControls(this.camera, this.renderer.domElement)
-    // this.setControlsSettings()
-
-    this.controls = new MapControls(this.camera)
-    this.controls.domElement = this.renderer.domElement
-    this.controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
-    this.controls.dampingFactor = 0.25
-    this.controls.screenSpacePanning = false
-    this.controls.minDistance = 100
-    this.controls.maxDistance = 1000000
-    this.controls.maxPolarAngle = Math.PI / 2
-    this.controls.rotateSpeed = 0.1
-    this.controls.panSpeed = 0.5
+    this.toggleMapControls()
   }
 
-  setControlsSettings () {
-    // this.controls.zoomSpeed = 0.5
+  toggleMapControls () {
+    this.switchControls('map')
+
+    if (this.closestBlock) {
+      this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+      this.camera.position.x = this.closestBlock.blockData.pos.x
+      this.camera.position.y = 2000
+      this.camera.position.z = this.closestBlock.blockData.pos.z
+    }
+  }
+
+  toggleFlyControls () {
+    this.switchControls('fly')
+  }
+
+  switchControls (type) {
+    if (this.controls) {
+      this.controls.dispose()
+      this.controls = null
+    }
+
+    switch (type) {
+      case 'map':
+        this.controls = new MapControls(this.camera)
+        this.controls.domElement = this.renderer.domElement
+        this.controls.enableDamping = true
+        this.controls.dampingFactor = 0.25
+        this.controls.screenSpacePanning = false
+        this.controls.minDistance = 100
+        this.controls.maxDistance = 1000000
+        this.controls.maxPolarAngle = Math.PI / 2
+        this.controls.rotateSpeed = 0.1
+        this.controls.panSpeed = 0.5
+        break
+
+      case 'fly':
+        this.controls = new FlyControls(this.camera)
+        this.controls.movementSpeed = 100
+        this.controls.domElement = this.renderer.domElement
+        this.controls.rollSpeed = Math.PI / 24
+        this.controls.autoForward = false
+        this.controls.dragToLook = false
+        break
+    }
+
+    this.setState({controlType: type})
   }
 
   setConfig (newConfig) {
@@ -621,6 +649,12 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   getClosestBlock () {
+    if (this.camera.position.y >= 2000) {
+      this.setState({closestBlock: null})
+      this.closestBlockReadyForUpdate = true
+      return
+    }
+
     this.prevClosestBlock = this.closestBlock
     if (this.blockGeoDataArray.length > 0) {
       let closestDist = Number.MAX_SAFE_INTEGER
@@ -662,7 +696,7 @@ class App extends mixin(EventEmitter, Component) {
         if (this.prevClosestBlock.blockData.hash !== this.closestBlock.blockData.hash) {
           this.closestBlockReadyForUpdate = true
         }
-        if (closestDist < 150000 && this.closestBlockReadyForUpdate) {
+        if (closestDist < 300000 && this.closestBlockReadyForUpdate) {
           this.closestBlockReadyForUpdate = false
           this.emit('blockChanged')
         }
@@ -725,8 +759,8 @@ class App extends mixin(EventEmitter, Component) {
         let closestBlocksGeoData = []
 
         let blockData = this.docRef
-          .where('height', '>=', closestHeight - 100)
-          .where('height', '<=', closestHeight + 100)
+          .where('height', '>=', closestHeight - 10)
+          .where('height', '<=', closestHeight + 10)
           .orderBy('height', 'asc')
           // .limit(100)
 
@@ -740,8 +774,8 @@ class App extends mixin(EventEmitter, Component) {
         })
 
         let blockGeoData = this.docRefGeo
-          .where('height', '>=', closestHeight - 100)
-          .where('height', '<=', closestHeight + 100)
+          .where('height', '>=', closestHeight - 10)
+          .where('height', '<=', closestHeight + 10)
           .orderBy('height', 'asc')
           // .limit(100)
 
@@ -787,7 +821,7 @@ class App extends mixin(EventEmitter, Component) {
           this.heightsToLoad.push(closestHeight)
         }
 
-        for (let height = 1; height < 200; height++) {
+        for (let height = 1; height < 10; height++) {
           let next = closestHeight + height
           let prev = closestHeight - height
 
@@ -868,10 +902,9 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     if (this.blockReady) {
-      // this.diskGenerator.update()
-
-      this.crystalGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
-      this.crystalAOGenerator.update(window.performance.now(), window.performance.now(), this.firstLoop)
+      this.diskGenerator.update({time: window.performance.now(), camPos: this.camera.position})
+      this.crystalGenerator.update(window.performance.now(), this.firstLoop)
+      // this.crystalAOGenerator.update(window.performance.now(), this.firstLoop)
     }
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
@@ -893,19 +926,23 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalGenerator.updateBlockStartTimes(blockData)
     })
 
-    // document.addEventListener('keydown', (event) => {
-    //   if (event.shiftKey) {
-    //     if (this.controls.movementSpeed < 1000) {
-    //       this.controls.movementSpeed += 10
-    //     }
-    //   }
-    // })
+    document.addEventListener('keydown', (event) => {
+      if (this.state.controlType === 'fly') {
+        if (event.shiftKey) {
+          if (this.controls.movementSpeed < 1000) {
+            this.controls.movementSpeed += 10
+          }
+        }
+      }
+    })
 
-    // document.addEventListener('keyup', (event) => {
-    //   if (!event.shiftKey) {
-    //     this.controls.movementSpeed = 100
-    //   }
-    // })
+    document.addEventListener('keyup', (event) => {
+      if (this.state.controlType === 'fly') {
+        if (!event.shiftKey) {
+          this.controls.movementSpeed = 100
+        }
+      }
+    })
   }
 
   async addClosestBlockDetail () {
@@ -993,7 +1030,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.topside = this.underside.clone()
       this.topside.material = topsideMaterial
-      this.topside.renderOrder = 2
+      // this.topside.renderOrder = 1
 
       this.topside.translateZ(-0.1)
       this.underside.translateZ(4.2)
@@ -1108,6 +1145,18 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.setSize(this.width, this.height)
   }
 
+  UICockpitButton () {
+    if (this.state.controlType === 'fly') {
+      return (
+        <button onClick={this.toggleMapControls.bind(this)} className='toggle-cockpit-controls'>Leave Cockpit Mode</button>
+      )
+    } else {
+      return (
+        <button onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls'>Enter Cockpit Mode</button>
+      )
+    }
+  }
+
   UIBlockDetails () {
     if (this.state.closestBlock) {
       const health = this.state.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.state.closestBlock.blockData.healthRatio
@@ -1116,6 +1165,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div>
           <div className='cockpit-border' />
+          {this.UICockpitButton()}
           <div className='block-details'>
             <h2>Block {this.state.closestBlock.blockData.hash}</h2>
             <div><h3>Health</h3>
@@ -1150,6 +1200,7 @@ class App extends mixin(EventEmitter, Component) {
   UI () {
     return (
       <div className='symphony-ui'>
+
         {this.UIBlockDetails()}
       </div>
     )

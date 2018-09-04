@@ -45,7 +45,7 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 0.9,
+      opacity: 0.85,
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 0.9,
@@ -560,9 +560,9 @@ export default class Crystal extends Base {
     this.txCount += blockGeoData.blockData.tx.length
   }
 
-  update (time, audioTime, firstLoop) {
+  update (time, firstLoop) {
     this.material.uniforms.uTime.value = time
-    this.material.uniforms.uAudioTime.value = audioTime
+    this.material.uniforms.uAudioTime.value = time
     this.material.uniforms.uFirstLoop.value = firstLoop
   }
 }

@@ -23,7 +23,7 @@ export default class Audio extends EventEmitter {
     this.biquadFilter.type = 'notch'
     this.biquadFilter.frequency.setValueAtTime(700, this.audioContext.currentTime)
     this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
-    this.biquadFilter.Q.setValueAtTime(0.5, this.audioContext.currentTime)
+    this.biquadFilter.Q.setValueAtTime(0.1, this.audioContext.currentTime)
 
     this.lowShelf = this.audioContext.createBiquadFilter()
     this.lowShelf.type = 'lowshelf'

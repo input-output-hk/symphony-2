@@ -92,15 +92,15 @@ void main() {
 
 	//float scaledTime = (timeMod * 0.002);
 
-	//  if (uFirstLoop == 1.0) {
-	//  	transformed.xz *= (scale * attack);
-	//  	transformed.y *= (offset.y * attack);
-	//  } else {
+	 if (uFirstLoop == 1.0) {
+	 	transformed.xz *= (scale * attack);
+	 	transformed.y *= (offset.y * attack);
+	 } else {
 
 		transformed.xz *= (scale);
 		transformed.y *= (offset.y);
 
-	//  }
+	  }
 
 		transformed.y += offset.y * 0.5;
 		
@@ -126,11 +126,11 @@ void main() {
 	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
 	transformed.y += (random(offset.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
-	transformed.y += (offset.y * 0.03) * centerTopVertex;
+	transformed.y += (offset.y * 0.02) * centerTopVertex;
 
 	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;
 
-	transformed.y -= 5.0 * centerBottomVertex;
+	transformed.y -= 4.5 * centerBottomVertex;
 
 	vTransformed = transformed;
 	vOffset = offset;
