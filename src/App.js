@@ -204,8 +204,7 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.95)
-
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.97)
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
@@ -388,9 +387,9 @@ class App extends mixin(EventEmitter, Component) {
     // let light = new THREE.AmbientLight(0xffffff)
     // this.scene.add(light)
 
-    this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
-    this.pointLight.position.set(0, 2000, 0)
-    this.scene.add(this.pointLight)
+    //this.pointLight = new THREE.PointLight(0xffa2a2, 0.5, 0, 9999999)
+    //this.pointLight.position.set(0, 2000, 0)
+    //this.scene.add(this.pointLight)
 
     this.planetMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
