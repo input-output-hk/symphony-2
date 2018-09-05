@@ -157,7 +157,7 @@ export default class CrystalAO extends Base {
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('blockHeight', blockHeights)
     this.geometry.addAttribute('quaternion', quaternions)
-    // this.geometry.addAttribute('txTime', txTimes)
+    this.geometry.addAttribute('txTime', txTimes)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

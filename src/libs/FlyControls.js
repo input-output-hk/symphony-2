@@ -85,6 +85,8 @@ export default class FlyControls {
 
       case 81: /* Q */ this.moveState.rollLeft = 1; break
       case 69: /* E */ this.moveState.rollRight = 1; break
+
+      default: break
     }
 
     this.updateMovementVector()
@@ -112,6 +114,8 @@ export default class FlyControls {
 
       case 81: /* Q */ this.moveState.rollLeft = 0; break
       case 69: /* E */ this.moveState.rollRight = 0; break
+
+      default: break
     }
 
     this.updateMovementVector()
@@ -132,6 +136,7 @@ export default class FlyControls {
       switch (event.button) {
         case 0: this.moveState.forward = 1; break
         case 2: this.moveState.back = 1; break
+        default: break
       }
 
       this.updateMovementVector()
@@ -163,6 +168,7 @@ export default class FlyControls {
       switch (event.button) {
         case 0: this.moveState.forward = 0; break
         case 2: this.moveState.back = 0; break
+        default: break
       }
 
       this.updateMovementVector()

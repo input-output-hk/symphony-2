@@ -24,7 +24,7 @@ export default class Crystal extends Base {
 
     this.voronoi = new Voronoi()
 
-    this.instanceTotal = 200 * 2000
+    this.instanceTotal = 50 * 2000
 
     this.txCount = 0
 
@@ -33,7 +33,7 @@ export default class Crystal extends Base {
     this.txIndexOffsets = {}
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/walkoffame-e/')
+      .setPath('assets/images/textures/cubemaps/playa2/')
       .load([
         '0004.png',
         '0002.png',
@@ -46,7 +46,7 @@ export default class Crystal extends Base {
     this.material = new CrystalMaterial({
       flatShading: true,
       opacity: 0.85,
-      color: 0xffffff,
+      color: 0x000000,
       emissive: 0x000000,
       metalness: 0.9,
       roughness: 0.0,
@@ -211,6 +211,11 @@ export default class Crystal extends Base {
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.02, 0))
+    tubeGeo.vertices[0].sub(new THREE.Vector3(0, 0.01, 0))
+    tubeGeo.vertices[2].sub(new THREE.Vector3(0, 0.01, 0))
+    tubeGeo.vertices[4].sub(new THREE.Vector3(0, 0.01, 0))
+
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
 

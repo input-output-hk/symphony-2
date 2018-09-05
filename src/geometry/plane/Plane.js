@@ -17,10 +17,10 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 10000
+    this.instanceTotal = 50
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/walkoffame-e/')
+      .setPath('assets/images/textures/cubemaps/playa2/')
       .load([
         '0004.png',
         '0002.png',
@@ -33,7 +33,7 @@ export default class Plane extends Base {
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
-      emissive: 0x333333,
+      emissive: 0x000000,
       metalness: 0.9,
       roughness: 0.1,
       opacity: 0.6,

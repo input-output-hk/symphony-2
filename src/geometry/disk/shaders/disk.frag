@@ -42,8 +42,8 @@ float plane(vec2 uv, vec2 quadUV) {
     float bottom = smoothstep(0.475 * (1.0-maxDerivative), 0.476, uv.y);
     float left = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), uv.x);
     float right = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), 1.0-uv.x);
-    //float pct = top * bottom * left * right;
-    float pct = top * bottom;
+    float pct = top * bottom * left * right;
+    // float pct = top * bottom;
     return pct;
 }
 
@@ -124,7 +124,7 @@ void main() {
 
 
 
-	s *= min(1.0, distToFragmentSq* 0.00000001);
+	s *= min(1.0, distToFragmentSq* 0.000000001);
 
 	gl_FragColor = vec4( outgoingLight, s * 0.8 );
 

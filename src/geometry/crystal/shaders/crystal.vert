@@ -14,8 +14,8 @@ attribute float scale;
 attribute float spentRatio;
 attribute vec3 barycentric;
 attribute float topVertex;
-attribute float centerTopVertex;
-attribute float centerBottomVertex;
+// attribute float centerTopVertex;
+// attribute float centerBottomVertex;
 attribute float txValue;
 attribute vec4 quaternion;
 attribute float txTime;
@@ -23,16 +23,14 @@ attribute float blockStartTime;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
-varying vec3 vOffset;
 varying vec2 vPlaneOffset;
 varying float vScale;
 varying float vSpentRatio;
 varying vec3 vBarycentric;
-varying float vTxValue;
 varying float vTopVertex;
 varying float vBottomVertex;
-varying float vCenterTopVertex;
-varying float vCenterBottomVertex;
+// varying float vCenterTopVertex;
+// varying float vCenterBottomVertex;
 varying float vEnvelope;
 
 #ifndef FLAT_SHADED
@@ -54,6 +52,7 @@ varying float vEnvelope;
 #include <clipping_planes_pars_vertex>
 
 void main() {
+
 
 	vPlaneOffset = planeOffset;
 
@@ -92,15 +91,15 @@ void main() {
 
 	//float scaledTime = (timeMod * 0.002);
 
-	 if (uFirstLoop == 1.0) {
-	 	transformed.xz *= (scale * attack);
-	 	transformed.y *= (offset.y * attack);
-	 } else {
+	//  if (uFirstLoop == 1.0) {
+	//  	transformed.xz *= (scale * attack);
+	//  	transformed.y *= (offset.y * attack);
+	//  } else {
 
 		transformed.xz *= (scale);
 		transformed.y *= (offset.y);
 
-	  }
+	//   }
 
 		transformed.y += offset.y * 0.5;
 		
@@ -125,20 +124,18 @@ void main() {
 	//transformed.x += (random(originalTransform.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 
-	transformed.y += (random(offset.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
-	transformed.y += (offset.y * 0.02) * centerTopVertex;
+	// transformed.y += (random(offset.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
+	// transformed.y += (offset.y * 0.02) * centerTopVertex;
 
 	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;
 
-	transformed.y -= 4.5 * centerBottomVertex;
+	// transformed.y -= 4.5 * centerBottomVertex;
 
 	vTransformed = transformed;
-	vOffset = offset;
 	vTopVertex = topVertex;
 	vBottomVertex = 1.0 - topVertex;
-	vCenterBottomVertex = centerBottomVertex;
+	//vCenterBottomVertex = centerBottomVertex;
 
-	vTxValue = txValue;
 	vScale = scale;
 
 	#include <morphtarget_vertex>

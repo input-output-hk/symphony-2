@@ -204,7 +204,7 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.97)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.95)
 
     this.composer.addPass(this.bloomPass)
 
@@ -352,13 +352,11 @@ class App extends mixin(EventEmitter, Component) {
           block.tx = transactions
           block.cacheTime = new Date()
 
-          block.pos = this.blockPositions[block.height]
-
           block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
 
           // save to firebase
           this.docRef.doc(block.hash).set(
-            block, { merge: true }
+            block, { merge: false }
           ).then(function () {
             console.log('Block data for: ' + block.hash + ' successfully written!')
           }).catch(function (error) {
@@ -450,7 +448,9 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    const height = parseInt(blockData.height)
+    const height = parseInt(blockData.height, 10)
+
+    blockData.pos = this.blockPositions[height]
 
     this.blockGeoDataArray[height] = blockGeoData
     this.blockGeoDataArray[height].blockData = blockData
@@ -459,7 +459,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initEnvironment () {
-    this.scene.add(this.planetMesh)
+    // this.scene.add(this.planetMesh)
 
     this.disk = await this.diskGenerator.init()
     this.disk.renderOrder = 3
@@ -531,22 +531,16 @@ class App extends mixin(EventEmitter, Component) {
             // this.scene.add(crystalAO)
 
             if (!this.geoAdded) {
-            // this.scene.add(this.planetMesh)
-
-            // this.disk = await this.diskGenerator.init(blockGeoData)
-            // this.disk.renderOrder = 3
-            // this.scene.add(this.disk)
-
               this.crystal = await this.crystalGenerator.init(blockGeoData)
-              // this.crystal.renderOrder = 2
+              this.crystal.renderOrder = 0
               this.scene.add(this.crystal)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
-              // this.trees.renderOrder = 0
+              this.trees.renderOrder = 0
               this.scene.add(this.trees)
 
               this.plane = await this.planeGenerator.init(blockGeoData)
-              // this.plane.renderOrder = 0
+              this.plane.renderOrder = 0
               this.scene.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
@@ -630,6 +624,9 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
         this.controls.dragToLook = false
+        break
+
+      default:
         break
     }
 
@@ -805,6 +802,8 @@ class App extends mixin(EventEmitter, Component) {
             if (typeof closestBlocksData[i] !== 'undefined') {
               blockGeoData.blockData = closestBlocksData[i]
 
+              blockGeoData.blockData.pos = this.blockPositions[blockGeoData.height]
+
               blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
 
               this.blockGeoDataArray[blockGeoData.height] = blockGeoData
@@ -841,8 +840,6 @@ class App extends mixin(EventEmitter, Component) {
         console.log(this.heightsToLoad)
 
         this.heightsToLoad.forEach(async (height) => {
-          // this.blockexplorer.getBlockHeight(height, options)
-
           let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           let blockDataJSON = await blockData.json()
@@ -1067,7 +1064,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.scene = new THREE.Scene()
-    // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
+    this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
@@ -1120,6 +1117,8 @@ class App extends mixin(EventEmitter, Component) {
       canvas: document.getElementById(this.config.scene.canvasID)
       // alpha: true
     })
+    // this.renderer.toneMapping = THREE.NoToneMapping
+    this.renderer.toneMappingExposure = 1.5
     this.renderer.setClearColor(0xffffff, 0)
   }
 

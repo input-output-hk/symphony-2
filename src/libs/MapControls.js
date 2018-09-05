@@ -494,6 +494,8 @@ const MapControls = function (object, domElement) {
         pan(-scope.keyPanSpeed, 0)
         scope.update()
         break
+
+      default: break
     }
   }
 
@@ -688,6 +690,8 @@ const MapControls = function (object, domElement) {
         state = STATE.ROTATE
 
         break
+
+      default: break
     }
 
     if (state !== STATE.NONE) {
@@ -727,6 +731,8 @@ const MapControls = function (object, domElement) {
         handleMouseMovePan(event)
 
         break
+
+      default: break
     }
   }
 
