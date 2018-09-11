@@ -17,7 +17,7 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 100
+    this.instanceTotal = 50
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
@@ -45,7 +45,7 @@ export default class Plane extends Base {
       // roughnessMap: this.roughnessMap
       // metalnessMap: this.roughnessMap
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.01, 0.01)
+      normalScale: new THREE.Vector2(0.02, 0.02)
     })
   }
 
@@ -93,6 +93,10 @@ export default class Plane extends Base {
   }
 
   async updateGeometry (blockGeoData) {
+    if (this.index + 1 > this.instanceTotal) {
+      this.index = 0
+    }
+
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()

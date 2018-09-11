@@ -15,7 +15,7 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 100
+    this.instanceTotal = 50
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -142,8 +142,9 @@ export default class Tree extends Base {
   }
 
   async updateGeometry (blockGeoData) {
-    console.log('update ', this.index)
-
+    if (this.index + 1 > this.instanceTotal) {
+      this.index = 0
+    }
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()

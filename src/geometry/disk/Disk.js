@@ -43,7 +43,7 @@ export default class Disk extends Base {
       // roughnessMap: this.roughnessMap
       // metalnessMap: this.roughnessMap
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.0, 0.0),
+      normalScale: new THREE.Vector2(0.01, 0.01),
 
       fog: false
     })

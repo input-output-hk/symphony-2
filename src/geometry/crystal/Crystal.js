@@ -24,7 +24,7 @@ export default class Crystal extends Base {
 
     this.voronoi = new Voronoi()
 
-    this.instanceTotal = 100 * 2000
+    this.instanceTotal = 50 * 3000
 
     this.txCount = 0
 
@@ -483,9 +483,10 @@ export default class Crystal extends Base {
       quaternionsAttr.array[txIndexOffset * 4 + 2] = object.quaternion.z
       quaternionsAttr.array[txIndexOffset * 4 + 3] = object.quaternion.w
 
-      for (let scalesIndex = 0; scalesIndex < blockGeoData.scales.length; scalesIndex++) {
-        scalesAttr.array[this.txCount + scalesIndex] = blockGeoData.scales[scalesIndex]
-      }
+      scalesAttr.setX(
+        txIndexOffset,
+        blockGeoData.scales[i]
+      )
 
       let txValue = (tx.value * 0.00000001)
       if (txValue > 1000) {
@@ -542,13 +543,16 @@ export default class Crystal extends Base {
   }
 
   async updateGeometry (blockGeoData) {
+    if (this.txCount + blockGeoData.blockData.tx.length > this.instanceTotal) {
+      this.txCount = 0
+    }
+
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
     object.lookAt(0, 0, 0)
 
-    console.time('setTxAttributes')
     this.setTxAttributes(
       object,
       blockGeoData,
@@ -560,7 +564,6 @@ export default class Crystal extends Base {
       this.geometry.attributes.spentRatio,
       this.geometry.attributes.txTime
     )
-    console.timeEnd('setTxAttributes')
 
     this.txCount += blockGeoData.blockData.tx.length
   }
