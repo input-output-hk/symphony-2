@@ -56,7 +56,7 @@ float circle(in float dist, in float radius) {
 
 void main() {
 
-	if (vPlaneOffset.x == 999999.) {
+	if (vPlaneOffset.x == 0.) {
 		discard;
 	}
 

@@ -17,7 +17,7 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 50
+    this.instanceTotal = 100
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
@@ -34,9 +34,9 @@ export default class Plane extends Base {
       flatShading: true,
       color: 0xffffff,
       emissive: 0x000000,
-      metalness: 0.9,
+      metalness: 0.7,
       roughness: 0.1,
-      opacity: 0.6,
+      opacity: 0.7,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -50,7 +50,7 @@ export default class Plane extends Base {
   }
 
   async init (blockGeoData) {
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(999999)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(0.0)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry

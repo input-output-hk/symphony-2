@@ -75,7 +75,7 @@ void main() {
 		float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
 
 		float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		float edgeAmount = (pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.4);
+		float edgeAmount = (pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.35);
 
 		vec2 dtEdge = dt * 10.0;
 		float maxDerivativeEdge = clamp(max(dtEdge.t, dtEdge.s), 0.0, 1.0);
@@ -101,10 +101,50 @@ void main() {
 		#include <emissivemap_fragment>
 
 		// accumulation
-		#include <lights_physical_fragment>
-		#include <lights_fragment_begin>
-		#include <lights_fragment_maps>
-		#include <lights_fragment_end>
+		 #include <lights_physical_fragment>
+		//  #include <lights_fragment_begin>
+
+		GeometricContext geometry;
+
+		geometry.position = - vViewPosition;
+		geometry.normal = normal;
+		geometry.viewDir = normalize( vViewPosition );
+
+		IncidentLight directLight;
+
+		#if defined( RE_IndirectDiffuse )
+
+			vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
+
+			#if ( NUM_HEMI_LIGHTS > 0 )
+
+				#pragma unroll_loop
+				for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
+
+					irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );
+
+				}
+
+			#endif
+
+		#endif
+
+		#if defined( RE_IndirectSpecular )
+
+			vec3 radiance = vec3( 0.0 );
+			vec3 clearCoatRadiance = vec3( 0.0 );
+
+		#endif
+
+
+
+
+
+
+
+
+		 #include <lights_fragment_maps>
+		 #include <lights_fragment_end>
 
 		// modulation
 		#include <aomap_fragment>
@@ -162,10 +202,10 @@ void main() {
 		color -= smoothstep(tile.y+0.3,tile.y,1.15)-
 				smoothstep(tile.y,tile.y-0.3,1.0);
 
-		float finalColor = mix(color,1.0, maxDerivativeFace*maxDerivativeFace) * (1.0- maxDerivativeFace * 0.7);
+		float finalColor = mix(color,1.0, maxDerivativeFace * 0.5) * (1.0- maxDerivativeFace * 0.7);
 
 
-		finalColor *= abs(noiseAmount) * 15.0;
+		finalColor *= abs(noiseAmount) * 35.0;
 
 		finalColor = (clamp(finalColor, 0.0, 1.0) );
 

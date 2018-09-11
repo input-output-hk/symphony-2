@@ -23,9 +23,11 @@ import {
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass
+  SMAAPass,
+  SSAARenderPass
 } from './libs/post/EffectComposer'
 
+import CopyShader from './libs/post/CopyShader'
 import HueSaturation from './libs/post/HueSaturation'
 import BrightnessContrast from './libs/post/BrightnessContrast'
 import VignetteShader from './libs/post/Vignette'
@@ -51,7 +53,7 @@ class App extends mixin(EventEmitter, Component) {
     // this.OrbitControls = OrbitConstructor(THREE)
 
     this.planeSize = 500
-    this.planeOffsetMultiplier = 500
+    this.planeOffsetMultiplier = 1080
     this.planeMargin = 100
     this.blockReady = false
     this.coils = 100
@@ -168,6 +170,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setPostSettings () {
+    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
+    // this.ssaaRenderPass.unbiased = true
+    // this.composer.addPass(this.ssaaRenderPass)
+
     this.HueSaturationPass = new ShaderPass(HueSaturation)
     this.composer.addPass(this.HueSaturationPass)
 
@@ -183,7 +189,12 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.VignettePass)
 
     this.FilmShaderPass = new ShaderPass(FilmShader)
+    // this.FilmShaderPass.renderToScreen = true
     this.composer.addPass(this.FilmShaderPass)
+
+    // this.copyPass = new ShaderPass(CopyShader)
+    // this.copyPass.renderToScreen = true
+    // this.composer.addPass(this.copyPass)
 
     this.SMAAPass = new SMAAPass(window.innerWidth, window.innerHeight)
     this.SMAAPass.renderToScreen = true
@@ -366,17 +377,56 @@ class App extends mixin(EventEmitter, Component) {
         '0003.png'
       ])
 
-    this.planetGeo = new THREE.SphereBufferGeometry(200000, 50, 50)
+    this.saturnmap = new THREE.TextureLoader()
+      .load(
+        'assets/images/textures/saturnmap-cold.jpg'
+      )
+
+    this.planetGeo = new THREE.SphereBufferGeometry(460000, 100, 100)
     this.planetMat = new THREE.MeshStandardMaterial({
       fog: false,
-      color: 0xffffff,
+      color: 0xbbbbbb,
       emissive: 0x000000,
-      metalness: 0.8,
-      roughness: 0.2,
-      envMap: this.planetMap
+      metalness: 0.3,
+      roughness: 0.0,
+      envMap: this.planetMap,
+      map: this.saturnmap
     })
 
     this.planetMesh = new THREE.Mesh(this.planetGeo, this.planetMat)
+    // this.planetMesh.castShadow = true
+
+    this.sunGeo = new THREE.SphereBufferGeometry(200000, 25, 25)
+    this.sunMat = new THREE.MeshBasicMaterial({
+      fog: false,
+      color: 0xffe083,
+      emissive: 0xffe083
+    })
+
+    this.sunMesh = new THREE.Mesh(this.sunGeo, this.sunMat)
+    this.sunMesh.renderOrder = 4
+    this.sunMesh.position.z = 20000000
+    this.sunMesh.position.y = 100000
+
+    // this.sunLight = new THREE.PointLight(0xffffa3, 0.8, 0.0, 0.0)
+    this.sunLight = new THREE.SpotLight(0xffffa3, 1.0, 0.0)
+    this.sunLight.position.set(0, 100000, 20000000)
+    // this.sunLight.castShadow = true
+
+    // this.sunLight.shadow.mapSize.width = 1024
+    // this.sunLight.shadow.mapSize.height = 1024
+    // this.sunLight.shadow.camera.near = 0.5
+    // this.sunLight.shadow.camera.far = 50000000
+
+    // this.sunLight.shadow.camera.lookAt(new THREE.Vector3(0, 0, 0))
+
+    // this.sunLight.shadow.camera.updateMatrix()
+    // this.sunLight.shadow.camera.updateMatrixWorld()
+
+    this.scene.add(this.sunLight)
+
+    // var helper = new THREE.CameraHelper(this.sunLight.shadow.camera)
+    // this.scene.add(helper)
   }
 
   async asyncForEach (array, callback) {
@@ -425,15 +475,13 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initEnvironment () {
-    // this.scene.add(this.planetMesh)
+    this.scene.add(this.planetMesh)
+    this.scene.add(this.sunMesh)
 
     this.disk = await this.diskGenerator.init()
     this.disk.renderOrder = 3
+    // this.disk.receiveShadow = true
     this.scene.add(this.disk)
-  }
-
-  async getMaxHeight () {
-    // BTC.getLatestBlock({this.config.blockchainInfo.apiCode}).then(({ hash }) => btc.getBlock(hash, {this.config.blockchainInfo.apiCode}))
   }
 
   async initPositions () {
@@ -457,7 +505,8 @@ class App extends mixin(EventEmitter, Component) {
 
     // TODO: use GPU.js for this loop
     console.time('posLoop')
-    for (let i = 0; i <= this.maxHeight; i++) {
+    for (let i = this.maxHeight; i > 0; i--) {
+    // for (let i = 0; i <= this.maxHeight; i++) {
       let away = awayStep * theta
       xOffset = Math.cos(theta) * away
       zOffset = Math.sin(theta) * away
@@ -620,7 +669,7 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.dampingFactor = 0.25
         this.controls.screenSpacePanning = false
         this.controls.minDistance = 100
-        this.controls.maxDistance = 1000000
+        this.controls.maxDistance = 10000000
         this.controls.maxPolarAngle = Math.PI / 2
         this.controls.rotateSpeed = 0.1
         this.controls.panSpeed = 0.5
@@ -975,7 +1024,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      this.audio.generate(this.closestBlock.blockData)
+    //  this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
@@ -1122,6 +1171,9 @@ class App extends mixin(EventEmitter, Component) {
     // this.renderer.toneMapping = THREE.NoToneMapping
     this.renderer.toneMappingExposure = 1.5
     this.renderer.setClearColor(0xffffff, 0)
+
+    // this.renderer.shadowMap.enabled = true
+    // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap // default THREE.PCFShadowMap
   }
 
   /**

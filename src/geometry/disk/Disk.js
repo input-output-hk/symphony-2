@@ -12,13 +12,29 @@ export default class Disk extends Base {
   constructor (args) {
     super(args)
 
+    this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
+    // this.normalMap.wrapS = THREE.RepeatWrapping
+    // this.normalMap.wrapT = THREE.RepeatWrapping
+    // this.normalMap.repeat.set(4, 4)
+
+    this.cubeMap = new THREE.CubeTextureLoader()
+      .setPath('assets/images/textures/cubemaps/playa2/')
+      .load([
+        '0004.png',
+        '0002.png',
+        '0006.png',
+        '0005.png',
+        '0001.png',
+        '0003.png'
+      ])
+
     this.material = new DiskMaterial({
       flatShading: true,
       color: 0xffffff,
-      // emissive: 0x333333,
-      // metalness: 0.9,
-      // roughness: 0.1,
-      opacity: 0.8,
+      emissive: 0x000000,
+      metalness: 0.4,
+      roughness: 0.0,
+      opacity: 0.6,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -26,8 +42,9 @@ export default class Disk extends Base {
       // bumpScale: 0.2
       // roughnessMap: this.roughnessMap
       // metalnessMap: this.roughnessMap
-      // normalMap: this.normalMap,
-      // normalScale: new THREE.Vector2(0.01, 0.01),
+      normalMap: this.normalMap,
+      normalScale: new THREE.Vector2(0.0, 0.0),
+
       fog: false
     })
   }
@@ -43,6 +60,8 @@ export default class Disk extends Base {
     this.mesh.rotateY(Math.PI)
     this.mesh.translateY(-10)
 
+    // this.mesh.receiveShadow = true
+
     return this.mesh
   }
 
@@ -56,12 +75,12 @@ export default class Disk extends Base {
   }
 }
 
-class DiskMaterial extends THREE.MeshBasicMaterial {
+class DiskMaterial extends THREE.MeshStandardMaterial {
   constructor (cfg) {
     super(cfg)
     this.type = 'ShaderMaterial'
 
-    this.uniforms = THREE.ShaderLib.basic.uniforms
+    this.uniforms = THREE.ShaderLib.standard.uniforms
 
     this.uniforms.uTime = {
       type: 'f',

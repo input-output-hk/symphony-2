@@ -265,9 +265,74 @@ export default class Audio extends EventEmitter {
 
     this.times = []
 
-    this.instanceTotal = 100 * 2000
-
     this.txCount = 0
+
+    // keep standard js happy
+    let custom_smoothstep = () => {}
+    let custom_step = () => {}
+    let custom_random = () => {}
+
+    this.sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, length) {
+      let sum = 0
+      let twoPI = 6.28318530718
+      let currentTime = (this.thread.x / 44100)
+
+      for (var i = 0; i < length; i++) {
+        let ANGULAR_FREQUENCY = frequencies[i] * twoPI
+
+        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI
+
+        let currentAngle = currentTime * ANGULAR_FREQUENCY
+        let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
+
+        let time = times[i]
+        let spentRatio = spent[i]
+
+        // envelope
+        let attack = custom_smoothstep(time, time + 5.0, currentTime)
+        let release = (1.0 - custom_smoothstep(time + 5.0, time + 10.0, currentTime))
+
+        let spent1 = custom_step(1.0, spentRatio) * 1
+        let spent2 = custom_step(2.0, spentRatio) * 1
+        let spent3 = custom_step(3.0, spentRatio) * 1
+        let spent4 = custom_step(4.0, spentRatio) * 1
+        let spent5 = custom_step(5.0, spentRatio) * 1
+        let spent6 = custom_step(6.0, spentRatio) * 1
+        let spent7 = custom_step(7.0, spentRatio) * 1
+        let spent8 = custom_step(8.0, spentRatio) * 1
+        let spent9 = custom_step(9.0, spentRatio) * 1
+        let spent10 = custom_step(10.0, spentRatio) * 1
+        let spent11 = custom_step(11.0, spentRatio) * 1
+        let spent12 = custom_step(12.0, spentRatio) * 1
+        let spent13 = custom_step(13.0, spentRatio) * 1
+        let spent14 = custom_step(14.0, spentRatio) * 1
+        let spent15 = custom_step(15.0, spentRatio) * 1
+        let spent16 = custom_step(16.0, spentRatio) * 1
+
+        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0) * health))) * spent1 +
+                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
+                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
+                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
+                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
+                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
+                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
+                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8 +
+                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0) * health))) * spent9 +
+                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0) * health))) * spent10 +
+                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0) * health))) * spent11 +
+                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0) * health))) * spent12 +
+                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0) * health))) * spent13 +
+                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0) * health))) * spent14 +
+                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
+                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
+
+        wave /= 16.0
+
+        sum += wave * attack * release * vol
+      }
+
+      return sum
+    }, {loopMaxIterations: 3000}).setOutput([this.sampleRate * this.soundDuration])
   }
 
   async generate (blockData) {
@@ -355,88 +420,21 @@ export default class Audio extends EventEmitter {
 
     this.txCount += blockData.tx.length
 
-    // keep standard js happy
-    let custom_smoothstep = () => {}
-    let custom_step = () => {}
-    let custom_random = () => {}
-
-    const sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, length) {
-      let sum = 0
-      let twoPI = 6.28318530718
-      let currentTime = (this.thread.x / 44100)
-
-      for (var i = 0; i < length; i++) {
-        let ANGULAR_FREQUENCY = frequencies[i] * twoPI
-
-        let ANGULAR_FREQUENCY_MOD = (frequencies[i] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI
-
-        let currentAngle = currentTime * ANGULAR_FREQUENCY
-        let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
-
-        let time = times[i]
-        let spentRatio = spent[i]
-
-        // envelope
-        let attack = custom_smoothstep(time, time + 5.0, currentTime)
-        let release = (1.0 - custom_smoothstep(time + 5.0, time + 10.0, currentTime))
-
-        let spent1 = custom_step(1.0, spentRatio) * 8
-        let spent2 = custom_step(2.0, spentRatio) * 7
-        let spent3 = custom_step(3.0, spentRatio) * 5
-        let spent4 = custom_step(4.0, spentRatio) * 3
-        let spent5 = custom_step(5.0, spentRatio) * 2
-        let spent6 = custom_step(6.0, spentRatio) * 1
-        let spent7 = custom_step(7.0, spentRatio) * 1
-        let spent8 = custom_step(8.0, spentRatio) * 1
-        let spent9 = custom_step(9.0, spentRatio) * 1
-        let spent10 = custom_step(10.0, spentRatio) * 1
-        let spent11 = custom_step(11.0, spentRatio) * 1
-        let spent12 = custom_step(12.0, spentRatio) * 1
-        let spent13 = custom_step(13.0, spentRatio) * 1
-        let spent14 = custom_step(14.0, spentRatio) * 1
-        let spent15 = custom_step(15.0, spentRatio) * 1
-        let spent16 = custom_step(16.0, spentRatio) * 1
-
-        let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0) * health))) * spent1 +
-                Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
-                Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
-                Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
-                Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
-                Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
-                Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
-                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8 +
-                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0) * health))) * spent9 +
-                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0) * health))) * spent10 +
-                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0) * health))) * spent11 +
-                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0) * health))) * spent12 +
-                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0) * health))) * spent13 +
-                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0) * health))) * spent14 +
-                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
-                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
-
-        wave *= 0.02777
-
-        sum += wave * attack * release * vol
-      }
-
-      return sum
-    }, {loopMaxIterations: 3000}).setOutput([this.sampleRate * this.soundDuration])
-
-    sineBank.addNativeFunction('custom_smoothstep', `highp float custom_smoothstep(float edge0, float edge1, float x) {
+    this.sineBank.addNativeFunction('custom_smoothstep', `highp float custom_smoothstep(float edge0, float edge1, float x) {
         return smoothstep(edge0, edge1, x);
     }`)
 
-    sineBank.addNativeFunction('custom_step', `highp float custom_step(float edge, float x) {
+    this.sineBank.addNativeFunction('custom_step', `highp float custom_step(float edge, float x) {
         return step(edge, x);
     }`)
 
-    sineBank.addNativeFunction('custom_random', `highp float custom_random(float n){
+    this.sineBank.addNativeFunction('custom_random', `highp float custom_random(float n){
         return fract(sin(n) * 43758.5453123);
     }`)
 
     let vol = this.getVol(frequencies.length)
     console.time('sineBank')
-    let sineArray = sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
+    let sineArray = this.sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
     console.timeEnd('sineBank')
 
     console.time('fillBuffer')
