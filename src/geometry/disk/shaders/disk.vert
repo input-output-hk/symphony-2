@@ -1,5 +1,6 @@
 //varying vec2 vUv;
 uniform vec3 uCamPos;
+uniform float uRadiusMultiplier;
 // uniform mat3 uvTransform;
 uniform float uTime;
 

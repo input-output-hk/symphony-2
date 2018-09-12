@@ -24,7 +24,7 @@ export default class Crystal extends Base {
 
     this.voronoi = new Voronoi()
 
-    this.instanceTotal = 50 * 3000
+    this.instanceTotal = 20 * 3000
 
     this.txCount = 0
 

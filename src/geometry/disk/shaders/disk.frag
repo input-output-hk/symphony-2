@@ -1,14 +1,12 @@
 uniform float uTime;
+uniform float uOffset;
 uniform vec3 uCamPos;
+uniform float uRadiusMultiplier;
 
 varying vec4 vWorldPosition;
 
-// forked from https://www.shadertoy.com/view/lsS3WV
 const float PI = 3.14159265359;
 const float twoPI = PI * 2.0;
-//const float radius = 0.00333333333;
-const float radius =   0.001;
-const float a = (radius / twoPI) * 8199.110;
 
 // arc length of archimedes spiral
 float arclength(float a, float theta) {
@@ -17,17 +15,13 @@ float arclength(float a, float theta) {
 }
 
 // calc where in the spiral a coordinate is
-vec2 spiral(vec2 uv) {
+vec2 spiral(vec2 uv, float a, float radius) {
 	float ang = atan(uv.y, uv.x);
 	float turn = length(uv)/radius - ang/twoPI;
 	ang += ceil(turn) * twoPI;
-	float d = arclength(a, ang) - 0.4;
+	float d = arclength(a, ang) + uOffset;
 
-	// 537971
-	// + 9061
-
-	if (d < 153297. || d > 690032.0) {
-
+	if (d < 154387. || d > 690032.0) {
 		vec2 dt = fwidth(uv) * 0.0;
 		float maxDerivative =  clamp(max(dt.t, dt.s), 0.0, 0.00001); 
 		return vec2(maxDerivative,0.0);
@@ -38,7 +32,7 @@ vec2 spiral(vec2 uv) {
 
 float plane(vec2 uv, vec2 quadUV) {
 	// get derivative of quad UV and blur based on this
-	vec2 dt = fwidth(quadUV) * 3000.0;
+	vec2 dt = fwidth(quadUV) * 2800.0;
 	float maxDerivative =  clamp(max(dt.t, dt.s), 0.0, 3.0);
 	maxDerivative *= maxDerivative;
     float top = smoothstep(0.475 * (1.0-maxDerivative), 0.476 + maxDerivative * 0.3, 1.0-uv.y);
@@ -52,7 +46,11 @@ float plane(vec2 uv, vec2 quadUV) {
 
 
 vec3 calc(vec2 uv) {
-	vec2 s = spiral(uv);
+
+	float radius = 0.001;
+	float a = (radius / twoPI) * uRadiusMultiplier;
+
+	vec2 s = spiral(uv, a, radius);
 	if (s.x == 0.0) {
 		return vec3(0.0);
 	} else {

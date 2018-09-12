@@ -20,6 +20,7 @@
     "case-sensitive-paths-webpack-plugin": "2.1.2",
     "chalk": "2.4.0",
     "css-loader": "0.28.11",
+    "dat.gui": "^0.7.2",
     "deep-assign": "^2.0.0",
     "dotenv": "4.0.0",
     "dotenv-expand": "4.0.1",

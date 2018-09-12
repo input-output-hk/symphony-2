@@ -16,6 +16,7 @@ import FlyControls from './libs/FlyControls'
 import MapControls from './libs/MapControls'
 import Audio from './libs/audio'
 import Circuit from './libs/circuit'
+import * as dat from 'dat.gui'
 
 // post
 import {
@@ -50,6 +51,9 @@ class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
+
+    this.gui = new dat.GUI()
+
     // this.OrbitControls = OrbitConstructor(THREE)
 
     this.planeSize = 500
@@ -134,6 +138,12 @@ class App extends mixin(EventEmitter, Component) {
       coils: this.coils,
       radius: this.radius
     })
+
+    this.heightsToLoad = []
+    this.loadingMutex = []
+
+    this.gui.add(this.diskGenerator, 'uRadiusMultiplier', 8257.34, 8257.4)
+    this.gui.add(this.diskGenerator, 'uOffset', 0.01, 1.00)
 
     this.initScene()
     this.initCamera()
@@ -404,7 +414,7 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.sunMesh = new THREE.Mesh(this.sunGeo, this.sunMat)
-    this.sunMesh.renderOrder = 4
+    this.sunMesh.renderOrder = 5
     this.sunMesh.position.z = 20000000
     this.sunMesh.position.y = 100000
 
@@ -479,7 +489,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.add(this.sunMesh)
 
     this.disk = await this.diskGenerator.init()
-    this.disk.renderOrder = 3
+    this.disk.renderOrder = 4
     // this.disk.receiveShadow = true
     this.scene.add(this.disk)
   }
@@ -540,15 +550,15 @@ class App extends mixin(EventEmitter, Component) {
 
             if (!this.geoAdded) {
               this.crystal = await this.crystalGenerator.init(blockGeoData)
-              this.crystal.renderOrder = 0
+              this.crystal.renderOrder = 1
               this.scene.add(this.crystal)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
-              this.trees.renderOrder = 0
+              this.trees.renderOrder = 1
               this.scene.add(this.trees)
 
               this.plane = await this.planeGenerator.init(blockGeoData)
-              this.plane.renderOrder = 0
+              this.plane.renderOrder = 1
               this.scene.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
@@ -578,7 +588,7 @@ class App extends mixin(EventEmitter, Component) {
         })
         this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
         this.underside.frustumCulled = false
-        this.underside.renderOrder = 2
+        this.underside.renderOrder = 3
         this.underside.scale.set(1.0, -1.0, 1.0)
         this.underside.translateY(-4.2)
         this.underside.updateMatrix()
@@ -876,9 +886,10 @@ class App extends mixin(EventEmitter, Component) {
         }
       })
 
-      this.heightsToLoad = []
       if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
-        this.heightsToLoad.push(this.closestHeight)
+        if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
+          this.heightsToLoad.push(this.closestHeight)
+        }
       }
 
       for (let i = 1; i < 10; i++) {
@@ -887,13 +898,17 @@ class App extends mixin(EventEmitter, Component) {
 
         if (typeof this.blockGeoDataObject[next] === 'undefined') {
           if (next <= this.maxHeight && next >= 0) {
-            this.heightsToLoad.push(next)
+            if (this.heightsToLoad.indexOf(next) === -1) {
+              this.heightsToLoad.push(next)
+            }
           }
         }
 
         if (typeof this.blockGeoDataObject[prev] === 'undefined') {
           if (prev <= this.maxHeight && prev >= 0) {
-            this.heightsToLoad.push(prev)
+            if (this.heightsToLoad.indexOf(prev) === -1) {
+              this.heightsToLoad.push(prev)
+            }
           }
         }
       }
@@ -901,17 +916,34 @@ class App extends mixin(EventEmitter, Component) {
       console.log(this.heightsToLoad)
 
       this.heightsToLoad.forEach(async (height) => {
-        let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-        // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-        let blockDataJSON = await blockData.json()
+        if (this.loadingMutex.indexOf(height) === -1) {
+          this.loadingMutex.push(height)
 
-        // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
-        // let blockDataSimpleJSON = await blockDataSimple.json()
+          console.log('loading ' + height)
 
-        let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
-        this.planeGenerator.updateGeometry(blockGeoData)
-        this.treeGenerator.updateGeometry(blockGeoData)
-        this.crystalGenerator.updateGeometry(blockGeoData)
+          let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          let blockDataJSON = await blockData.json()
+
+          // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
+          // let blockDataSimpleJSON = await blockDataSimple.json()
+
+          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
+          this.planeGenerator.updateGeometry(blockGeoData)
+          this.treeGenerator.updateGeometry(blockGeoData)
+          this.crystalGenerator.updateGeometry(blockGeoData)
+
+          let heightIndex = this.heightsToLoad.indexOf(height)
+          if (heightIndex > -1) {
+            this.heightsToLoad.splice(heightIndex, 1)
+          }
+          let mutexIndex = this.loadingMutex.indexOf(height)
+          if (mutexIndex > -1) {
+            this.heightsToLoad.splice(mutexIndex, 1)
+          }
+
+          console.log('loaded ' + height)
+        }
       })
     }
   }
@@ -1024,28 +1056,69 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
-    //  this.audio.generate(this.closestBlock.blockData)
+      this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
-    this.updateCircuit(this.closestBlock, 0)
+    this.updateClosestTrees()
+
+    this.updateMerkleDetail(this.closestBlock, 0)
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      this.updateCircuit(this.blockGeoDataObject[this.closestBlock.blockData.height - 1], 1)
+      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height - 1], 1)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      this.updateCircuit(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2)
+      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2)
     }
-
-    /* this.treeGenerator.removeClosest(this.prevClosestBlock, this.closestIndex, this.prevClosestIndex)
-
-    let newTree = await this.treeGenerator.get(this.closestBlock.blockData)
-    this.scene.add(newTree)
-    this.scene.remove(this.tree)
-    this.tree = newTree
-    this.tree.renderOrder = 0 */
   }
 
-  async updateCircuit (blockGeoData, circuitIndex) {
+  async updateClosestTrees () {
+    let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
+    if (this.centerTree) {
+      this.scene.remove(this.centerTree)
+    }
+    this.centerTree = centerTree
+    this.centerTree.renderOrder = 0
+    this.scene.add(this.centerTree)
+
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
+      let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
+      if (this.lTree) {
+        this.scene.remove(this.lTree)
+      }
+      this.lTree = lTree
+      this.lTree.renderOrder = 0
+      this.scene.add(this.lTree)
+    }
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
+      let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
+      if (this.rTree) {
+        this.scene.remove(this.rTree)
+      }
+      this.rTree = rTree
+      this.rTree.renderOrder = 0
+      this.scene.add(this.rTree)
+    }
+
+    this.trees.geometry.attributes.display.array.forEach((height, i) => {
+      this.trees.geometry.attributes.display.array[i] = 1
+    })
+
+    let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
+    this.trees.geometry.attributes.display.array[treeHeight] = 0
+
+    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
+      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
+      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    }
+
+    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
+      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
+      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    }
+    this.trees.geometry.attributes.display.needsUpdate = true
+  }
+
+  async updateMerkleDetail (blockGeoData, circuitIndex) {
     let undersidePlane
     let topsidePlane
 

@@ -5,6 +5,7 @@
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute vec4 quaternion;
+attribute float display;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
@@ -31,44 +32,47 @@ varying vec2 vPlaneOffset;
 
 void main() {
 
-	vPlaneOffset = planeOffset;
+	if (display == 1.0) {
 
-	#include <uv_vertex>
-	#include <uv2_vertex>
-	#include <color_vertex>
+		vPlaneOffset = planeOffset;
 
-	#include <beginnormal_vertex>
-	#include <morphnormal_vertex>
-	#include <skinbase_vertex>
-	#include <skinnormal_vertex>
-	#include <defaultnormal_vertex>
+		#include <uv_vertex>
+		#include <uv2_vertex>
+		#include <color_vertex>
 
-#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
+		#include <beginnormal_vertex>
+		#include <morphnormal_vertex>
+		#include <skinbase_vertex>
+		#include <skinnormal_vertex>
+		#include <defaultnormal_vertex>
 
-	vNormal = normalize( transformedNormal );
+	#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
 
-#endif
+		vNormal = normalize( transformedNormal );
 
-	#include <begin_vertex>
+	#endif
 
-	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
+		#include <begin_vertex>
 
-    transformed.xz += planeOffset.xy;
+		transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-	vTransformed = transformed;
-	vOffset = offset;
+		transformed.xz += planeOffset.xy;
 
-	#include <morphtarget_vertex>
-	#include <skinning_vertex>
-	#include <displacementmap_vertex>
-	#include <project_vertex>
-	#include <logdepthbuf_vertex>
-	#include <clipping_planes_vertex>
+		vTransformed = transformed;
+		vOffset = offset;
 
-	vViewPosition = - mvPosition.xyz;
+		#include <morphtarget_vertex>
+		#include <skinning_vertex>
+		#include <displacementmap_vertex>
+		#include <project_vertex>
+		#include <logdepthbuf_vertex>
+		#include <clipping_planes_vertex>
 
-	#include <worldpos_vertex>
-	#include <shadowmap_vertex>
-	#include <fog_vertex>
+		vViewPosition = - mvPosition.xyz;
 
+		#include <worldpos_vertex>
+		#include <shadowmap_vertex>
+		#include <fog_vertex>
+
+	}
 }

@@ -12,6 +12,9 @@ export default class Disk extends Base {
   constructor (args) {
     super(args)
 
+    this.uRadiusMultiplier = 8257.34
+    this.uOffset = 0.880
+
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     // this.normalMap.wrapS = THREE.RepeatWrapping
     // this.normalMap.wrapT = THREE.RepeatWrapping
@@ -72,6 +75,8 @@ export default class Disk extends Base {
   update (args) {
     this.material.uniforms.uTime.value = args.time * 0.001
     this.material.uniforms.uCamPos.value = args.camPos
+    this.material.uniforms.uRadiusMultiplier.value = this.uRadiusMultiplier
+    this.material.uniforms.uOffset.value = this.uOffset
   }
 }
 
@@ -90,6 +95,16 @@ class DiskMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uCamPos = {
       type: 'v3',
       value: new THREE.Vector3(0, 0, 0)
+    }
+
+    this.uniforms.uRadiusMultiplier = {
+      type: 'f',
+      value: 8257.308
+    }
+
+    this.uniforms.uOffset = {
+      type: 'f',
+      value: 0.540
     }
 
     this.vertexShader = vertexShader
