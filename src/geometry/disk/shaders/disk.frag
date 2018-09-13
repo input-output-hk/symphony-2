@@ -32,7 +32,7 @@ vec2 spiral(vec2 uv, float a, float radius) {
 
 float plane(vec2 uv, vec2 quadUV) {
 	// get derivative of quad UV and blur based on this
-	vec2 dt = fwidth(quadUV) * 2800.0;
+	vec2 dt = fwidth(quadUV) * 3000.0;
 	float maxDerivative =  clamp(max(dt.t, dt.s), 0.0, 3.0);
 	maxDerivative *= maxDerivative;
     float top = smoothstep(0.475 * (1.0-maxDerivative), 0.476 + maxDerivative * 0.3, 1.0-uv.y);
@@ -143,8 +143,8 @@ void main() {
 
 	s.x *= min(1.0, distToFragmentSq* 0.00000001);
 
-	outgoingLight += (1.0-(s.y*0.000002)) * 0.2;
-	outgoingLight -= sin(1.0-(s.y*0.002)) * 0.015;
+	outgoingLight += (1.0-(s.y*0.0000013)) * 0.3;
+	outgoingLight -= sin(1.0-(s.y*0.002)) * 0.025;
 
 	gl_FragColor = vec4( outgoingLight, s.x );
 

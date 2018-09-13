@@ -921,17 +921,23 @@ class App extends mixin(EventEmitter, Component) {
 
           console.log('loading ' + height)
 
-          let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-          // let blockData = await window.fetch('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-          let blockDataJSON = await blockData.json()
+          if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+            // let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
 
-          // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
-          // let blockDataSimpleJSON = await blockDataSimple.json()
+            const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
+            let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
 
-          let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
-          this.planeGenerator.updateGeometry(blockGeoData)
-          this.treeGenerator.updateGeometry(blockGeoData)
-          this.crystalGenerator.updateGeometry(blockGeoData)
+            let blockData = await window.fetch(url)
+            let blockDataJSON = await blockData.json()
+
+            // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
+            // let blockDataSimpleJSON = await blockDataSimple.json()
+
+            let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
+            this.planeGenerator.updateGeometry(blockGeoData)
+            this.treeGenerator.updateGeometry(blockGeoData)
+            this.crystalGenerator.updateGeometry(blockGeoData)
+          }
 
           let heightIndex = this.heightsToLoad.indexOf(height)
           if (heightIndex > -1) {
@@ -1188,7 +1194,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.scene = new THREE.Scene()
-    // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
+    this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
