@@ -88,7 +88,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.state = {
       closestBlock: null,
-      controlType: ''
+      controlType: '',
+      txSelected: null
     }
   }
 
@@ -153,6 +154,8 @@ class App extends mixin(EventEmitter, Component) {
     this.gui.add(this.diskGenerator, 'uRadiusMultiplier', 8257.34, 8257.4)
     this.gui.add(this.diskGenerator, 'uOffset', 0.01, 1.00)
 
+    this.canvas = document.getElementById(this.config.scene.canvasID)
+
     this.initScene()
     this.initCamera()
     this.initRenderer()
@@ -212,12 +215,14 @@ class App extends mixin(EventEmitter, Component) {
 
         //     this.nodes.material.uniforms.nodeIsHovered.value = 1.0
         this.txIsHovered = true
+        document.body.style.cursor = 'pointer'
       } else {
         this.emit('txMouseOut', {
           mousePos: this.mousePos
         })
         //     this.nodes.material.uniforms.nodeIsHovered.value = 0.0
         this.txIsHovered = false
+        document.body.style.cursor = 'default'
       }
 
     //   let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
@@ -243,7 +248,6 @@ class App extends mixin(EventEmitter, Component) {
       // pause movement on click
       if (this.txIsHovered) {
         this.lastSelectedID = this.lastHoveredID
-        this.movementPaused = true
 
         if (typeof this.pickerGenerator.txMap[this.lastHoveredID] !== 'undefined') {
           this.selectedTXHash = this.pickerGenerator.txMap[this.lastHoveredID]
@@ -257,7 +261,31 @@ class App extends mixin(EventEmitter, Component) {
           let txData = await window.fetch('https://blockchain.info/rawtx/' + this.selectedTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           let txDataJSON = await txData.json()
 
-          console.log(txDataJSON)
+          let outTotal = 0
+          let inTotal = 0
+
+          txDataJSON.out.forEach((output) => {
+            outTotal += output.value
+          })
+
+          txDataJSON.inputs.forEach((input, i) => {
+            if (typeof input.prev_out !== 'undefined') {
+              inTotal += input.prev_out.value
+            }
+          })
+
+          txDataJSON.inTotal = inTotal / 100000000
+          txDataJSON.outTotal = outTotal / 100000000
+          txDataJSON.fee = (inTotal - outTotal) / 100000000
+          if (txDataJSON.fee < 0) {
+            txDataJSON.fee = 0
+          }
+
+          this.setState({
+            txSelected: txDataJSON
+          })
+
+          console.log(this.state.txSelected)
         }
       } else {
         this.lastSelectedID = -1
@@ -1158,13 +1186,13 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalGenerator.updateBlockStartTimes(blockData)
     })
 
-    window.addEventListener('mousemove', this.onMouseMove.bind(this), false)
+    document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
-    window.addEventListener('mouseup', (e) => {
+    document.addEventListener('mouseup', (e) => {
       this.onMouseUp()
     })
 
-    window.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousedown', (e) => {
       this.onMouseDown()
     })
 
@@ -1222,6 +1250,8 @@ class App extends mixin(EventEmitter, Component) {
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
       this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2)
     }
+
+    this.pickerGenerator.updateGeometry(this.closestBlock)
   }
 
   async updateClosestTrees () {
@@ -1390,7 +1420,7 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
       logarithmicDepthBuffer: true,
-      canvas: document.getElementById(this.config.scene.canvasID)
+      canvas: this.canvas
     })
     // this.renderer.toneMapping = THREE.NoToneMapping
     this.renderer.toneMappingExposure = 1.5
@@ -1438,6 +1468,28 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  UITXDetails () {
+    if (this.state.txSelected) {
+      return (
+        <div className='tx-details'>
+          <h2>Transaction</h2>
+          <ul>
+            <li><h3>Date</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
+            <li><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
+            <li><h3>Version</h3> <strong>{this.state.txSelected.ver}</strong></li>
+            <li><h3>Size (bytes)</h3> <strong>{this.state.txSelected.size}</strong></li>
+            <li><h3>Relayed By</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
+            <li><h3>Inputs</h3> <strong>{this.state.txSelected.vin_sz}</strong></li>
+            <li><h3>Outputs</h3> <strong>{this.state.txSelected.vout_sz}</strong></li>
+            <li><h3>Input Total</h3> <strong>{this.state.txSelected.inTotal} BTC</strong></li>
+            <li><h3>Output Total</h3> <strong>{this.state.txSelected.outTotal} BTC</strong></li>
+            <li><h3>Fee</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
+          </ul>
+        </div>
+      )
+    }
+  }
+
   UIBlockDetails () {
     if (this.state.closestBlock) {
       const health = this.state.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.state.closestBlock.blockData.healthRatio
@@ -1447,6 +1499,7 @@ class App extends mixin(EventEmitter, Component) {
         <div>
           <div className='cockpit-border' />
           {this.UICockpitButton()}
+          {this.UITXDetails()}
           <div className='block-details'>
             <h2>Block {this.state.closestBlock.blockData.hash}</h2>
             <div><h3>Health</h3>
@@ -1481,7 +1534,6 @@ class App extends mixin(EventEmitter, Component) {
   UI () {
     return (
       <div className='symphony-ui'>
-
         {this.UIBlockDetails()}
       </div>
     )

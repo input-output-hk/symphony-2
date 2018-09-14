@@ -102,39 +102,39 @@ void main() {
 
 		// accumulation
 		 #include <lights_physical_fragment>
-		//  #include <lights_fragment_begin>
+		 #include <lights_fragment_begin>
 
-		GeometricContext geometry;
+		// GeometricContext geometry;
 
-		geometry.position = - vViewPosition;
-		geometry.normal = normal;
-		geometry.viewDir = normalize( vViewPosition );
+		// geometry.position = - vViewPosition;
+		// geometry.normal = normal;
+		// geometry.viewDir = normalize( vViewPosition );
 
-		IncidentLight directLight;
+		// IncidentLight directLight;
 
-		#if defined( RE_IndirectDiffuse )
+		// #if defined( RE_IndirectDiffuse )
 
-			vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
+		// 	vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
 
-			#if ( NUM_HEMI_LIGHTS > 0 )
+		// 	#if ( NUM_HEMI_LIGHTS > 0 )
 
-				#pragma unroll_loop
-				for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
+		// 		#pragma unroll_loop
+		// 		for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
 
-					irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );
+		// 			irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );
 
-				}
+		// 		}
 
-			#endif
+		// 	#endif
 
-		#endif
+		// #endif
 
-		#if defined( RE_IndirectSpecular )
+		// #if defined( RE_IndirectSpecular )
 
-			vec3 radiance = vec3( 0.0 );
-			vec3 clearCoatRadiance = vec3( 0.0 );
+		// 	vec3 radiance = vec3( 0.0 );
+		// 	vec3 clearCoatRadiance = vec3( 0.0 );
 
-		#endif
+		// #endif
 
 
 
