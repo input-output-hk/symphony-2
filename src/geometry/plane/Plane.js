@@ -40,12 +40,9 @@ export default class Plane extends Base {
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
-      // bumpMap: this.bumpMap,
-      // bumpScale: 0.2
-      // roughnessMap: this.roughnessMap
-      // metalnessMap: this.roughnessMap
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.02, 0.02)
+      normalScale: new THREE.Vector2(0.02, 0.02),
+      fog: false
     })
   }
 
@@ -66,7 +63,6 @@ export default class Plane extends Base {
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
     object.lookAt(0, 0, 0)
-    // object.rotateY(1 / (blockHeight + 20))
 
     this.quatArray[0] = object.quaternion.x
     this.quatArray[1] = object.quaternion.y

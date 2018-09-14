@@ -78,6 +78,8 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
+	// outgoingLight += 1.0- vSpentRatio;
+
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 
 	#include <tonemapping_fragment>

@@ -8,6 +8,7 @@ uniform float uTime;
 uniform float uAudioTime;
 uniform float uFirstLoop;
 
+attribute vec3 pickerColor;
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
@@ -32,6 +33,7 @@ varying float vBottomVertex;
 // varying float vCenterTopVertex;
 // varying float vCenterBottomVertex;
 varying float vEnvelope;
+varying vec3 vPickerColor;
 
 #ifndef FLAT_SHADED
 
@@ -53,6 +55,7 @@ varying float vEnvelope;
 
 void main() {
 
+	vPickerColor = pickerColor;
 
 	vPlaneOffset = planeOffset;
 

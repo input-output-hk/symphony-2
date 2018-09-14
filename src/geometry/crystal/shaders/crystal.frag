@@ -70,16 +70,16 @@ void main() {
 
 		#include <clipping_planes_fragment>
 
-		vec2 dt = fwidth(vUv);
-		vec2 dtFace = dt * 200.0;
-		float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
+		// vec2 dt = fwidth(vUv);
+		// vec2 dtFace = dt * 200.0;
+		// float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
 
 		float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		float edgeAmount = (pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.35);
+		float edgeAmount = (pow(clamp( (1.0 - d), 0.0, 1.0), 3.0) * 0.3);
 
-		vec2 dtEdge = dt * 10.0;
-		float maxDerivativeEdge = clamp(max(dtEdge.t, dtEdge.s), 0.0, 1.0);
-		edgeAmount *= 1.0-maxDerivativeEdge;
+		// vec2 dtEdge = dt * 10.0;
+		// float maxDerivativeEdge = clamp(max(dtEdge.t, dtEdge.s), 0.0, 1.0);
+		// edgeAmount *= 1.0-maxDerivativeEdge;
 
 		vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 1.3  )  );
 		
@@ -87,7 +87,7 @@ void main() {
 
 		ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-		vec3 totalEmissiveRadiance = vec3(clamp((1.0-vSpentRatio + (vEnvelope )), 0.0, 2.5) * 0.3);
+		vec3 totalEmissiveRadiance = vec3(clamp((1.0-vSpentRatio + (vEnvelope )), 0.0, 2.5) * 0.2);
 
 		#include <logdepthbuf_fragment>
 		#include <map_fragment>
@@ -202,10 +202,11 @@ void main() {
 		color -= smoothstep(tile.y+0.3,tile.y,1.15)-
 				smoothstep(tile.y,tile.y-0.3,1.0);
 
-		float finalColor = mix(color,1.0, maxDerivativeFace * 0.5) * (1.0- maxDerivativeFace * 0.7);
+		// float finalColor = mix(color,1.0, maxDerivativeFace * 0.5) * (1.0- maxDerivativeFace * 0.7);
 
 
-		finalColor *= abs(noiseAmount) * 35.0;
+		float finalColor = color;
+		finalColor *= abs(noiseAmount) * 15.0;
 
 		finalColor = (clamp(finalColor, 0.0, 1.0) );
 
@@ -215,7 +216,7 @@ void main() {
 
 
 
-		gl_FragColor = vec4( outgoingLight, diffuseColor.a);
+		gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));
 
 		#include <tonemapping_fragment>
 		#include <encodings_fragment>

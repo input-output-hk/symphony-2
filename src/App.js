@@ -24,13 +24,13 @@ import {
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass,
-  SSAARenderPass
+  SMAAPass
+  // SSAARenderPass
 } from './libs/post/EffectComposer'
 
-import CopyShader from './libs/post/CopyShader'
+// import CopyShader from './libs/post/CopyShader'
 import HueSaturation from './libs/post/HueSaturation'
-import BrightnessContrast from './libs/post/BrightnessContrast'
+// import BrightnessContrast from './libs/post/BrightnessContrast'
 import VignetteShader from './libs/post/Vignette'
 import FilmShader from './libs/post/Film'
 
@@ -39,6 +39,7 @@ import Config from './Config'
 
 // Geometry
 import Crystal from './geometry/crystal/Crystal'
+import Picker from './geometry/picker/Picker'
 import CrystalAO from './geometry/crystalAO/CrystalAO'
 import Plane from './geometry/plane/Plane'
 import Tree from './geometry/tree/Tree'
@@ -82,6 +83,9 @@ class App extends mixin(EventEmitter, Component) {
     this.loadedHeights = []
     this.loadedCircuits = []
 
+    this.mousePos = new THREE.Vector2() // keep track of mouse position
+    this.mouseDelta = new THREE.Vector2() // keep track of mouse position
+
     this.state = {
       closestBlock: null,
       controlType: ''
@@ -107,13 +111,17 @@ class App extends mixin(EventEmitter, Component) {
       radius: this.radius
     })
 
+    this.pickerGenerator = new Picker({
+      planeSize: this.planeSize,
+      planeOffsetMultiplier: this.planeOffsetMultiplier,
+      planeMargin: this.planeMargin
+    })
+
     this.crystalAOGenerator = new CrystalAO({
       firebaseDB: this.firebaseDB,
       planeSize: this.planeSize,
       planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin,
-      coils: this.coils,
-      radius: this.radius
+      planeMargin: this.planeMargin
     })
 
     this.planeGenerator = new Plane({
@@ -154,8 +162,112 @@ class App extends mixin(EventEmitter, Component) {
     await this.initPositions()
     this.initEnvironment()
     this.initGeometry()
+
     this.addEvents()
     this.animate()
+  }
+
+  initPicker () {
+    this.lastHoveredID = -1
+    this.lastSelectedID = -1
+    this.pickingScene = new THREE.Scene()
+    this.pickingTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight)
+    this.pickingTexture.texture.minFilter = THREE.LinearFilter
+    this.pickingTexture.texture.generateMipmaps = false
+  }
+
+  onMouseMove (e) {
+    this.mousePos.x = e.clientX
+    this.mousePos.y = e.clientY
+  }
+
+  updatePicker () {
+    this.renderer.setClearColor(0)
+    this.renderer.render(this.pickingScene, this.camera, this.pickingTexture)
+
+    let pixelBuffer = new Uint8Array(4)
+
+    let canvasOffset = this.renderer.domElement.getBoundingClientRect()
+
+    this.renderer.readRenderTargetPixels(
+      this.pickingTexture,
+      this.mousePos.x - canvasOffset.left,
+      this.pickingTexture.height - (this.mousePos.y - canvasOffset.top),
+      1,
+      1,
+      pixelBuffer
+    )
+
+    let id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2] - 1)
+
+    if (this.lastHoveredID !== id) {
+      this.lastHoveredID = id
+
+      if (typeof this.pickerGenerator.txMap[id] !== 'undefined') {
+        this.hoveredTXHash = this.pickerGenerator.txMap[id]
+        this.emit('txMouseOver', {
+          txData: this.hoveredTXHash,
+          mousePos: this.mousePos
+        })
+
+        //     this.nodes.material.uniforms.nodeIsHovered.value = 1.0
+        this.txIsHovered = true
+      } else {
+        this.emit('txMouseOut', {
+          mousePos: this.mousePos
+        })
+        //     this.nodes.material.uniforms.nodeIsHovered.value = 0.0
+        this.txIsHovered = false
+      }
+
+    //   let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
+    //   hoveredArray[this.lastHoveredNodeID] = 1.0
+
+    //   this.crystal.geometry.attributes.isHovered.array = hoveredArray
+    //   this.crystal.geometry.attributes.isHovered.needsUpdate = true
+    }
+  }
+
+  async onMouseUp () {
+    let mouseMoveVec = this.mousePos.clone().sub(this.lastMousePos)
+
+    // clicking on the same tx twice deselects
+    if (this.lastSelectedID === this.lastHoveredID) {
+      this.lastSelectedID = -1
+      this.emit('txDeselect', {})
+    } else {
+      if (mouseMoveVec.lengthSq() > 200) {
+        return
+      }
+
+      // pause movement on click
+      if (this.txIsHovered) {
+        this.lastSelectedID = this.lastHoveredID
+        this.movementPaused = true
+
+        if (typeof this.pickerGenerator.txMap[this.lastHoveredID] !== 'undefined') {
+          this.selectedTXHash = this.pickerGenerator.txMap[this.lastHoveredID]
+
+          this.emit('txSelect', {
+            txData: this.selectedTXHash,
+            mousePos: this.mousePos
+          })
+
+          // get tx data
+          let txData = await window.fetch('https://blockchain.info/rawtx/' + this.selectedTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          let txDataJSON = await txData.json()
+
+          console.log(txDataJSON)
+        }
+      } else {
+        this.lastSelectedID = -1
+        this.emit('txDeselect', {})
+      }
+    }
+  }
+
+  onMouseDown () {
+    this.lastMousePos = new THREE.Vector2(this.mousePos.x, this.mousePos.y)
   }
 
   setTimestampToLoad () {
@@ -187,15 +299,14 @@ class App extends mixin(EventEmitter, Component) {
     this.HueSaturationPass = new ShaderPass(HueSaturation)
     this.composer.addPass(this.HueSaturationPass)
 
-    this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
-    this.composer.addPass(this.BrightnessContrastPass)
+    // this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
+    // this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
     this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.97)
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
-
     this.composer.addPass(this.VignettePass)
 
     this.FilmShaderPass = new ShaderPass(FilmShader)
@@ -543,15 +654,20 @@ class App extends mixin(EventEmitter, Component) {
           if (addCount < 1) {
             let blockGeoData = await this.getGeometry(hash, addCount)
 
-            // let crystalAO = await this.crystalAOGenerator.getMultiple(this.blockGeoDataObject)
-            // crystalAO.renderOrder = 2
-            // crystalAO.translateY(0.1)
-            // this.scene.add(crystalAO)
-
             if (!this.geoAdded) {
               this.crystal = await this.crystalGenerator.init(blockGeoData)
+
+              this.initPicker()
+              this.picker = await this.pickerGenerator.init(blockGeoData)
+              this.pickingScene.add(this.picker)
+
               this.crystal.renderOrder = 1
               this.scene.add(this.crystal)
+
+              this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
+              this.crystalAO.renderOrder = 1
+              this.crystalAO.translateY(0.1)
+              this.scene.add(this.crystalAO)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
               this.trees.renderOrder = 1
@@ -577,6 +693,7 @@ class App extends mixin(EventEmitter, Component) {
               this.planeGenerator.updateGeometry(blockGeoData, addCount)
               this.treeGenerator.updateGeometry(blockGeoData, addCount)
               this.crystalGenerator.updateGeometry(blockGeoData)
+              this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
           }
           addCount++
@@ -681,8 +798,9 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.minDistance = 100
         this.controls.maxDistance = 10000000
         this.controls.maxPolarAngle = Math.PI / 2
-        this.controls.rotateSpeed = 0.1
-        this.controls.panSpeed = 0.5
+        this.controls.rotateSpeed = 0.05
+        this.controls.panSpeed = 0.25
+        this.controls.zoomSpeed = 0.5
         break
 
       case 'fly':
@@ -765,7 +883,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async loadNearestBlocks () {
-    if (this.camera.position.y < 15000) {
+    if (this.camera.position.y < 20000) {
       let loadNew = false
 
       if (typeof this.lastLoadPos === 'undefined') {
@@ -882,6 +1000,7 @@ class App extends mixin(EventEmitter, Component) {
             this.planeGenerator.updateGeometry(blockGeoData)
             this.treeGenerator.updateGeometry(blockGeoData)
             this.crystalGenerator.updateGeometry(blockGeoData)
+            this.crystalAOGenerator.updateGeometry(blockGeoData)
           }
         }
       })
@@ -924,6 +1043,16 @@ class App extends mixin(EventEmitter, Component) {
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
             // let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
 
+            let blockGeoDataTemp = {}
+            blockGeoDataTemp.blockData = {}
+            blockGeoDataTemp.blockData.height = height
+            blockGeoDataTemp.blockData.pos = {}
+            blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
+            blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+
+            this.planeGenerator.updateGeometry(blockGeoDataTemp)
+            this.treeGenerator.updateGeometry(blockGeoDataTemp)
+
             const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
             let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
 
@@ -934,9 +1063,9 @@ class App extends mixin(EventEmitter, Component) {
             // let blockDataSimpleJSON = await blockDataSimple.json()
 
             let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
-            this.planeGenerator.updateGeometry(blockGeoData)
-            this.treeGenerator.updateGeometry(blockGeoData)
+
             this.crystalGenerator.updateGeometry(blockGeoData)
+            this.crystalAOGenerator.updateGeometry(blockGeoData)
           }
 
           let heightIndex = this.heightsToLoad.indexOf(height)
@@ -963,6 +1092,10 @@ class App extends mixin(EventEmitter, Component) {
       this.loadNearestBlocks()
     }
     this.getClosestBlock()
+
+    if (this.picker) {
+      this.updatePicker()
+    }
 
     // if (this.plane) {
     //   if (this.camera.position.y < 0) {
@@ -999,13 +1132,17 @@ class App extends mixin(EventEmitter, Component) {
     if (this.blockReady) {
       this.diskGenerator.update({time: window.performance.now(), camPos: this.camera.position})
       this.crystalGenerator.update(window.performance.now(), this.firstLoop)
-      // this.crystalAOGenerator.update(window.performance.now(), this.firstLoop)
+      this.crystalAOGenerator.update(window.performance.now(), this.firstLoop)
     }
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
 
+    if (this.config.scene.debugPicker && this.pickingScene) {
+      this.renderer.render(this.pickingScene, this.camera)
+    } else {
     // this.renderer.render(this.scene, this.camera)
-    this.composer.render()
+      this.composer.render()
+    }
   }
 
   addEvents () {
@@ -1019,6 +1156,16 @@ class App extends mixin(EventEmitter, Component) {
 
     this.audio.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
+    })
+
+    window.addEventListener('mousemove', this.onMouseMove.bind(this), false)
+
+    window.addEventListener('mouseup', (e) => {
+      this.onMouseUp()
+    })
+
+    window.addEventListener('mousedown', (e) => {
+      this.onMouseDown()
     })
 
     document.addEventListener('keydown', (event) => {
@@ -1083,7 +1230,7 @@ class App extends mixin(EventEmitter, Component) {
       this.scene.remove(this.centerTree)
     }
     this.centerTree = centerTree
-    this.centerTree.renderOrder = 0
+    this.centerTree.renderOrder = 1
     this.scene.add(this.centerTree)
 
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
@@ -1092,7 +1239,7 @@ class App extends mixin(EventEmitter, Component) {
         this.scene.remove(this.lTree)
       }
       this.lTree = lTree
-      this.lTree.renderOrder = 0
+      this.lTree.renderOrder = 1
       this.scene.add(this.lTree)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
@@ -1101,7 +1248,7 @@ class App extends mixin(EventEmitter, Component) {
         this.scene.remove(this.rTree)
       }
       this.rTree = rTree
-      this.rTree.renderOrder = 0
+      this.rTree.renderOrder = 1
       this.scene.add(this.rTree)
     }
 
@@ -1194,7 +1341,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.scene = new THREE.Scene()
-    this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
+    // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
@@ -1218,7 +1365,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camera = new THREE.PerspectiveCamera(
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
-      1.0,
+      0.01,
       1000000000
       // 10000
     )
@@ -1241,11 +1388,9 @@ class App extends mixin(EventEmitter, Component) {
    */
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
-      // antialias: this.config.scene.antialias,
       antialias: false,
       logarithmicDepthBuffer: true,
       canvas: document.getElementById(this.config.scene.canvasID)
-      // alpha: true
     })
     // this.renderer.toneMapping = THREE.NoToneMapping
     this.renderer.toneMappingExposure = 1.5
@@ -1275,6 +1420,10 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer.setSize(this.width, this.height, false)
 
     this.composer.setSize(this.width, this.height)
+
+    if (this.pickingTexture) {
+      this.pickingTexture.setSize(this.width, this.height)
+    }
   }
 
   UICockpitButton () {

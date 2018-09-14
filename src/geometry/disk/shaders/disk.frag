@@ -141,7 +141,7 @@ void main() {
 	vec4 distVec = vWorldPosition - vec4(uCamPos, 0);
 	float distToFragmentSq = dot(distVec, distVec);
 
-	s.x *= min(1.0, distToFragmentSq* 0.00000001);
+	s.x *= min(1.0, distToFragmentSq* 0.000000001);
 
 	outgoingLight += (1.0-(s.y*0.0000013)) * 0.3;
 	outgoingLight -= sin(1.0-(s.y*0.002)) * 0.025;
