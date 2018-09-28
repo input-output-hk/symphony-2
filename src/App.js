@@ -2,7 +2,6 @@
 import React, { Component } from 'react'
 import * as THREE from 'three'
 import GLTFLoader from 'three-gltf-loader'
-// import OrbitConstructor from 'three-orbit-controls'
 import deepAssign from 'deep-assign'
 import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
@@ -24,8 +23,8 @@ import {
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass
-  // SSAARenderPass
+  SMAAPass,
+  SSAARenderPass
 } from './libs/post/EffectComposer'
 
 // import CopyShader from './libs/post/CopyShader'
@@ -185,6 +184,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   updatePicker () {
+    if (!this.closestBlock) {
+      return
+    }
+
     this.renderer.setClearColor(0)
     this.renderer.render(this.pickingScene, this.camera, this.pickingTexture)
 
@@ -225,11 +228,15 @@ class App extends mixin(EventEmitter, Component) {
         document.body.style.cursor = 'default'
       }
 
-    //   let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
-    //   hoveredArray[this.lastHoveredNodeID] = 1.0
+      let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
 
-    //   this.crystal.geometry.attributes.isHovered.array = hoveredArray
-    //   this.crystal.geometry.attributes.isHovered.needsUpdate = true
+      if (this.lastHoveredID !== -1) {
+        const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+        hoveredArray[this.lastHoveredID + txIndexOffset] = 1.0
+      }
+
+      this.crystal.geometry.attributes.isHovered.array = hoveredArray
+      this.crystal.geometry.attributes.isHovered.needsUpdate = true
     }
   }
 
@@ -245,7 +252,6 @@ class App extends mixin(EventEmitter, Component) {
         return
       }
 
-      // pause movement on click
       if (this.txIsHovered) {
         this.lastSelectedID = this.lastHoveredID
 
@@ -335,6 +341,7 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
+    // this.VignettePass.renderToScreen = true
     this.composer.addPass(this.VignettePass)
 
     this.FilmShaderPass = new ShaderPass(FilmShader)

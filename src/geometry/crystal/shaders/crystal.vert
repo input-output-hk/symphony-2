@@ -8,6 +8,7 @@ uniform float uTime;
 uniform float uAudioTime;
 uniform float uFirstLoop;
 
+attribute float isHovered;
 attribute vec3 pickerColor;
 attribute vec3 offset;
 attribute vec2 planeOffset;
@@ -22,6 +23,7 @@ attribute vec4 quaternion;
 attribute float txTime;
 attribute float blockStartTime;
 
+varying float vIsHovered;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec2 vPlaneOffset;
@@ -58,6 +60,8 @@ void main() {
 	vPickerColor = pickerColor;
 
 	vPlaneOffset = planeOffset;
+
+	vIsHovered = isHovered;
 
 	#include <uv_vertex>
 	#include <uv2_vertex>

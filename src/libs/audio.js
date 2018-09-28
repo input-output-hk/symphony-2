@@ -14,7 +14,7 @@ export default class Audio extends EventEmitter {
 
     this.compressor = this.audioContext.createDynamicsCompressor()
     this.compressor.threshold.setValueAtTime(-30, this.audioContext.currentTime)
-    this.compressor.knee.setValueAtTime(40, this.audioContext.currentTime)
+    this.compressor.knee.setValueAtTime(10, this.audioContext.currentTime)
     this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
     this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
     this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
@@ -40,8 +40,9 @@ export default class Audio extends EventEmitter {
 
     getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
       this.convolver.buffer = buffer
-      this.masterBus.connect(this.compressor)
-      this.compressor.connect(this.convolver)
+      // this.masterBus.connect(this.compressor)
+      this.masterBus.connect(this.convolver)
+      // this.compressor.connect(this.convolver)
       this.convolver.connect(this.biquadFilter)
       this.biquadFilter.connect(this.lowShelf)
       this.lowShelf.connect(this.audioContext.destination)
@@ -326,7 +327,7 @@ export default class Audio extends EventEmitter {
                 Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
                 Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
-        wave /= 16.0
+        wave /= 8.0
 
         sum += wave * attack * release * vol
       }
@@ -470,7 +471,7 @@ export default class Audio extends EventEmitter {
   }
 
   getVol (frequencies) {
-    let noteLength = 7.0
+    let noteLength = 3.0
     let vol = (this.soundDuration / noteLength) / frequencies
 
     if (vol > 0.5) {

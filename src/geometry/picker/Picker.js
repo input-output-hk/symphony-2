@@ -132,6 +132,12 @@ export default class Picker extends Base {
 
     let pickColor = new THREE.Color(0x999999)
 
+    this.geometry.attributes.offset.array = new Float32Array(this.instanceTotal * 3)
+    this.geometry.attributes.planeOffset.array = new Float32Array(this.instanceTotal * 2).fill(0)
+    this.geometry.attributes.scale.array = new Float32Array(this.instanceTotal)
+    this.geometry.attributes.quaternion.array = new Float32Array(this.instanceTotal * 4)
+    this.geometry.attributes.pickerColor.array = new Float32Array(this.instanceTotal * 3)
+
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
       const tx = blockGeoData.blockData.tx[i]
 

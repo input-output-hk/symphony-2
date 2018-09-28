@@ -3623,9 +3623,9 @@ got@^6.7.1:
     unzip-response "^2.0.1"
     url-parse-lax "^1.0.0"
 
-gpu.js@^1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.7.0.tgz#61fb20b321d8c62ee867ea5c4d732296639c8483"
+gpu.js@^1.8.1:
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.8.1.tgz#1a378d2bb9005918d81a10e3b2f2a220ca405e4f"
   dependencies:
     acorn "^5.1.1"
 
@@ -7476,9 +7476,9 @@ three-orbit-controls@^82.1.0:
   version "82.1.0"
   resolved "https://registry.yarnpkg.com/three-orbit-controls/-/three-orbit-controls-82.1.0.tgz#11a7f33d0a20ecec98f098b37780f6537374fab4"
 
-three@^0.96.0:
-  version "0.96.0"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.96.0.tgz#6f48bb9e321506906ae4708bda69b0ffa808ee7f"
+three@^0.97.0:
+  version "0.97.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.97.0.tgz#76141e1b0ace14246fe9198a458fefddc98a4e30"
 
 throat@^4.0.0:
   version "4.1.0"
