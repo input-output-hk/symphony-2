@@ -47,7 +47,7 @@ export default class Plane extends Base {
   }
 
   async init (blockGeoData) {
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(0.0)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999.0)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
@@ -122,6 +122,16 @@ class PlaneMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uTime = {
       type: 'f',
       value: 0.0
+    }
+
+    this.uniforms.uCubePos = {
+      type: 'v3',
+      value: new THREE.Vector3(0, 0, 0)
+    }
+
+    this.uniforms.uOriginOffset = {
+      type: 'v2',
+      value: new THREE.Vector2(0.0, 0.0)
     }
 
     this.vertexShader = vertexShader

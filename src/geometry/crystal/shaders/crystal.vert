@@ -8,6 +8,8 @@ uniform float uTime;
 uniform float uAudioTime;
 uniform float uFirstLoop;
 
+uniform vec2 uOriginOffset;
+
 attribute float isHovered;
 attribute vec3 pickerColor;
 attribute vec3 offset;
@@ -126,7 +128,7 @@ void main() {
 	// }
 
     //transformed.y *= offset.y;
-    transformed.xz += offset.xz;
+    transformed.xz += (offset.xz - uOriginOffset.xy);
 
 	//transformed.x += (random(originalTransform.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
 	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;

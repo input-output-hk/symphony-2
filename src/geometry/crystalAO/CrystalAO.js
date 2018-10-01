@@ -145,6 +145,11 @@ class CrystalAOMaterial extends THREE.MeshBasicMaterial {
       value: 0.0
     }
 
+    this.uniforms.uOriginOffset = {
+      type: 'v2',
+      value: new THREE.Vector2(0.0, 0.0)
+    }
+
     this.vertexShader = vertexShader
     this.fragmentShader = fragmentShader
   }

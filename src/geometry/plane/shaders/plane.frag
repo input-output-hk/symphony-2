@@ -1,3 +1,10 @@
+varying vec3 vReflect;
+varying vec3 vRefract[3];
+//varying float vReflectionFactor;
+varying vec3 worldNormal;
+
+varying vec3 vWorldPosition;
+
 #define PHYSICAL
 
 uniform vec3 diffuse;
@@ -46,24 +53,11 @@ varying vec2 vPlaneOffset;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
-float circle(in float dist, in float radius) {
-	return 1.0 - smoothstep(
-		radius - (radius * 2.0),
-		radius + (radius * 0.00001),
-        dot(dist, dist) * 4.0
-	);
-}
-
 void main() {
-
-	if (vPlaneOffset.x == 0.) {
-		discard;
-	}
 
 	#include <clipping_planes_fragment>
 
 	vec4 diffuseColor = vec4( diffuse, opacity );
-
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;
 
@@ -89,13 +83,7 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	// outgoingLight += 0.2;
-
-	// outgoingLight.b += 0.2;
-	// outgoingLight.g += 0.1;
-
-	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
-	//gl_FragColor = vec4( outgoingLight, 0.0);
+	gl_FragColor = vec4( outgoingLight.rgb, diffuseColor.a );
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>

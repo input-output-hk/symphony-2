@@ -2,6 +2,7 @@ uniform float uTime;
 uniform float uOffset;
 uniform vec3 uCamPos;
 uniform float uRadiusMultiplier;
+uniform vec2 uOriginOffset;
 
 varying vec4 vWorldPosition;
 

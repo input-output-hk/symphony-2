@@ -7,6 +7,8 @@ attribute vec2 planeOffset;
 attribute vec4 quaternion;
 attribute float display;
 
+uniform vec2 uOriginOffset;
+
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
@@ -55,8 +57,8 @@ void main() {
 		#include <begin_vertex>
 
 		transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
-
-		transformed.xz += planeOffset.xy;
+	
+		transformed.xz += (planeOffset.xy - uOriginOffset);
 
 		vTransformed = transformed;
 		vOffset = offset;

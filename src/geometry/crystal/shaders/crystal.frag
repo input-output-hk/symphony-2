@@ -76,7 +76,9 @@ void main() {
 		// float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
 
 		float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 3.0) * 1.0);
+		float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 3.0) * 0.3);
+
+		float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
 		// vec2 dtEdge = dt * 10.0;
 		// float maxDerivativeEdge = clamp(max(dtEdge.t, dtEdge.s), 0.0, 1.0);
@@ -84,7 +86,7 @@ void main() {
 
 		vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 1.3  )  );
 		
-		vec4 diffuseColor = vec4( diffuseVar + edgeAmount, opacity);
+		vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
 		//diffuseColor -= clamp(d, 0.99, 1.0) * vIsHovered ;
 
@@ -216,8 +218,8 @@ void main() {
 		outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
 		outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
-		outgoingLight += ((vIsHovered*0.1) * (edgeAmount*2.0));
-		outgoingLight += (1.0-step(edgeAmount, 0.95)) * (vIsHovered*0.1);
+		outgoingLight += ((vIsHovered*0.1) * (sideEdgeAmount*2.0));
+		outgoingLight += (1.0-step(edgeAmount , 0.95)) * (vIsHovered*0.1);
 
 
 		gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));

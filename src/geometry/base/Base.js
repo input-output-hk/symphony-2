@@ -25,6 +25,10 @@ export default class Base {
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
   }
 
+  updateOriginOffset (originOffset) {
+    this.material.uniforms.uOriginOffset.value = originOffset
+  }
+
   setTxAttributes (
     object,
     blockGeoData,

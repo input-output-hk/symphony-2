@@ -4,13 +4,21 @@
 
 attribute vec3 offset;
 attribute vec2 planeOffset;
-//attribute float blockHeight;
+
+uniform vec2 uOriginOffset;
+
 attribute vec4 quaternion;
 
 varying vec3 vViewPosition;
+
+varying vec3 vWorldPosition;
+
 varying vec3 vTransformed;
 varying vec3 vOffset;
 varying vec2 vPlaneOffset;
+varying vec3 vPosition;
+
+uniform vec3 uCubePos;
 
 #ifndef FLAT_SHADED
 
@@ -53,7 +61,7 @@ void main() {
 	#include <begin_vertex>
 
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
-    transformed.xz += planeOffset.xy;
+    transformed.xz += (planeOffset.xy - uOriginOffset);
 
 	vTransformed = transformed;
 	vOffset = offset;
@@ -66,8 +74,12 @@ void main() {
 	#include <clipping_planes_vertex>
 
 	vViewPosition = - mvPosition.xyz;
+	vPosition = vec3(modelMatrix * vec4(position, 1.0));
 
 	#include <worldpos_vertex>
+
+	vWorldPosition = worldPosition.xyz;
+
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
 

@@ -4,6 +4,8 @@ uniform float uRadiusMultiplier;
 // uniform mat3 uvTransform;
 uniform float uTime;
 
+uniform vec2 uOriginOffset;
+
 varying vec4 vWorldPosition;
 
 #define PHYSICAL
@@ -50,6 +52,9 @@ void main() {
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>
 	#include <displacementmap_vertex>
+
+	transformed.xz += uOriginOffset;
+
 	#include <project_vertex>
 	#include <logdepthbuf_vertex>
 	#include <clipping_planes_vertex>

@@ -85,6 +85,8 @@ class App extends mixin(EventEmitter, Component) {
     this.mousePos = new THREE.Vector2() // keep track of mouse position
     this.mouseDelta = new THREE.Vector2() // keep track of mouse position
 
+    this.origin = new THREE.Vector2(0.0, 0.0)
+
     this.state = {
       closestBlock: null,
       controlType: '',
@@ -579,7 +581,7 @@ class App extends mixin(EventEmitter, Component) {
     // this.sunLight.shadow.camera.updateMatrix()
     // this.sunLight.shadow.camera.updateMatrixWorld()
 
-    this.scene.add(this.sunLight)
+    this.group.add(this.sunLight)
 
     // var helper = new THREE.CameraHelper(this.sunLight.shadow.camera)
     // this.scene.add(helper)
@@ -631,13 +633,13 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initEnvironment () {
-    this.scene.add(this.planetMesh)
-    this.scene.add(this.sunMesh)
+    this.group.add(this.planetMesh)
+    this.group.add(this.sunMesh)
 
     this.disk = await this.diskGenerator.init()
     this.disk.renderOrder = 4
     // this.disk.receiveShadow = true
-    this.scene.add(this.disk)
+    this.group.add(this.disk)
   }
 
   async initPositions () {
@@ -697,20 +699,20 @@ class App extends mixin(EventEmitter, Component) {
               this.pickingScene.add(this.picker)
 
               this.crystal.renderOrder = 1
-              this.scene.add(this.crystal)
+              this.group.add(this.crystal)
 
               this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
               this.crystalAO.renderOrder = 1
               this.crystalAO.translateY(0.1)
-              this.scene.add(this.crystalAO)
+              this.group.add(this.crystalAO)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
               this.trees.renderOrder = 1
-              this.scene.add(this.trees)
+              this.group.add(this.trees)
 
               this.plane = await this.planeGenerator.init(blockGeoData)
               this.plane.renderOrder = 1
-              this.scene.add(this.plane)
+              this.group.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
               let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
@@ -720,8 +722,22 @@ class App extends mixin(EventEmitter, Component) {
 
               this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
 
+              this.group.position.x += planeX
+              this.group.position.z += planeZ
+
               this.geoAdded = true
               this.blockReady = true
+
+              this.originOffset = new THREE.Vector2(planeX, planeZ)
+
+              this.treeGenerator.updateOriginOffset(this.originOffset)
+              this.planeGenerator.updateOriginOffset(this.originOffset)
+              this.crystalGenerator.updateOriginOffset(this.originOffset)
+              this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+              this.diskGenerator.updateOriginOffset(this.originOffset)
+
+              this.planetMesh.position.x -= this.originOffset.x
+              this.planetMesh.position.z -= this.originOffset.y
 
               this.closestBlockReadyForUpdate = true
             } else {
@@ -744,21 +760,21 @@ class App extends mixin(EventEmitter, Component) {
         this.underside.scale.set(1.0, -1.0, 1.0)
         this.underside.translateY(-4.2)
         this.underside.updateMatrix()
-        this.scene.add(this.underside)
+        this.group.add(this.underside)
 
         let undersideMaterialL = new THREE.MeshBasicMaterial({
           transparent: true
         })
         this.undersideL = this.underside.clone()
         this.undersideL.material = undersideMaterialL
-        this.scene.add(this.undersideL)
+        this.group.add(this.undersideL)
 
         let undersideMaterialR = new THREE.MeshBasicMaterial({
           transparent: true
         })
         this.undersideR = this.underside.clone()
         this.undersideR.material = undersideMaterialR
-        this.scene.add(this.undersideR)
+        this.group.add(this.undersideR)
 
         let topsideMaterial = new THREE.MeshStandardMaterial({
           side: THREE.BackSide,
@@ -774,7 +790,7 @@ class App extends mixin(EventEmitter, Component) {
         })
         this.topsideL = this.topside.clone()
         this.topsideL.material = topsideMaterialL
-        this.scene.add(this.topsideL)
+        this.group.add(this.topsideL)
 
         let topsideMaterialR = new THREE.MeshStandardMaterial({
           side: THREE.BackSide,
@@ -782,10 +798,24 @@ class App extends mixin(EventEmitter, Component) {
         })
         this.topsideR = this.topside.clone()
         this.topsideR.material = topsideMaterialR
-        this.scene.add(this.topsideR)
+        this.group.add(this.topsideR)
 
-        this.scene.add(this.topside)
+        this.group.add(this.topside)
       }.bind(this))
+  }
+
+  createCubeMap (pos) {
+    // this.scene.background = this.crystalGenerator.cubeMap
+
+    let cubeCamera = new THREE.CubeCamera(1.0, 5000, 512)
+    cubeCamera.position.copy(pos)
+
+    cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
+    cubeCamera.update(this.renderer, this.scene)
+
+    this.crystal.material.envMap = cubeCamera.renderTarget.texture
+
+    this.scene.background = this.cubeMap
   }
 
   initSound () {
@@ -1227,6 +1257,25 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+    this.originOffset = new THREE.Vector2(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1])
+
+    this.planetMesh.position.x = 0
+    this.planetMesh.position.z = 0
+    this.planetMesh.position.x -= this.originOffset.x
+    this.planetMesh.position.z -= this.originOffset.y
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+
+    this.treeGenerator.updateOriginOffset(this.originOffset)
+    this.planeGenerator.updateOriginOffset(this.originOffset)
+    this.crystalGenerator.updateOriginOffset(this.originOffset)
+    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    this.diskGenerator.updateOriginOffset(this.originOffset)
+
+    this.createCubeMap(new THREE.Vector3(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], 5, this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1]))
+
     this.setState({
       closestBlock: this.closestBlock
     })
@@ -1264,29 +1313,29 @@ class App extends mixin(EventEmitter, Component) {
   async updateClosestTrees () {
     let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
     if (this.centerTree) {
-      this.scene.remove(this.centerTree)
+      this.group.remove(this.centerTree)
     }
     this.centerTree = centerTree
     this.centerTree.renderOrder = 1
-    this.scene.add(this.centerTree)
+    this.group.add(this.centerTree)
 
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
       let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
       if (this.lTree) {
-        this.scene.remove(this.lTree)
+        this.group.remove(this.lTree)
       }
       this.lTree = lTree
       this.lTree.renderOrder = 1
-      this.scene.add(this.lTree)
+      this.group.add(this.lTree)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
       let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
       if (this.rTree) {
-        this.scene.remove(this.rTree)
+        this.group.remove(this.rTree)
       }
       this.rTree = rTree
       this.rTree.renderOrder = 1
-      this.scene.add(this.rTree)
+      this.group.add(this.rTree)
     }
 
     this.trees.geometry.attributes.display.array.forEach((height, i) => {
@@ -1353,10 +1402,10 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.rotation.x = 0
     undersidePlane.rotation.y = 0
     undersidePlane.rotation.z = 0
-    undersidePlane.position.x = 0
-    undersidePlane.position.z = 0
-    undersidePlane.translateX(blockGeoData.blockData.pos.x)
-    undersidePlane.translateZ(blockGeoData.blockData.pos.z)
+    undersidePlane.position.x = blockGeoData.blockData.pos.x - this.originOffset.x
+    undersidePlane.position.z = blockGeoData.blockData.pos.z - this.originOffset.y
+    // undersidePlane.translateX()
+    // undersidePlane.translateZ(blockGeoData.blockData.pos.z - this.originOffset.y)
     undersidePlane.applyQuaternion(quat)
     undersidePlane.rotateX(Math.PI / 2)
     undersidePlane.updateMatrix()
@@ -1367,17 +1416,22 @@ class App extends mixin(EventEmitter, Component) {
     topsidePlane.rotation.x = 0
     topsidePlane.rotation.y = 0
     topsidePlane.rotation.z = 0
-    topsidePlane.position.x = 0
-    topsidePlane.position.z = 0
-    topsidePlane.translateX(blockGeoData.blockData.pos.x)
-    topsidePlane.translateZ(blockGeoData.blockData.pos.z)
+    topsidePlane.position.x = blockGeoData.blockData.pos.x - this.originOffset.x
+    topsidePlane.position.z = blockGeoData.blockData.pos.z - this.originOffset.y
+    // topsidePlane.translateX(blockGeoData.blockData.pos.x - this.originOffset.x)
+    // topsidePlane.translateZ(blockGeoData.blockData.pos.z - this.originOffset.y)
     topsidePlane.applyQuaternion(quat)
     topsidePlane.rotateX(Math.PI / 2)
     topsidePlane.updateMatrix()
   }
 
   initScene () {
+    this.group = new THREE.Group()
+
     this.scene = new THREE.Scene()
+
+    this.scene.add(this.group)
+
     // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
@@ -1402,9 +1456,8 @@ class App extends mixin(EventEmitter, Component) {
     this.camera = new THREE.PerspectiveCamera(
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
-      0.01,
+      1.0,
       1000000000
-      // 10000
     )
     window.camera = this.camera
     this.camera.position.x = this.config.camera.initPos.x

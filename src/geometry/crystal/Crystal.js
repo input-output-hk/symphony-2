@@ -48,8 +48,8 @@ export default class Crystal extends Base {
       opacity: 0.87,
       color: 0x000000,
       emissive: 0x000000,
-      metalness: 1.0,
-      roughness: 0.0,
+      metalness: 0.9,
+      roughness: 0.15,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -489,6 +489,11 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uFirstLoop = {
       type: 'f',
       value: 1.0
+    }
+
+    this.uniforms.uOriginOffset = {
+      type: 'v2',
+      value: new THREE.Vector2(0.0, 0.0)
     }
 
     this.vertexShader = vertexShader
