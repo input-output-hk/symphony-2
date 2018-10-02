@@ -11,6 +11,7 @@ uniform float metalness;
 uniform float opacity;
 uniform float uTime;
 
+varying float vIsSelected;
 varying float vIsHovered;
 varying vec3 vBarycentric;
 varying vec3 vTransformed;
@@ -218,8 +219,10 @@ void main() {
 		outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
 		outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
-		outgoingLight += ((vIsHovered*0.1) * (sideEdgeAmount*2.0));
-		outgoingLight += (1.0-step(edgeAmount , 0.95)) * (vIsHovered*0.1);
+		outgoingLight.r += vIsHovered * (sideEdgeAmount * 2.0);
+		outgoingLight.r += vIsSelected * (sideEdgeAmount * 2.0);
+		outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsHovered;
+		outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsSelected;
 
 
 		gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));

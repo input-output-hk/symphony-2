@@ -35,19 +35,19 @@ export default class Plane extends Base {
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 0.7,
-      roughness: 0.1,
+      roughness: 0.2,
       opacity: 0.7,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.02, 0.02),
-      fog: false
+      normalScale: new THREE.Vector2(0.009, 0.009)
+      // fog: false
     })
   }
 
   async init (blockGeoData) {
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999.0)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry

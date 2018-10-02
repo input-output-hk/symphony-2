@@ -1,5 +1,6 @@
 #pragma glslify: noise = require('glsl-noise/simplex/4d');
 #pragma glslify: applyQuaternionToVector = require('../../../shaders/applyQuaternionToVector')
+#pragma glslify: rotationMatrix = require('../../../shaders/rotationMatrix')
 #pragma glslify: random = require('../../../shaders/random)
 
 #define PHYSICAL
@@ -11,6 +12,7 @@ uniform float uFirstLoop;
 uniform vec2 uOriginOffset;
 
 attribute float isHovered;
+attribute float isSelected;
 attribute vec3 pickerColor;
 attribute vec3 offset;
 attribute vec2 planeOffset;
@@ -26,6 +28,7 @@ attribute float txTime;
 attribute float blockStartTime;
 
 varying float vIsHovered;
+varying float vIsSelected;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec2 vPlaneOffset;
@@ -64,6 +67,7 @@ void main() {
 	vPlaneOffset = planeOffset;
 
 	vIsHovered = isHovered;
+	vIsSelected = isSelected;
 
 	#include <uv_vertex>
 	#include <uv2_vertex>
@@ -111,6 +115,14 @@ void main() {
 	//   }
 
 		transformed.y += offset.y * 0.5;
+
+		transformed.y += (1.0 * isSelected);
+
+		mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), (uTime*0.0002) * isSelected);
+
+		vec4 newPos = rotation * vec4( transformed, 1.0 );
+
+		transformed.xyz = newPos.xyz;
 		
 	//if (timeMod < 500.0) {
     	//transformed.xz *= (scale * scaledTime);

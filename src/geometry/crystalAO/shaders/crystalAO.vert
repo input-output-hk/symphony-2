@@ -6,6 +6,8 @@ uniform float uTime;
 uniform float uAudioTime;
 uniform float uFirstLoop;
 
+uniform vec2 uOriginOffset;
+
 attribute vec3 offset;
 attribute vec2 planeOffset;
 attribute float scale;
@@ -70,7 +72,7 @@ void main() {
 	    transformed.xz *= (scale * 2.7);
 	// }
     
-    transformed.xz += offset.xz;
+	transformed.xz += (offset.xz - uOriginOffset.xy);
 
 	vTransformed = transformed;
 	vOffset = offset;

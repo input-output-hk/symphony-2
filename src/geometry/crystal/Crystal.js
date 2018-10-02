@@ -203,10 +203,11 @@ export default class Crystal extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(0)
+    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
     this.isHovered = new Float32Array(this.instanceTotal)
+    this.isSelected = new Float32Array(this.instanceTotal)
 
     let blockPosition = blockGeoData.blockData.pos
 
@@ -229,6 +230,7 @@ export default class Crystal extends Base {
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
     let isHovered = new THREE.InstancedBufferAttribute(this.isHovered, 1)
+    let isSelected = new THREE.InstancedBufferAttribute(this.isSelected, 1)
     let blockStartTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
 
     let object = new THREE.Object3D()
@@ -256,6 +258,7 @@ export default class Crystal extends Base {
     this.geometry.addAttribute('txTime', txTimes)
     this.geometry.addAttribute('blockStartTime', blockStartTimes)
     this.geometry.addAttribute('isHovered', isHovered)
+    this.geometry.addAttribute('isSelected', isSelected)
 
     const positionAttrib = this.geometry.getAttribute('position')
 

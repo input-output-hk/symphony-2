@@ -230,13 +230,12 @@ class App extends mixin(EventEmitter, Component) {
         document.body.style.cursor = 'default'
       }
 
+      // update isHovered attribute
       let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
-
       if (this.lastHoveredID !== -1) {
         const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
         hoveredArray[this.lastHoveredID + txIndexOffset] = 1.0
       }
-
       this.crystal.geometry.attributes.isHovered.array = hoveredArray
       this.crystal.geometry.attributes.isHovered.needsUpdate = true
     }
@@ -249,6 +248,15 @@ class App extends mixin(EventEmitter, Component) {
     if (this.lastSelectedID === this.lastHoveredID) {
       this.lastSelectedID = -1
       this.emit('txDeselect', {})
+
+      this.setState({
+        txSelected: null
+      })
+
+      // update isSelected attribute
+      let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
+      this.crystal.geometry.attributes.isSelected.array = selectedArray
+      this.crystal.geometry.attributes.isSelected.needsUpdate = true
     } else {
       if (mouseMoveVec.lengthSq() > 200) {
         return
@@ -293,11 +301,28 @@ class App extends mixin(EventEmitter, Component) {
             txSelected: txDataJSON
           })
 
-          console.log(this.state.txSelected)
+          // update isSelected attribute
+          let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
+          if (this.lastSelectedID !== -1) {
+            const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+            selectedArray[this.lastSelectedID + txIndexOffset] = 1.0
+          }
+
+          this.crystal.geometry.attributes.isSelected.array = selectedArray
+          this.crystal.geometry.attributes.isSelected.needsUpdate = true
         }
       } else {
         this.lastSelectedID = -1
         this.emit('txDeselect', {})
+
+        this.setState({
+          txSelected: null
+        })
+
+        // update isSelected attribute
+        let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
+        this.crystal.geometry.attributes.isSelected.array = selectedArray
+        this.crystal.geometry.attributes.isSelected.needsUpdate = true
       }
     }
   }
@@ -567,7 +592,8 @@ class App extends mixin(EventEmitter, Component) {
     this.sunMesh.position.y = 100000
 
     // this.sunLight = new THREE.PointLight(0xffffa3, 0.8, 0.0, 0.0)
-    this.sunLight = new THREE.SpotLight(0xffffa3, 1.0, 0.0)
+    // this.sunLight = new THREE.SpotLight(0xffffa3, 1.0, 0.0)
+    this.sunLight = new THREE.SpotLight(0xffffff, 0.6, 0.0)
     this.sunLight.position.set(0, 100000, 20000000)
     // this.sunLight.castShadow = true
 
@@ -756,6 +782,7 @@ class App extends mixin(EventEmitter, Component) {
         })
         this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
         this.underside.frustumCulled = false
+        this.underside.visible = false
         this.underside.renderOrder = 3
         this.underside.scale.set(1.0, -1.0, 1.0)
         this.underside.translateY(-4.2)
@@ -805,15 +832,20 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   createCubeMap (pos) {
-    // this.scene.background = this.crystalGenerator.cubeMap
+    this.scene.background = this.crystalGenerator.cubeMap
 
-    let cubeCamera = new THREE.CubeCamera(1.0, 5000, 512)
+    this.crystal.material.side = THREE.FrontSide
+
+    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 512)
     cubeCamera.position.copy(pos)
 
     cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
     cubeCamera.update(this.renderer, this.scene)
 
     this.crystal.material.envMap = cubeCamera.renderTarget.texture
+    this.crystal.material.side = THREE.DoubleSide
+
+    this.plane.material.envMap = cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
   }
@@ -1274,7 +1306,7 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
-    this.createCubeMap(new THREE.Vector3(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], 5, this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1]))
+    this.createCubeMap(new THREE.Vector3(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], 2, this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1]))
 
     this.setState({
       closestBlock: this.closestBlock
@@ -1399,6 +1431,7 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.material.map = undersideTexture
     undersidePlane.material.needsUpdate = true
 
+    undersidePlane.visible = false
     undersidePlane.rotation.x = 0
     undersidePlane.rotation.y = 0
     undersidePlane.rotation.z = 0
@@ -1409,10 +1442,12 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.applyQuaternion(quat)
     undersidePlane.rotateX(Math.PI / 2)
     undersidePlane.updateMatrix()
+    undersidePlane.visible = true
 
     topsidePlane.material.map = undersideTexture
     topsidePlane.material.needsUpdate = true
 
+    topsidePlane.visible = false
     topsidePlane.rotation.x = 0
     topsidePlane.rotation.y = 0
     topsidePlane.rotation.z = 0
@@ -1423,6 +1458,7 @@ class App extends mixin(EventEmitter, Component) {
     topsidePlane.applyQuaternion(quat)
     topsidePlane.rotateX(Math.PI / 2)
     topsidePlane.updateMatrix()
+    topsidePlane.visible = true
   }
 
   initScene () {
@@ -1432,7 +1468,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.scene.add(this.group)
 
-    // this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
+    this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/saturn/')
