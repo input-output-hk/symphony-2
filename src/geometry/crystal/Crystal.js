@@ -203,7 +203,7 @@ export default class Crystal extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
+
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
     this.isHovered = new Float32Array(this.instanceTotal)
@@ -226,7 +226,6 @@ export default class Crystal extends Base {
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
-    let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
     let isHovered = new THREE.InstancedBufferAttribute(this.isHovered, 1)
@@ -241,7 +240,6 @@ export default class Crystal extends Base {
       object,
       blockGeoData,
       offsets,
-      planeOffsets,
       quaternions,
       scales,
       txValues,
@@ -251,7 +249,6 @@ export default class Crystal extends Base {
 
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('txValue', txValues)
-    this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('quaternion', quaternions)
@@ -454,7 +451,6 @@ export default class Crystal extends Base {
       object,
       blockGeoData,
       this.geometry.attributes.offset,
-      this.geometry.attributes.planeOffset,
       this.geometry.attributes.quaternion,
       this.geometry.attributes.scale,
       this.geometry.attributes.txValue,

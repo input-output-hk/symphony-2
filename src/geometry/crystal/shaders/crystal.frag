@@ -29,7 +29,6 @@ varying float vEnvelope;
 
 varying vec3 vViewPosition;
 varying float vSpentRatio;
-varying vec2 vPlaneOffset;
 
 #ifndef FLAT_SHADED
 
@@ -65,9 +64,7 @@ varying vec2 vPlaneOffset;
 
 void main() {
 
-	if (vPlaneOffset.x == 0.) {
-		discard;
-	} else {
+	
 
 
 		#include <clipping_planes_fragment>
@@ -232,6 +229,6 @@ void main() {
 		#include <fog_fragment>
 		#include <premultiplied_alpha_fragment>
 		#include <dithering_fragment>
-	}
+	
 
 }

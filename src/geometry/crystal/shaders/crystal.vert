@@ -15,7 +15,6 @@ attribute float isHovered;
 attribute float isSelected;
 attribute vec3 pickerColor;
 attribute vec3 offset;
-attribute vec2 planeOffset;
 attribute float scale;
 attribute float spentRatio;
 attribute vec3 barycentric;
@@ -31,7 +30,6 @@ varying float vIsHovered;
 varying float vIsSelected;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
-varying vec2 vPlaneOffset;
 varying float vScale;
 varying float vSpentRatio;
 varying vec3 vBarycentric;
@@ -63,8 +61,6 @@ varying vec3 vPickerColor;
 void main() {
 
 	vPickerColor = pickerColor;
-
-	vPlaneOffset = planeOffset;
 
 	vIsHovered = isHovered;
 	vIsSelected = isSelected;
@@ -104,15 +100,13 @@ void main() {
 
 	//float scaledTime = (timeMod * 0.002);
 
-	//  if (uFirstLoop == 1.0) {
-	//  	transformed.xz *= (scale * attack);
-	//  	transformed.y *= (offset.y * attack);
-	//  } else {
-
-		transformed.xz *= (scale);
-		transformed.y *= (offset.y);
-
-	//   }
+	if (uFirstLoop == 1.0) {
+	  	transformed.xz *= (scale * attack);
+		transformed.y *= (offset.y * attack);
+	} else {
+		transformed.xz *= scale;
+		transformed.y *= offset.y;
+	}
 
 		transformed.y += offset.y * 0.5;
 

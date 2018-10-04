@@ -33,7 +33,6 @@ export default class Base {
     object,
     blockGeoData,
     offsetsAttr,
-    planeOffsetsAttr,
     quaternionsAttr,
     scalesAttr,
     txValuesAttr,
@@ -71,9 +70,6 @@ export default class Base {
       offsetsAttr.array[txIndexOffset * 3 + 1] = vector.y
       offsetsAttr.array[txIndexOffset * 3 + 2] = vector.z
 
-      planeOffsetsAttr.array[txIndexOffset * 2 + 0] = blockPosition.x
-      planeOffsetsAttr.array[txIndexOffset * 2 + 1] = blockPosition.z
-
       quaternionsAttr.array[txIndexOffset * 4 + 0] = object.quaternion.x
       quaternionsAttr.array[txIndexOffset * 4 + 1] = object.quaternion.y
       quaternionsAttr.array[txIndexOffset * 4 + 2] = object.quaternion.z
@@ -85,8 +81,8 @@ export default class Base {
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
+      if (txValue > 800) {
+        txValue = 800
       }
       if (txValue < 1) {
         txValue = 1
@@ -134,7 +130,6 @@ export default class Base {
     scalesAttr.needsUpdate = true
     offsetsAttr.needsUpdate = true
     quaternionsAttr.needsUpdate = true
-    planeOffsetsAttr.needsUpdate = true
     txTimesAttr.needsUpdate = true
   }
 }

@@ -5,6 +5,7 @@ uniform vec3 emissive;
 uniform float roughness;
 uniform float metalness;
 uniform float opacity;
+uniform float uTime;
 
 #ifndef STANDARD
 	uniform float clearCoat;
@@ -12,7 +13,7 @@ uniform float opacity;
 #endif
 
 varying vec3 vViewPosition;
-varying vec2 vPlaneOffset;
+varying float vDistanceFromCenter;
 
 #ifndef FLAT_SHADED
 
@@ -48,11 +49,6 @@ varying vec2 vPlaneOffset;
 
 void main() {
 
-	if (vPlaneOffset.x == 999999.) {
-		discard;
-	}
-
-
 	#include <clipping_planes_fragment>
 
 	vec4 diffuseColor = vec4( diffuse, opacity );
@@ -82,8 +78,10 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	// outgoingLight.b += 0.2;
-	// outgoingLight.g += 0.1;
+	diffuseColor.a *= (1.0 - step(
+		(uTime*0.002),
+        vDistanceFromCenter / 255.
+	));
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

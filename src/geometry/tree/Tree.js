@@ -174,6 +174,11 @@ export default class Tree extends Base {
     this.index++
   }
 
+  update (time, firstLoop) {
+    this.material.uniforms.uTime.value = time
+    this.material.uniforms.uFirstLoop.value = firstLoop
+  }
+
   async removeClosest (blockGeoData, closestIndex, prevClosestIndex) {
     console.log('remove ', closestIndex)
 
@@ -264,6 +269,11 @@ class TreeMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uOriginOffset = {
       type: 'v2',
       value: new THREE.Vector2(0.0, 0.0)
+    }
+
+    this.uniforms.uFirstLoop = {
+      type: 'f',
+      value: 1.0
     }
 
     this.vertexShader = vertexShader

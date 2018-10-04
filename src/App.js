@@ -52,10 +52,6 @@ class App extends mixin(EventEmitter, Component) {
     super(props)
     this.config = deepAssign(Config, this.props.config)
 
-    this.gui = new dat.GUI()
-
-    // this.OrbitControls = OrbitConstructor(THREE)
-
     this.planeSize = 500
     this.planeOffsetMultiplier = 1080
     this.planeMargin = 100
@@ -63,6 +59,7 @@ class App extends mixin(EventEmitter, Component) {
     this.coils = 100
     this.radius = 1000000
 
+    this.loading = false
     this.gltfLoader = new GLTFLoader()
     this.blockGeoDataObject = {}
     this.hashes = []
@@ -75,7 +72,7 @@ class App extends mixin(EventEmitter, Component) {
     this.topside = null
     this.closestBlockReadyForUpdate = false
     this.drawCircuits = true
-    this.firstLoop = true
+    this.firstLoop = false
     this.geoAdded = false
     this.clock = new THREE.Clock()
 
@@ -85,12 +82,41 @@ class App extends mixin(EventEmitter, Component) {
     this.mousePos = new THREE.Vector2() // keep track of mouse position
     this.mouseDelta = new THREE.Vector2() // keep track of mouse position
 
-    this.origin = new THREE.Vector2(0.0, 0.0)
+    this.blockAnimStartTime = 0
 
     this.state = {
       closestBlock: null,
-      controlType: '',
+      controlType: 'map',
       txSelected: null
+    }
+  }
+
+  /**
+   * Switch renderOrder of elements based on camera position
+   */
+  setRenderOrder () {
+    if (this.camera.position.y > 0) {
+      this.trees.renderOrder = 1
+      this.plane.renderOrder = 2
+      this.crystalAO.renderOrder = 3
+      this.underside.renderOrder = 4
+      this.undersideL.renderOrder = 4
+      this.undersideR.renderOrder = 4
+      this.topside.renderOrder = 4
+      this.topsideL.renderOrder = 4
+      this.topsideR.renderOrder = 4
+      this.crystal.renderOrder = 5
+    } else {
+      this.crystal.renderOrder = 1
+      this.crystalAO.renderOrder = 2
+      this.plane.renderOrder = 3
+      this.underside.renderOrder = 4
+      this.undersideL.renderOrder = 4
+      this.undersideR.renderOrder = 4
+      this.topside.renderOrder = 4
+      this.topsideL.renderOrder = 4
+      this.topsideR.renderOrder = 4
+      this.trees.renderOrder = 5
     }
   }
 
@@ -106,57 +132,39 @@ class App extends mixin(EventEmitter, Component) {
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
-      planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin,
-      coils: this.coils,
-      radius: this.radius
+      planeSize: this.planeSize
     })
 
     this.pickerGenerator = new Picker({
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin
+      planeOffsetMultiplier: this.planeOffsetMultiplier
     })
 
     this.crystalAOGenerator = new CrystalAO({
       firebaseDB: this.firebaseDB,
-      planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin
+      planeSize: this.planeSize
     })
 
     this.planeGenerator = new Plane({
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin,
-      coils: this.coils,
-      radius: this.radius
+      planeOffsetMultiplier: this.planeOffsetMultiplier
     })
 
     this.treeGenerator = new Tree({
       planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin,
-      coils: this.coils,
-      radius: this.radius
+      planeOffsetMultiplier: this.planeOffsetMultiplier
     })
 
     this.diskGenerator = new Disk({
-      planeOffsetMultiplier: this.planeOffsetMultiplier,
-      planeMargin: this.planeMargin,
-      coils: this.coils,
-      radius: this.radius
+      planeOffsetMultiplier: this.planeOffsetMultiplier
     })
 
     this.heightsToLoad = []
     this.loadingMutex = []
 
-    this.gui.add(this.diskGenerator, 'uRadiusMultiplier', 8257.34, 8257.4)
-    this.gui.add(this.diskGenerator, 'uOffset', 0.01, 1.00)
-
     this.canvas = document.getElementById(this.config.scene.canvasID)
 
+    this.initGUI()
     this.initScene()
     this.initCamera()
     this.initRenderer()
@@ -169,6 +177,14 @@ class App extends mixin(EventEmitter, Component) {
 
     this.addEvents()
     this.animate()
+  }
+
+  initGUI () {
+    if (this.config.showGUI) {
+      this.gui = new dat.GUI()
+      this.gui.add(this.diskGenerator, 'uRadiusMultiplier', 8257.34, 8257.4)
+      this.gui.add(this.diskGenerator, 'uOffset', 0.01, 1.00)
+    }
   }
 
   initPicker () {
@@ -225,6 +241,10 @@ class App extends mixin(EventEmitter, Component) {
         this.emit('txMouseOut', {
           mousePos: this.mousePos
         })
+
+        this.hoveredLight.position.x = -999999
+        this.hoveredLight.position.z = -999999
+
         //     this.nodes.material.uniforms.nodeIsHovered.value = 0.0
         this.txIsHovered = false
         document.body.style.cursor = 'default'
@@ -234,6 +254,13 @@ class App extends mixin(EventEmitter, Component) {
       let hoveredArray = new Float32Array(this.crystalGenerator.instanceTotal)
       if (this.lastHoveredID !== -1) {
         const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+
+        let selectedPosX = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 0] - this.originOffset.x
+        let selectedPosZ = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 2] - this.originOffset.y
+
+        this.hoveredLight.position.x = selectedPosX
+        this.hoveredLight.position.z = selectedPosZ
+
         hoveredArray[this.lastHoveredID + txIndexOffset] = 1.0
       }
       this.crystal.geometry.attributes.isHovered.array = hoveredArray
@@ -252,6 +279,9 @@ class App extends mixin(EventEmitter, Component) {
       this.setState({
         txSelected: null
       })
+
+      this.selectedLight.position.x = -999999
+      this.selectedLight.position.z = -999999
 
       // update isSelected attribute
       let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
@@ -305,6 +335,13 @@ class App extends mixin(EventEmitter, Component) {
           let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
           if (this.lastSelectedID !== -1) {
             const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+
+            let selectedPosX = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 0] - this.originOffset.x
+            let selectedPosZ = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 2] - this.originOffset.y
+
+            this.selectedLight.position.x = selectedPosX
+            this.selectedLight.position.z = selectedPosZ
+
             selectedArray[this.lastSelectedID + txIndexOffset] = 1.0
           }
 
@@ -314,6 +351,9 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         this.lastSelectedID = -1
         this.emit('txDeselect', {})
+
+        this.selectedLight.position.x = -999999
+        this.selectedLight.position.z = -999999
 
         this.setState({
           txSelected: null
@@ -582,8 +622,7 @@ class App extends mixin(EventEmitter, Component) {
     this.sunGeo = new THREE.SphereBufferGeometry(200000, 25, 25)
     this.sunMat = new THREE.MeshBasicMaterial({
       fog: false,
-      color: 0xffe083,
-      emissive: 0xffe083
+      color: 0xffe083
     })
 
     this.sunMesh = new THREE.Mesh(this.sunGeo, this.sunMat)
@@ -591,11 +630,22 @@ class App extends mixin(EventEmitter, Component) {
     this.sunMesh.position.z = 20000000
     this.sunMesh.position.y = 100000
 
-    // this.sunLight = new THREE.PointLight(0xffffa3, 0.8, 0.0, 0.0)
-    // this.sunLight = new THREE.SpotLight(0xffffa3, 1.0, 0.0)
-    this.sunLight = new THREE.SpotLight(0xffffff, 0.6, 0.0)
+    this.sunLight = new THREE.PointLight(0xffffa3, 0.8, 0.0, 0.0)
+    // this.sunLight = new THREE.SpotLight(0xffffff, 0.1, 0.0)
     this.sunLight.position.set(0, 100000, 20000000)
     // this.sunLight.castShadow = true
+
+    // let textureLoader = new THREE.TextureLoader()
+    // let textureFlare0 = textureLoader.load('assets/images/textures/lensflare/lensflare0.png')
+    // let textureFlare3 = textureLoader.load('assets/images/textures/lensflare/lensflare3.png')
+
+    // var lensflare = new Lensflare()
+    // lensflare.addElement(new LensflareElement(textureFlare0, 700, 0, this.sunLight.color))
+    // lensflare.addElement(new LensflareElement(textureFlare3, 60, 0.6))
+    // lensflare.addElement(new LensflareElement(textureFlare3, 70, 0.7))
+    // lensflare.addElement(new LensflareElement(textureFlare3, 120, 0.9))
+    // lensflare.addElement(new LensflareElement(textureFlare3, 70, 1))
+    // this.sunLight.add(lensflare)
 
     // this.sunLight.shadow.mapSize.width = 1024
     // this.sunLight.shadow.mapSize.height = 1024
@@ -608,6 +658,14 @@ class App extends mixin(EventEmitter, Component) {
     // this.sunLight.shadow.camera.updateMatrixWorld()
 
     this.group.add(this.sunLight)
+
+    this.hoveredLight = new THREE.PointLight(0xff0000, 0.1, 500.0)
+    this.hoveredLight.position.set(-999999, 5, -999999)
+    this.group.add(this.hoveredLight)
+
+    this.selectedLight = new THREE.PointLight(0xff0000, 0.1, 500.0)
+    this.selectedLight.position.set(-999999, 5, -999999)
+    this.group.add(this.selectedLight)
 
     // var helper = new THREE.CameraHelper(this.sunLight.shadow.camera)
     // this.scene.add(helper)
@@ -663,7 +721,7 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.sunMesh)
 
     this.disk = await this.diskGenerator.init()
-    this.disk.renderOrder = 4
+    this.disk.renderOrder = 6
     // this.disk.receiveShadow = true
     this.group.add(this.disk)
   }
@@ -724,20 +782,16 @@ class App extends mixin(EventEmitter, Component) {
               this.picker = await this.pickerGenerator.init(blockGeoData)
               this.pickingScene.add(this.picker)
 
-              this.crystal.renderOrder = 1
               this.group.add(this.crystal)
 
               this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
-              this.crystalAO.renderOrder = 1
               this.crystalAO.translateY(0.1)
               this.group.add(this.crystalAO)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
-              this.trees.renderOrder = 1
               this.group.add(this.trees)
 
               this.plane = await this.planeGenerator.init(blockGeoData)
-              this.plane.renderOrder = 1
               this.group.add(this.plane)
 
               let planeX = this.plane.geometry.attributes.planeOffset.array[0]
@@ -752,7 +806,6 @@ class App extends mixin(EventEmitter, Component) {
               this.group.position.z += planeZ
 
               this.geoAdded = true
-              this.blockReady = true
 
               this.originOffset = new THREE.Vector2(planeX, planeZ)
 
@@ -783,7 +836,7 @@ class App extends mixin(EventEmitter, Component) {
         this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
         this.underside.frustumCulled = false
         this.underside.visible = false
-        this.underside.renderOrder = 3
+
         this.underside.scale.set(1.0, -1.0, 1.0)
         this.underside.translateY(-4.2)
         this.underside.updateMatrix()
@@ -828,6 +881,8 @@ class App extends mixin(EventEmitter, Component) {
         this.group.add(this.topsideR)
 
         this.group.add(this.topside)
+
+        this.blockReady = true
       }.bind(this))
   }
 
@@ -898,6 +953,7 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.rotateSpeed = 0.05
         this.controls.panSpeed = 0.25
         this.controls.zoomSpeed = 0.5
+
         break
 
       case 'fly':
@@ -907,6 +963,7 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
         this.controls.dragToLook = false
+
         break
 
       default:
@@ -980,6 +1037,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async loadNearestBlocks () {
+    if (this.loading) {
+      return
+    }
+
     if (this.camera.position.y < 20000) {
       let loadNew = false
 
@@ -998,11 +1059,14 @@ class App extends mixin(EventEmitter, Component) {
         loadNew = true
       }
 
-      // loadNew = false
-
       if (!loadNew) {
+        this.loading = false
         return
       }
+
+      console.log('loadNearestBlocks')
+
+      this.loading = true
 
       this.lastLoadPos = {
         x: this.camera.position.x,
@@ -1013,7 +1077,6 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      console.time('closest')
       for (let index = 0; index < this.blockPositions.length / 2; index++) {
         const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
         const zComponent = this.blockPositions[index * 2 + 1] - camVec.y
@@ -1028,9 +1091,9 @@ class App extends mixin(EventEmitter, Component) {
           this.closestHeight = index
         }
       }
-      console.timeEnd('closest')
 
       if (this.loadedHeights.indexOf(this.closestHeight) !== -1) {
+        this.loading = false
         return
       }
 
@@ -1040,25 +1103,24 @@ class App extends mixin(EventEmitter, Component) {
       let closestBlocksGeoData = []
 
       let blockData = this.docRef
-        .where('height', '>=', this.closestHeight - 10)
-        .where('height', '<=', this.closestHeight + 10)
+        .where('height', '>', this.closestHeight - 1)
+        .where('height', '<', this.closestHeight + 1)
         .orderBy('height', 'asc')
-        .limit(20)
 
       let querySnapshot = await blockData.get()
 
       querySnapshot.forEach(snapshot => {
         let data = snapshot.data()
+        console.log(data)
         if (typeof this.blockGeoDataObject[data.height] === 'undefined') {
           closestBlocksData.push(data)
         }
       })
 
       let blockGeoData = this.docRefGeo
-        .where('height', '>=', this.closestHeight - 10)
-        .where('height', '<=', this.closestHeight + 10)
+        .where('height', '>', this.closestHeight - 1)
+        .where('height', '<', this.closestHeight + 1)
         .orderBy('height', 'asc')
-        .limit(20)
 
       let geoSnapshot = await blockGeoData.get()
 
@@ -1177,6 +1239,9 @@ class App extends mixin(EventEmitter, Component) {
           console.log('loaded ' + height)
         }
       })
+
+      this.loading = false
+      console.log('loaded')
     }
   }
 
@@ -1184,15 +1249,6 @@ class App extends mixin(EventEmitter, Component) {
     let delta = this.clock.getDelta()
 
     this.controls.update(delta)
-
-    if (this.geoAdded) {
-      this.loadNearestBlocks()
-    }
-    this.getClosestBlock()
-
-    if (this.picker) {
-      this.updatePicker()
-    }
 
     // if (this.plane) {
     //   if (this.camera.position.y < 0) {
@@ -1227,19 +1283,30 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     if (this.blockReady) {
+      this.setRenderOrder()
+
       this.diskGenerator.update({time: window.performance.now(), camPos: this.camera.position})
       this.crystalGenerator.update(window.performance.now(), this.firstLoop)
       this.crystalAOGenerator.update(window.performance.now(), this.firstLoop)
+      this.treeGenerator.update(window.performance.now() - this.blockAnimStartTime, this.firstLoop)
     }
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
 
-    if (this.config.scene.debugPicker && this.pickingScene) {
+    if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
     // this.renderer.render(this.scene, this.camera)
       this.composer.render()
     }
+
+    if (this.picker) {
+      this.updatePicker()
+    }
+    if (this.geoAdded) {
+      this.loadNearestBlocks()
+    }
+    this.getClosestBlock()
   }
 
   addEvents () {
@@ -1253,11 +1320,15 @@ class App extends mixin(EventEmitter, Component) {
 
     this.audio.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
+      this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
+      if (e.target.tagName === 'A') {
+        return
+      }
       this.onMouseUp()
     })
 
@@ -1289,8 +1360,13 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
-    this.originOffset = new THREE.Vector2(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1])
+    this.blockAnimStartTime = window.performance.now()
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    this.originOffset = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
 
     this.planetMesh.position.x = 0
     this.planetMesh.position.z = 0
@@ -1306,7 +1382,7 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
-    this.createCubeMap(new THREE.Vector3(this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 0], 2, this.crystal.geometry.attributes.planeOffset.array[txIndexOffset * 2 + 1]))
+    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
 
     this.setState({
       closestBlock: this.closestBlock
@@ -1327,9 +1403,10 @@ class App extends mixin(EventEmitter, Component) {
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
+      this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
-    this.updateClosestTrees()
+    await this.updateClosestTrees()
 
     this.updateMerkleDetail(this.closestBlock, 0)
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
@@ -1343,50 +1420,54 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async updateClosestTrees () {
-    let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
-    if (this.centerTree) {
-      this.group.remove(this.centerTree)
-    }
-    this.centerTree = centerTree
-    this.centerTree.renderOrder = 1
-    this.group.add(this.centerTree)
-
-    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
-      if (this.lTree) {
-        this.group.remove(this.lTree)
+    return new Promise(async (resolve, reject) => {
+      let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
+      if (this.centerTree) {
+        this.group.remove(this.centerTree)
       }
-      this.lTree = lTree
-      this.lTree.renderOrder = 1
-      this.group.add(this.lTree)
-    }
-    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
-      if (this.rTree) {
-        this.group.remove(this.rTree)
-      }
-      this.rTree = rTree
-      this.rTree.renderOrder = 1
-      this.group.add(this.rTree)
-    }
+      this.centerTree = centerTree
+      this.centerTree.renderOrder = 1
+      this.group.add(this.centerTree)
 
-    this.trees.geometry.attributes.display.array.forEach((height, i) => {
-      this.trees.geometry.attributes.display.array[i] = 1
+      if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
+        let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
+        if (this.lTree) {
+          this.group.remove(this.lTree)
+        }
+        this.lTree = lTree
+        this.lTree.renderOrder = 1
+        this.group.add(this.lTree)
+      }
+      if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
+        let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
+        if (this.rTree) {
+          this.group.remove(this.rTree)
+        }
+        this.rTree = rTree
+        this.rTree.renderOrder = 1
+        this.group.add(this.rTree)
+      }
+
+      this.trees.geometry.attributes.display.array.forEach((height, i) => {
+        this.trees.geometry.attributes.display.array[i] = 1
+      })
+
+      let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
+      this.trees.geometry.attributes.display.array[treeHeight] = 0
+
+      if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
+        treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
+        this.trees.geometry.attributes.display.array[treeHeight] = 0
+      }
+
+      if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
+        treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
+        this.trees.geometry.attributes.display.array[treeHeight] = 0
+      }
+      this.trees.geometry.attributes.display.needsUpdate = true
+
+      resolve()
     })
-
-    let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
-    this.trees.geometry.attributes.display.array[treeHeight] = 0
-
-    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
-      this.trees.geometry.attributes.display.array[treeHeight] = 0
-    }
-
-    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
-      this.trees.geometry.attributes.display.array[treeHeight] = 0
-    }
-    this.trees.geometry.attributes.display.needsUpdate = true
   }
 
   async updateMerkleDetail (blockGeoData, circuitIndex) {
@@ -1437,8 +1518,7 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.rotation.z = 0
     undersidePlane.position.x = blockGeoData.blockData.pos.x - this.originOffset.x
     undersidePlane.position.z = blockGeoData.blockData.pos.z - this.originOffset.y
-    // undersidePlane.translateX()
-    // undersidePlane.translateZ(blockGeoData.blockData.pos.z - this.originOffset.y)
+
     undersidePlane.applyQuaternion(quat)
     undersidePlane.rotateX(Math.PI / 2)
     undersidePlane.updateMatrix()
@@ -1453,8 +1533,7 @@ class App extends mixin(EventEmitter, Component) {
     topsidePlane.rotation.z = 0
     topsidePlane.position.x = blockGeoData.blockData.pos.x - this.originOffset.x
     topsidePlane.position.z = blockGeoData.blockData.pos.z - this.originOffset.y
-    // topsidePlane.translateX(blockGeoData.blockData.pos.x - this.originOffset.x)
-    // topsidePlane.translateZ(blockGeoData.blockData.pos.z - this.originOffset.y)
+
     topsidePlane.applyQuaternion(quat)
     topsidePlane.rotateX(Math.PI / 2)
     topsidePlane.updateMatrix()
@@ -1571,7 +1650,7 @@ class App extends mixin(EventEmitter, Component) {
           <h2>Transaction</h2>
           <ul>
             <li><h3>Date</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
-            <li><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
+            <li title={this.state.txSelected.hash}><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
             <li><h3>Version</h3> <strong>{this.state.txSelected.ver}</strong></li>
             <li><h3>Size (bytes)</h3> <strong>{this.state.txSelected.size}</strong></li>
             <li><h3>Relayed By</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
@@ -1581,6 +1660,20 @@ class App extends mixin(EventEmitter, Component) {
             <li><h3>Output Total</h3> <strong>{this.state.txSelected.outTotal} BTC</strong></li>
             <li><h3>Fee</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
           </ul>
+          <ul>
+            <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
+          </ul>
+        </div>
+      )
+    }
+  }
+
+  UICockpit () {
+    if (this.state.controlType === 'fly') {
+      return (
+        <div>
+
+          <div className='crosshair' />
         </div>
       )
     }
@@ -1594,6 +1687,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div>
           <div className='cockpit-border' />
+          {this.UICockpit()}
           {this.UICockpitButton()}
           {this.UITXDetails()}
           <div className='block-details'>

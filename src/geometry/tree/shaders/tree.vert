@@ -1,4 +1,5 @@
 #pragma glslify: applyQuaternionToVector = require('../../../shaders/applyQuaternionToVector')
+#pragma glslify: random = require('../../../shaders/random')
 
 #define PHYSICAL
 
@@ -7,12 +8,14 @@ attribute vec2 planeOffset;
 attribute vec4 quaternion;
 attribute float display;
 
+uniform float uTime;
+uniform float uFirstLoop;
 uniform vec2 uOriginOffset;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
 varying vec3 vOffset;
-varying vec2 vPlaneOffset;
+varying float vDistanceFromCenter;
 
 #ifndef FLAT_SHADED
 
@@ -36,8 +39,6 @@ void main() {
 
 	if (display == 1.0) {
 
-		vPlaneOffset = planeOffset;
-
 		#include <uv_vertex>
 		#include <uv2_vertex>
 		#include <color_vertex>
@@ -58,10 +59,17 @@ void main() {
 
 		transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	
+		vec3 dest = transformed.xyz;
+		dest.x -= 10.0;
+		dest.y -= 100.0;
+
 		transformed.xz += (planeOffset.xy - uOriginOffset);
 
+
+		//vDistanceFromCenter = distance(transformed.xyz, dest) + (random(transformed.xy) * 100.0 );
+		vDistanceFromCenter = distance(transformed.xyz + vec3(0.0, 100.0, 0.0), dest * 10.0 );
+
 		vTransformed = transformed;
-		vOffset = offset;
 
 		#include <morphtarget_vertex>
 		#include <skinning_vertex>

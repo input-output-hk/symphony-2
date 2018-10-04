@@ -19,6 +19,8 @@ export default class Plane extends Base {
 
     this.instanceTotal = 50
 
+    this.blockHeightIndex = {}
+
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa2/')
       .load([
@@ -47,7 +49,7 @@ export default class Plane extends Base {
   }
 
   async init (blockGeoData) {
-    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
+    this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
@@ -71,6 +73,8 @@ export default class Plane extends Base {
 
     this.planeOffsetsArray[0] = blockPosition.x
     this.planeOffsetsArray[1] = blockPosition.z
+
+    this.blockHeightIndex[blockGeoData.blockData.height] = 0
 
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(this.planeOffsetsArray, 2)
@@ -98,6 +102,8 @@ export default class Plane extends Base {
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
     object.lookAt(0, 0, 0)
+
+    this.blockHeightIndex[blockGeoData.blockData.height] = this.index * 2
 
     this.geometry.attributes.quaternion.array[this.index * 4 + 0] = object.quaternion.x
     this.geometry.attributes.quaternion.array[this.index * 4 + 1] = object.quaternion.y
