@@ -87,7 +87,10 @@ class App extends mixin(EventEmitter, Component) {
     this.state = {
       closestBlock: null,
       controlType: 'map',
-      txSelected: null
+      txSelected: null,
+      sidebarOpen: false,
+      txSearchOpen: false,
+      searchTXHash: ''
     }
   }
 
@@ -548,7 +551,7 @@ class App extends mixin(EventEmitter, Component) {
 
             outputTotal += tx.value
 
-            let txTime = map(i, 0, txCount, 0, 30)
+            let txTime = map(i, 0, txCount, 0, 20)
             block.txTimes.push(txTime)
           }
 
@@ -608,10 +611,10 @@ class App extends mixin(EventEmitter, Component) {
     this.planetGeo = new THREE.SphereBufferGeometry(460000, 100, 100)
     this.planetMat = new THREE.MeshStandardMaterial({
       fog: false,
-      color: 0xbbbbbb,
+      color: 0xffffff,
       emissive: 0x000000,
       metalness: 0.3,
-      roughness: 0.0,
+      roughness: 0.8,
       envMap: this.planetMap,
       map: this.saturnmap
     })
@@ -630,7 +633,7 @@ class App extends mixin(EventEmitter, Component) {
     this.sunMesh.position.z = 20000000
     this.sunMesh.position.y = 100000
 
-    this.sunLight = new THREE.PointLight(0xffffa3, 0.8, 0.0, 0.0)
+    this.sunLight = new THREE.PointLight(0xffffff, 0.3, 0.0, 0.0)
     // this.sunLight = new THREE.SpotLight(0xffffff, 0.1, 0.0)
     this.sunLight.position.set(0, 100000, 20000000)
     // this.sunLight.castShadow = true
@@ -1197,8 +1200,6 @@ class App extends mixin(EventEmitter, Component) {
         if (this.loadingMutex.indexOf(height) === -1) {
           this.loadingMutex.push(height)
 
-          console.log('loading ' + height)
-
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
             // let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
 
@@ -1235,8 +1236,6 @@ class App extends mixin(EventEmitter, Component) {
           if (mutexIndex > -1) {
             this.heightsToLoad.splice(mutexIndex, 1)
           }
-
-          console.log('loaded ' + height)
         }
       })
 
@@ -1245,10 +1244,18 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  toggleTxSearch () {
+    this.setState({txSearchOpen: !this.state.txSearchOpen})
+  }
+
   renderFrame () {
     let delta = this.clock.getDelta()
 
     this.controls.update(delta)
+
+    if (this.planetMesh) {
+      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000001)
+    }
 
     // if (this.plane) {
     //   if (this.camera.position.y < 0) {
@@ -1326,7 +1333,7 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
-      if (e.target.tagName === 'A') {
+      if (e.target.className !== 'cockpit-border') {
         return
       }
       this.onMouseUp()
@@ -1631,6 +1638,10 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  toggleSidebar () {
+    this.setState({sidebarOpen: !this.state.sidebarOpen})
+  }
+
   UICockpitButton () {
     if (this.state.controlType === 'fly') {
       return (
@@ -1668,11 +1679,85 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  searchFocus (e) {
+    e.target.focus()
+  }
+
+  async lookupTXFromHash () {
+    try {
+      let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      let txDataJSON = await txData.json()
+
+      // const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
+      // let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + txDataJSON.block_height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+
+      // let blockData = await window.fetch(url)
+      // let blockDataJSON = await blockData.json()
+
+      let posX = this.blockPositions[txDataJSON.block_height * 2 + 0]
+      let posZ = this.blockPositions[txDataJSON.block_height * 2 + 1]
+
+      this.camera.position.x = posX
+      this.camera.position.y = 1000
+      this.camera.position.z = posZ
+
+      this.controls.target.x = posX
+      this.controls.target.y = 0
+      this.controls.target.z = posZ
+
+    } catch (error) {
+
+    }
+  }
+
+  updateSearchTXHash (e) {
+    this.setState({searchTXHash: e.target.value})
+  }
+
+  UISidebar () {
+    let sidebarClassName = 'sidebar'
+
+    if (this.state.sidebarOpen) {
+      sidebarClassName += ' open'
+    } else {
+      sidebarClassName += ' closed'
+    }
+
+    return (
+      <div className={sidebarClassName}>
+        <button className='expand' onClick={this.toggleSidebar.bind(this)} />
+        <h1>Symphony</h1>
+        <h2>Interactive Blockchain Map</h2>
+        <div className='section explore'>
+          <h3>Explore</h3>
+          <ul>
+            <li>
+              <button className='search' onClick={this.toggleSidebar.bind(this)} />
+              <span onClick={this.toggleTxSearch.bind(this)}>Locate Transaction</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  UITXSearchBox () {
+    if (this.state.txSearchOpen) {
+      return (
+        <div className='tx-search-container'>
+          <h2>Enter Transaction Hash</h2>
+          <button className='tx-search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
+          <input className='tx-search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <button className='tx-search-action' onClick={this.lookupTXFromHash.bind(this)} />
+        </div>
+      )
+    }
+  }
+
   UICockpit () {
     if (this.state.controlType === 'fly') {
       return (
         <div>
-
           <div className='crosshair' />
         </div>
       )
@@ -1724,6 +1809,8 @@ class App extends mixin(EventEmitter, Component) {
   UI () {
     return (
       <div className='symphony-ui'>
+        {this.UISidebar()}
+        {this.UITXSearchBox()}
         {this.UIBlockDetails()}
       </div>
     )

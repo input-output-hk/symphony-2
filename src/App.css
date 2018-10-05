@@ -123,6 +123,8 @@ canvas#sketchboard {
 .toggle-cockpit-controls {
   position: absolute;
   z-index: 1;
+  right: 10px;
+  top: 10px;
 }
 
 .tx-details {
@@ -152,4 +154,192 @@ canvas#sketchboard {
   margin-left: -25px;
   margin-top: -25px;
   opacity: 0.8;
+}
+
+.sidebar {
+  background: rgba(18,23,38,0.9);
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-right: 1px solid #153453;
+  box-shadow: 5px 0px 10px #030a17;
+  z-index: 10;
+  padding: 17px;
+  transition: width 0.5s;
+  transition-timing-function: ease-in-out;
+}
+
+.sidebar.closed {
+  width: 58px;
+}
+
+.sidebar.open {
+  width: 320px;
+}
+
+.search {
+  background: url(./assets/images/search.svg) no-repeat;
+  width: 20px;
+  height: 20px;
+  border: none;
+  margin: 0 10px 0 0;
+}
+
+.search:hover {
+  cursor: pointer;
+}
+
+.sidebar .section {
+  padding: 10px 0
+}
+
+.sidebar ul span {
+  transition: opacity 0.5s;
+  transition-timing-function: ease-in-out;
+}
+
+.sidebar ul span:hover {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.sidebar li {
+  width: 240px;
+  padding: 0;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.sidebar.closed ul span {
+  opacity: 0.0;
+  
+}
+
+.sidebar.open ul span {
+  opacity: 1.0;
+}
+
+.sidebar ul span {
+  vertical-align: top;
+}
+
+.sidebar h1 {
+  overflow: hidden;
+  color: #719bf1;
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 2px;
+  font-weight: bold;
+  transition: opacity 0.5s;
+  transition-timing-function: ease-in-out;
+}
+
+.sidebar h2 {
+  overflow: hidden;
+  display: inline-block;
+  width: 240px;
+  text-transform: none;
+  color: #d8d6d7;
+  font-weight: normal;
+  letter-spacing: 1px;
+  border: none;
+  transition: opacity 0.5s;
+  transition-timing-function: ease-in-out;
+  padding: 0 0 20px;
+}
+
+.sidebar h3 {
+  overflow: hidden;
+  color: #719bf1;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: normal;
+  transition: opacity 0.5s;
+  transition-timing-function: ease-in-out;
+  padding: 0 0 20px;
+}
+
+.sidebar.closed h1,
+.sidebar.closed h2,
+.sidebar.closed h3 {
+  opacity: 0.0;
+}
+
+.sidebar.open h1,
+.sidebar.open h2,
+.sidebar.open h3 {
+  opacity: 1.0;
+}
+
+.sidebar .expand {
+  position: relative;
+  z-index: 2;
+  border: none;
+  float: right;
+  width: 20px;
+  height: 20px;
+  background: url(./assets/images/expand.svg) no-repeat;
+}
+
+.sidebar .expand:hover {
+  cursor: pointer;
+}
+
+.sidebar.open .expand {
+  background: url(./assets/images/contract.svg) no-repeat;
+}
+
+.tx-search-container {
+  background: rgba(18,23,38,0.9);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid #153453;
+  box-shadow: 5px 5px 10px #030a17;
+  z-index: 10;
+  padding: 17px;
+  width: 522px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -261px;
+}
+
+.tx-search-container h2 {
+  border: none;
+}
+
+.tx-search-box {
+  width: 453px;
+  height: 28px;
+  float: left;
+}
+
+.tx-search-box-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-weight: bold;
+  color: #22c0c3;
+}
+
+.tx-search-box-close:hover {
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.tx-search-action {
+  background: url(./assets/images/search.svg) no-repeat;
+  width: 20px;
+  height: 20px;
+  border: none;
+  margin: 2px 0px 0 0;
+  float: right;
+}
+
+.tx-search-action:hover {
+  cursor: pointer;
 }

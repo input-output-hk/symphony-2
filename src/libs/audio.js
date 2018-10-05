@@ -49,7 +49,7 @@ export default class Audio extends EventEmitter {
     })
 
     this.sampleRate = 44100
-    this.soundDuration = 40 // (seconds)
+    this.soundDuration = 30 // (seconds)
     this.notes = {
       27.5000: 'A0',
       29.1352: 'A#0',
@@ -301,14 +301,14 @@ export default class Audio extends EventEmitter {
         let spent6 = custom_step(6.0, spentRatio) * 1
         let spent7 = custom_step(7.0, spentRatio) * 1
         let spent8 = custom_step(8.0, spentRatio) * 1
-        let spent9 = custom_step(9.0, spentRatio) * 1
-        let spent10 = custom_step(10.0, spentRatio) * 1
-        let spent11 = custom_step(11.0, spentRatio) * 1
-        let spent12 = custom_step(12.0, spentRatio) * 1
-        let spent13 = custom_step(13.0, spentRatio) * 1
-        let spent14 = custom_step(14.0, spentRatio) * 1
-        let spent15 = custom_step(15.0, spentRatio) * 1
-        let spent16 = custom_step(16.0, spentRatio) * 1
+        // let spent9 = custom_step(9.0, spentRatio) * 1
+        // let spent10 = custom_step(10.0, spentRatio) * 1
+        // let spent11 = custom_step(11.0, spentRatio) * 1
+        // let spent12 = custom_step(12.0, spentRatio) * 1
+        // let spent13 = custom_step(13.0, spentRatio) * 1
+        // let spent14 = custom_step(14.0, spentRatio) * 1
+        // let spent15 = custom_step(15.0, spentRatio) * 1
+        // let spent16 = custom_step(16.0, spentRatio) * 1
 
         let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0) * health))) * spent1 +
                 Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
@@ -317,15 +317,15 @@ export default class Audio extends EventEmitter {
                 Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
                 Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
                 Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
-                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8 +
-                Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0) * health))) * spent9 +
-                Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0) * health))) * spent10 +
-                Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0) * health))) * spent11 +
-                Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0) * health))) * spent12 +
-                Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0) * health))) * spent13 +
-                Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0) * health))) * spent14 +
-                Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
-                Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
+                Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
+        // Math.sin(currentAngleMod * (9.0 + (custom_random(ANGULAR_FREQUENCY * 9.0) * health))) * spent9 +
+        // Math.sin(currentAngleMod * (10.0 + (custom_random(ANGULAR_FREQUENCY * 10.0) * health))) * spent10 +
+        // Math.sin(currentAngleMod * (11.0 + (custom_random(ANGULAR_FREQUENCY * 11.0) * health))) * spent11 +
+        // Math.sin(currentAngleMod * (12.0 + (custom_random(ANGULAR_FREQUENCY * 12.0) * health))) * spent12 +
+        // Math.sin(currentAngleMod * (13.0 + (custom_random(ANGULAR_FREQUENCY * 13.0) * health))) * spent13 +
+        // Math.sin(currentAngleMod * (14.0 + (custom_random(ANGULAR_FREQUENCY * 14.0) * health))) * spent14 +
+        // Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
+        // Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
         wave /= 8.0
 
@@ -399,7 +399,7 @@ export default class Audio extends EventEmitter {
         spentCount += tx.out[index].spent
       }
 
-      let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 16.0, 1.0)
+      let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 8.0, 1.0)
 
       spent.push(mappedSpentRatio)
 

@@ -112,6 +112,8 @@ void main() {
 
 		transformed.y += (1.0 * isSelected);
 
+		transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
+
 		mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), (uTime*0.0002) * isSelected);
 
 		vec4 newPos = rotation * vec4( transformed, 1.0 );
