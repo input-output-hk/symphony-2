@@ -184,6 +184,9 @@ canvas#sketchboard {
   height: 20px;
   border: none;
   margin: 0 10px 0 0;
+  float: left;
+  position: relative;
+  z-index: 1;
 }
 
 .search:hover {
@@ -201,7 +204,6 @@ canvas#sketchboard {
 
 .sidebar ul span:hover {
   cursor: pointer;
-  font-weight: bold;
 }
 
 .sidebar li {
@@ -209,6 +211,11 @@ canvas#sketchboard {
   padding: 0;
   overflow: hidden;
   font-size: 13px;
+}
+
+.sidebar li span {
+  display: block;
+  padding: 0 0 10px 32px;
 }
 
 .sidebar.closed ul span {
@@ -291,7 +298,7 @@ canvas#sketchboard {
   background: url(./assets/images/contract.svg) no-repeat;
 }
 
-.tx-search-container {
+.search-container {
   background: rgba(18,23,38,0.9);
   position: absolute;
   top: 50%;
@@ -306,17 +313,17 @@ canvas#sketchboard {
   margin-left: -261px;
 }
 
-.tx-search-container h2 {
+.search-container h2 {
   border: none;
 }
 
-.tx-search-box {
+.search-box {
   width: 453px;
   height: 28px;
   float: left;
 }
 
-.tx-search-box-close {
+.search-box-close {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -326,12 +333,12 @@ canvas#sketchboard {
   color: #22c0c3;
 }
 
-.tx-search-box-close:hover {
+.search-box-close:hover {
   cursor: pointer;
   color: #ffffff;
 }
 
-.tx-search-action {
+.search-action {
   background: url(./assets/images/search.svg) no-repeat;
   width: 20px;
   height: 20px;
@@ -340,6 +347,6 @@ canvas#sketchboard {
   float: right;
 }
 
-.tx-search-action:hover {
+.search-action:hover {
   cursor: pointer;
 }

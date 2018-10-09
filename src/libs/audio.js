@@ -327,7 +327,7 @@ export default class Audio extends EventEmitter {
         // Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
         // Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
-        wave /= 8.0
+        wave /= 4.0
 
         sum += wave * attack * release * vol
       }

@@ -62,6 +62,7 @@
     "three": "^0.97.0",
     "three-gltf-loader": "^1.94.0",
     "three-orbit-controls": "^82.1.0",
+    "tween.js": "^16.6.0",
     "url-loader": "1.0.1",
     "voronoi": "^1.0.0",
     "webpack": "3.8.1",

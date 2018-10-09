@@ -16,6 +16,7 @@ import MapControls from './libs/MapControls'
 import Audio from './libs/audio'
 import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
+import TWEEN from 'tween.js'
 
 // post
 import {
@@ -84,13 +85,17 @@ class App extends mixin(EventEmitter, Component) {
 
     this.blockAnimStartTime = 0
 
+    this.animatingCamera = false
+
     this.state = {
       closestBlock: null,
       controlType: 'map',
       txSelected: null,
       sidebarOpen: false,
       txSearchOpen: false,
-      searchTXHash: ''
+      blockSearchOpen: false,
+      searchTXHash: '',
+      searchBlockHash: ''
     }
   }
 
@@ -271,7 +276,125 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  async selectTX (index, TXHash) {
+    this.emit('txSelect', {
+      txData: TXHash,
+      mousePos: this.mousePos
+    })
+
+    // get tx data
+    let txData = await window.fetch('https://blockchain.info/rawtx/' + TXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    let txDataJSON = await txData.json()
+
+    let outTotal = 0
+    let inTotal = 0
+
+    txDataJSON.out.forEach((output) => {
+      outTotal += output.value
+    })
+
+    txDataJSON.inputs.forEach((input, i) => {
+      if (typeof input.prev_out !== 'undefined') {
+        inTotal += input.prev_out.value
+      }
+    })
+
+    txDataJSON.inTotal = inTotal / 100000000
+    txDataJSON.outTotal = outTotal / 100000000
+    txDataJSON.fee = (inTotal - outTotal) / 100000000
+    if (txDataJSON.fee < 0) {
+      txDataJSON.fee = 0
+    }
+
+    this.setState({
+      txSelected: txDataJSON
+    })
+
+    // update isSelected attribute
+    let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
+    if (index !== -1) {
+      const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+
+      let selectedPosX = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0] - this.originOffset.x
+      let selectedPosY = 100 + (this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 1])
+      let selectedPosZ = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2] - this.originOffset.y
+
+      this.selectedLight.position.x = selectedPosX
+      this.selectedLight.position.z = selectedPosZ
+
+      this.animatingCamera = true
+
+      if (this.controls) {
+        this.controls.dispose()
+        this.controls = null
+      }
+
+      const easing = TWEEN.Easing.Quartic.InOut
+
+      let to = new THREE.Vector3(selectedPosX + this.originOffset.x, selectedPosY, selectedPosZ + this.originOffset.y)
+      let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
+
+      let fromPosition = new THREE.Vector3().copy(this.camera.position)
+      let fromRotation = new THREE.Euler().copy(this.camera.rotation)
+
+      // set final position and grab final rotation
+      this.camera.position.set(to.x, to.y, to.z)
+
+      this.camera.lookAt(toTarget)
+      let toRotation = new THREE.Euler().copy(this.camera.rotation)
+
+      // reset original position and rotation
+      this.camera.position.set(fromPosition.x, fromPosition.y, fromPosition.z)
+      this.camera.rotation.set(fromRotation.x, fromRotation.y, fromRotation.z)
+
+      // rotate with slerp
+      let fromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
+      let toQuaternion = new THREE.Quaternion().setFromEuler(toRotation)
+      let moveQuaternion = new THREE.Quaternion()
+      this.camera.quaternion.set(moveQuaternion)
+
+      let that = this
+
+      new TWEEN.Tween(this.camera.position)
+        .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
+        .onUpdate(function () {
+          that.camera.position.set(this.x, this.y, this.z)
+        })
+        .onComplete(() => {
+          that.toggleMapControls(false)
+          this.controls.target = new THREE.Vector3(to.x, 0, to.z)
+          this.camera.position.x = to.x
+          this.camera.position.z = to.z
+
+          this.setState({searchTXHash: ''})
+
+          this.animatingCamera = false
+        })
+        .easing(TWEEN.Easing.Linear.None)
+        .start()
+
+      let o = {t: 0}
+      new TWEEN.Tween(o)
+        .to({t: 1}, 2000)
+        .onUpdate(function () {
+          THREE.Quaternion.slerp(fromQuaternion, toQuaternion, moveQuaternion, o.t)
+          that.camera.quaternion.set(moveQuaternion.x, moveQuaternion.y, moveQuaternion.z, moveQuaternion.w)
+        })
+        .easing(easing)
+        .start()
+
+      selectedArray[index + txIndexOffset] = 1.0
+    }
+
+    this.crystal.geometry.attributes.isSelected.array = selectedArray
+    this.crystal.geometry.attributes.isSelected.needsUpdate = true
+  }
+
   async onMouseUp () {
+    if (this.animatingCamera) {
+      return
+    }
+
     let mouseMoveVec = this.mousePos.clone().sub(this.lastMousePos)
 
     // clicking on the same tx twice deselects
@@ -291,7 +414,7 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.isSelected.array = selectedArray
       this.crystal.geometry.attributes.isSelected.needsUpdate = true
     } else {
-      if (mouseMoveVec.lengthSq() > 200) {
+      if (mouseMoveVec.lengthSq() > 100) {
         return
       }
 
@@ -301,55 +424,7 @@ class App extends mixin(EventEmitter, Component) {
         if (typeof this.pickerGenerator.txMap[this.lastHoveredID] !== 'undefined') {
           this.selectedTXHash = this.pickerGenerator.txMap[this.lastHoveredID]
 
-          this.emit('txSelect', {
-            txData: this.selectedTXHash,
-            mousePos: this.mousePos
-          })
-
-          // get tx data
-          let txData = await window.fetch('https://blockchain.info/rawtx/' + this.selectedTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-          let txDataJSON = await txData.json()
-
-          let outTotal = 0
-          let inTotal = 0
-
-          txDataJSON.out.forEach((output) => {
-            outTotal += output.value
-          })
-
-          txDataJSON.inputs.forEach((input, i) => {
-            if (typeof input.prev_out !== 'undefined') {
-              inTotal += input.prev_out.value
-            }
-          })
-
-          txDataJSON.inTotal = inTotal / 100000000
-          txDataJSON.outTotal = outTotal / 100000000
-          txDataJSON.fee = (inTotal - outTotal) / 100000000
-          if (txDataJSON.fee < 0) {
-            txDataJSON.fee = 0
-          }
-
-          this.setState({
-            txSelected: txDataJSON
-          })
-
-          // update isSelected attribute
-          let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
-          if (this.lastSelectedID !== -1) {
-            const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
-
-            let selectedPosX = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 0] - this.originOffset.x
-            let selectedPosZ = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 2] - this.originOffset.y
-
-            this.selectedLight.position.x = selectedPosX
-            this.selectedLight.position.z = selectedPosZ
-
-            selectedArray[this.lastSelectedID + txIndexOffset] = 1.0
-          }
-
-          this.crystal.geometry.attributes.isSelected.array = selectedArray
-          this.crystal.geometry.attributes.isSelected.needsUpdate = true
+          this.selectTX(this.lastSelectedID, this.selectedTXHash)
         }
       } else {
         this.lastSelectedID = -1
@@ -680,7 +755,11 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  async getGeometry (hash) {
+  async getGeometry (hash, blockHeight = null) {
+    if (blockHeight && typeof this.blockGeoDataObject[blockHeight] !== 'undefined') {
+      return
+    }
+
     let blockData = await this.getBlockData(hash)
 
     // check for data in cache
@@ -776,7 +855,7 @@ class App extends mixin(EventEmitter, Component) {
 
         await this.asyncForEach(this.hashes, async (hash) => {
           if (addCount < 1) {
-            let blockGeoData = await this.getGeometry(hash, addCount)
+            let blockGeoData = await this.getGeometry(hash)
 
             if (!this.geoAdded) {
               this.crystal = await this.crystalGenerator.init(blockGeoData)
@@ -823,8 +902,8 @@ class App extends mixin(EventEmitter, Component) {
 
               this.closestBlockReadyForUpdate = true
             } else {
-              this.planeGenerator.updateGeometry(blockGeoData, addCount)
-              this.treeGenerator.updateGeometry(blockGeoData, addCount)
+              this.planeGenerator.updateGeometry(blockGeoData)
+              this.treeGenerator.updateGeometry(blockGeoData)
               this.crystalGenerator.updateGeometry(blockGeoData)
               this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
@@ -922,14 +1001,15 @@ class App extends mixin(EventEmitter, Component) {
     this.toggleMapControls()
   }
 
-  toggleMapControls () {
+  toggleMapControls (setPos = true) {
     this.switchControls('map')
-
     if (this.closestBlock) {
-      this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
-      this.camera.position.x = this.closestBlock.blockData.pos.x
-      this.camera.position.y = 2000
-      this.camera.position.z = this.closestBlock.blockData.pos.z
+      if (setPos) {
+        this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+        this.camera.position.x = this.closestBlock.blockData.pos.x
+        this.camera.position.y = 500
+        this.camera.position.z = this.closestBlock.blockData.pos.z
+      }
     }
   }
 
@@ -949,8 +1029,8 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.domElement = this.renderer.domElement
         this.controls.enableDamping = true
         this.controls.dampingFactor = 0.25
-        this.controls.screenSpacePanning = false
-        this.controls.minDistance = 100
+        this.controls.screenSpacePanning = true
+        this.controls.minDistance = 50
         this.controls.maxDistance = 10000000
         this.controls.maxPolarAngle = Math.PI / 2
         this.controls.rotateSpeed = 0.05
@@ -1222,10 +1302,12 @@ class App extends mixin(EventEmitter, Component) {
             // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
             // let blockDataSimpleJSON = await blockDataSimple.json()
 
-            let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash)
+            let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, height)
 
-            this.crystalGenerator.updateGeometry(blockGeoData)
-            this.crystalAOGenerator.updateGeometry(blockGeoData)
+            if (blockGeoData) {
+              this.crystalGenerator.updateGeometry(blockGeoData)
+              this.crystalAOGenerator.updateGeometry(blockGeoData)
+            }
           }
 
           let heightIndex = this.heightsToLoad.indexOf(height)
@@ -1245,13 +1327,27 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   toggleTxSearch () {
-    this.setState({txSearchOpen: !this.state.txSearchOpen})
+    this.setState({
+      blockSearchOpen: false,
+      txSearchOpen: !this.state.txSearchOpen
+    })
+  }
+
+  toggleBlockSearch () {
+    this.setState({
+      txSearchOpen: false,
+      blockSearchOpen: !this.state.blockSearchOpen
+    })
   }
 
   renderFrame () {
     let delta = this.clock.getDelta()
 
-    this.controls.update(delta)
+    TWEEN.update()
+
+    if (this.controls) {
+      this.controls.update(delta)
+    }
 
     if (this.planetMesh) {
       this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000001)
@@ -1289,6 +1385,14 @@ class App extends mixin(EventEmitter, Component) {
     //   // }
     // }
 
+    if (this.picker) {
+      this.updatePicker()
+    }
+    if (this.geoAdded) {
+      this.loadNearestBlocks()
+    }
+    this.getClosestBlock()
+
     if (this.blockReady) {
       this.setRenderOrder()
 
@@ -1306,14 +1410,6 @@ class App extends mixin(EventEmitter, Component) {
     // this.renderer.render(this.scene, this.camera)
       this.composer.render()
     }
-
-    if (this.picker) {
-      this.updatePicker()
-    }
-    if (this.geoAdded) {
-      this.loadNearestBlocks()
-    }
-    this.getClosestBlock()
   }
 
   addEvents () {
@@ -1367,7 +1463,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    this.blockAnimStartTime = window.performance.now()
+    // this.blockAnimStartTime = window.performance.now()
 
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
     this.originOffset = new THREE.Vector2(
@@ -1688,30 +1784,115 @@ class App extends mixin(EventEmitter, Component) {
       let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
       let txDataJSON = await txData.json()
 
-      // const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-      // let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + txDataJSON.block_height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      this.animatingCamera = true
 
-      // let blockData = await window.fetch(url)
-      // let blockDataJSON = await blockData.json()
+      this.controls.dispose()
+      this.controls = null
+
+      this.toggleTxSearch()
 
       let posX = this.blockPositions[txDataJSON.block_height * 2 + 0]
       let posZ = this.blockPositions[txDataJSON.block_height * 2 + 1]
 
-      this.camera.position.x = posX
-      this.camera.position.y = 1000
-      this.camera.position.z = posZ
+      let to = new THREE.Vector3(posX, 10000, posZ)
+      let toTarget = new THREE.Vector3(posX, 0, posZ)
 
-      this.controls.target.x = posX
-      this.controls.target.y = 0
-      this.controls.target.z = posZ
+      const easing = TWEEN.Easing.Quartic.InOut
 
+      let that = this
+
+      let diff = to.clone().sub(this.camera.position)
+      diff.multiplyScalar(0.5)
+
+      let midPoint = this.camera.position.clone().add(diff)
+      midPoint.y = 1000000
+
+      let fromPosition = new THREE.Vector3().copy(this.camera.position)
+      let fromRotation = new THREE.Euler().copy(this.camera.rotation)
+
+      // set final position and grab final rotation
+
+      this.camera.position.set(to.x, to.y, to.z)
+
+      this.camera.lookAt(toTarget)
+      let toRotation = new THREE.Euler().copy(this.camera.rotation)
+
+      // reset original position and rotation
+      this.camera.position.set(fromPosition.x, fromPosition.y, fromPosition.z)
+      this.camera.rotation.set(fromRotation.x, fromRotation.y, fromRotation.z)
+
+      // rotate with slerp
+      let fromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
+      let toQuaternion = new THREE.Quaternion().setFromEuler(toRotation)
+      let moveQuaternion = new THREE.Quaternion()
+      this.camera.quaternion.set(moveQuaternion)
+
+      new TWEEN.Tween(this.camera.position)
+        .to(midPoint, 5000)
+        .onUpdate(function () {
+          that.camera.position.set(this.x, this.y, this.z)
+        })
+        .onComplete(() => {
+          new TWEEN.Tween(that.camera.position)
+            .to(to, 5000)
+            .onUpdate(function () {
+              that.camera.position.set(this.x, this.y, this.z)
+            })
+            .onComplete(() => {
+              new TWEEN.Tween(this.camera.position)
+                .to(new THREE.Vector3(to.x, 500, to.z), 5000)
+                .onUpdate(function () {
+                  that.camera.position.set(this.x, this.y, this.z)
+                })
+                .onComplete(() => {
+                  that.toggleMapControls()
+                  if (this.state.searchTXHash) {
+                    let foundTXID = 0
+
+                    this.closestBlock.blockData.tx.forEach((el, i) => {
+                      if (el.hash === this.state.searchTXHash) {
+                        foundTXID = i
+                      }
+                    })
+
+                    this.selectTX(foundTXID, this.state.searchTXHash)
+                  }
+                })
+                .easing(TWEEN.Easing.Linear.None)
+                .start()
+            })
+            .easing(easing)
+            .start()
+        })
+        .easing(easing)
+        .start()
+
+      let o = {t: 0}
+      new TWEEN.Tween(o)
+        .to({t: 1}, 10000)
+        .onUpdate(function () {
+          THREE.Quaternion.slerp(fromQuaternion, toQuaternion, moveQuaternion, o.t)
+          that.camera.quaternion.set(moveQuaternion.x, moveQuaternion.y, moveQuaternion.z, moveQuaternion.w)
+        })
+        .easing(easing)
+        .start()
     } catch (error) {
 
     }
   }
 
   updateSearchTXHash (e) {
-    this.setState({searchTXHash: e.target.value})
+    let txHash = e.target.value.trim()
+    if (txHash) {
+      this.setState({searchTXHash: txHash})
+    }
+  }
+
+  updateSearchBlockHash (e) {
+    let blockHash = e.target.value.trim()
+    if (blockHash) {
+      this.setState({searchBlockHash: blockHash})
+    }
   }
 
   UISidebar () {
@@ -1733,6 +1914,7 @@ class App extends mixin(EventEmitter, Component) {
           <ul>
             <li>
               <button className='search' onClick={this.toggleSidebar.bind(this)} />
+              <span onClick={this.toggleBlockSearch.bind(this)}>Locate Block</span>
               <span onClick={this.toggleTxSearch.bind(this)}>Locate Transaction</span>
             </li>
           </ul>
@@ -1741,14 +1923,31 @@ class App extends mixin(EventEmitter, Component) {
     )
   }
 
+  lookupBlockFromHash () {
+
+  }
+
   UITXSearchBox () {
     if (this.state.txSearchOpen) {
       return (
-        <div className='tx-search-container'>
+        <div className='search-container'>
           <h2>Enter Transaction Hash</h2>
-          <button className='tx-search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
-          <input className='tx-search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
-          <button className='tx-search-action' onClick={this.lookupTXFromHash.bind(this)} />
+          <button className='search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
+          <input className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <button className='search-action' onClick={this.lookupTXFromHash.bind(this)} />
+        </div>
+      )
+    }
+  }
+
+  UIBlockSearchBox () {
+    if (this.state.blockSearchOpen) {
+      return (
+        <div className='search-container'>
+          <h2>Enter Block Hash</h2>
+          <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
+          <input className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <button className='search-action' onClick={this.lookupBlockFromHash.bind(this)} />
         </div>
       )
     }
@@ -1811,6 +2010,7 @@ class App extends mixin(EventEmitter, Component) {
       <div className='symphony-ui'>
         {this.UISidebar()}
         {this.UITXSearchBox()}
+        {this.UIBlockSearchBox()}
         {this.UIBlockDetails()}
       </div>
     )
