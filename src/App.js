@@ -87,6 +87,13 @@ class App extends mixin(EventEmitter, Component) {
 
     this.animatingCamera = false
 
+    this.camPosTo = new THREE.Vector3(0.0, 0.0, 0.0)
+    this.camPosToTarget = new THREE.Vector3(0.0, 0.0, 0.0)
+    this.camFromPosition = new THREE.Vector3(0.0, 0.0, 0.0)
+    this.camFromRotation = new THREE.Vector3(0.0, 0.0, 0.0)
+
+    this.defaultCamEasing = TWEEN.Easing.Quartic.InOut
+
     this.state = {
       closestBlock: null,
       controlType: 'map',
@@ -144,8 +151,7 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.pickerGenerator = new Picker({
-      planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeSize: this.planeSize
     })
 
     this.crystalAOGenerator = new CrystalAO({
@@ -154,17 +160,15 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.planeGenerator = new Plane({
-      planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeSize: this.planeSize
     })
 
     this.treeGenerator = new Tree({
-      planeSize: this.planeSize,
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeSize: this.planeSize
     })
 
     this.diskGenerator = new Disk({
-      planeOffsetMultiplier: this.planeOffsetMultiplier
+      planeSize: this.planeSize
     })
 
     this.heightsToLoad = []
@@ -322,39 +326,15 @@ class App extends mixin(EventEmitter, Component) {
       this.selectedLight.position.x = selectedPosX
       this.selectedLight.position.z = selectedPosZ
 
-      this.animatingCamera = true
-
-      if (this.controls) {
-        this.controls.dispose()
-        this.controls = null
-      }
-
-      const easing = TWEEN.Easing.Quartic.InOut
-
       let to = new THREE.Vector3(selectedPosX + this.originOffset.x, selectedPosY, selectedPosZ + this.originOffset.y)
       let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
 
-      let fromPosition = new THREE.Vector3().copy(this.camera.position)
-      let fromRotation = new THREE.Euler().copy(this.camera.rotation)
-
-      // set final position and grab final rotation
-      this.camera.position.set(to.x, to.y, to.z)
-
-      this.camera.lookAt(toTarget)
-      let toRotation = new THREE.Euler().copy(this.camera.rotation)
-
-      // reset original position and rotation
-      this.camera.position.set(fromPosition.x, fromPosition.y, fromPosition.z)
-      this.camera.rotation.set(fromRotation.x, fromRotation.y, fromRotation.z)
-
-      // rotate with slerp
-      let fromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
-      let toQuaternion = new THREE.Quaternion().setFromEuler(toRotation)
-      let moveQuaternion = new THREE.Quaternion()
-      this.camera.quaternion.set(moveQuaternion)
+      this.prepareCamAnim(
+        to,
+        toTarget
+      )
 
       let that = this
-
       new TWEEN.Tween(this.camera.position)
         .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
         .onUpdate(function () {
@@ -373,15 +353,7 @@ class App extends mixin(EventEmitter, Component) {
         .easing(TWEEN.Easing.Linear.None)
         .start()
 
-      let o = {t: 0}
-      new TWEEN.Tween(o)
-        .to({t: 1}, 2000)
-        .onUpdate(function () {
-          THREE.Quaternion.slerp(fromQuaternion, toQuaternion, moveQuaternion, o.t)
-          that.camera.quaternion.set(moveQuaternion.x, moveQuaternion.y, moveQuaternion.z, moveQuaternion.w)
-        })
-        .easing(easing)
-        .start()
+      this.animateCamRotation(2000)
 
       selectedArray[index + txIndexOffset] = 1.0
     }
@@ -475,8 +447,8 @@ class App extends mixin(EventEmitter, Component) {
     // this.ssaaRenderPass.unbiased = true
     // this.composer.addPass(this.ssaaRenderPass)
 
-    this.HueSaturationPass = new ShaderPass(HueSaturation)
-    this.composer.addPass(this.HueSaturationPass)
+    // this.HueSaturationPass = new ShaderPass(HueSaturation)
+    // this.composer.addPass(this.HueSaturationPass)
 
     // this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
     // this.composer.addPass(this.BrightnessContrastPass)
@@ -744,9 +716,6 @@ class App extends mixin(EventEmitter, Component) {
     this.selectedLight = new THREE.PointLight(0xff0000, 0.1, 500.0)
     this.selectedLight.position.set(-999999, 5, -999999)
     this.group.add(this.selectedLight)
-
-    // var helper = new THREE.CameraHelper(this.sunLight.shadow.camera)
-    // this.scene.add(helper)
   }
 
   async asyncForEach (array, callback) {
@@ -973,7 +942,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.crystal.material.side = THREE.FrontSide
 
-    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 512)
+    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 1024)
     cubeCamera.position.copy(pos)
 
     cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1013,6 +982,11 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  toggleUndersideControls () {
+    this.switchControls('underside')
+    this.controls.maxPolarAngle = Math.PI * 2
+  }
+
   toggleFlyControls () {
     this.switchControls('fly')
   }
@@ -1023,8 +997,11 @@ class App extends mixin(EventEmitter, Component) {
       this.controls = null
     }
 
+    this.animatingCamera = false
+
     switch (type) {
       case 'map':
+      case 'underside':
         this.controls = new MapControls(this.camera)
         this.controls.domElement = this.renderer.domElement
         this.controls.enableDamping = true
@@ -1054,6 +1031,84 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.setState({controlType: type})
+  }
+
+  prepareCamAnim (to, toTarget) {
+    this.animatingCamera = true
+
+    if (this.controls) {
+      this.controls.dispose()
+      this.controls = null
+    }
+
+    this.camPosTo = to
+    this.camPosTarget = toTarget
+
+    this.camFromPosition = new THREE.Vector3().copy(this.camera.position)
+    this.camFromRotation = new THREE.Euler().copy(this.camera.rotation)
+
+    // set final position and grab final rotation
+    this.camera.position.set(this.camPosTo.x, this.camPosTo.y, this.camPosTo.z)
+
+    this.camera.lookAt(this.camPosTarget)
+    this.camToRotation = new THREE.Euler().copy(this.camera.rotation)
+
+    // reset original position and rotation
+    this.camera.position.set(this.camFromPosition.x, this.camFromPosition.y, this.camFromPosition.z)
+    this.camera.rotation.set(this.camFromRotation.x, this.camFromRotation.y, this.camFromRotation.z)
+
+    // rotate with slerp
+    this.camFromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
+    this.camToQuaternion = new THREE.Quaternion().setFromEuler(this.camToRotation)
+    this.camMoveQuaternion = new THREE.Quaternion()
+    this.camera.quaternion.set(this.camMoveQuaternion)
+  }
+
+  toggleTopView () {
+    this.prepareCamAnim(
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, 500, this.closestBlock.blockData.pos.z),
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+    )
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(this.camPosTo, 5000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        this.toggleMapControls()
+        this.controls.target = this.camPosTarget
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(5000)
+  }
+
+  toggleUndersideView () {
+    let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -200, this.closestBlock.blockData.pos.z - 100)
+    let toTarget = new THREE.Vector3(this.closestBlock.blockData.pos.x - 90, 0, this.closestBlock.blockData.pos.z - 90)
+
+    this.prepareCamAnim(
+      to,
+      toTarget
+    )
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(this.camPosTo, 5000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        that.toggleUndersideControls()
+        that.controls.target = that.camPosTarget
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(5000)
   }
 
   setConfig (newConfig) {
@@ -1350,7 +1405,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (this.planetMesh) {
-      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000001)
+      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.000000075)
     }
 
     // if (this.plane) {
@@ -1701,7 +1756,7 @@ class App extends mixin(EventEmitter, Component) {
       canvas: this.canvas
     })
     // this.renderer.toneMapping = THREE.NoToneMapping
-    this.renderer.toneMappingExposure = 1.5
+    // this.renderer.toneMappingExposure = 1.5
     this.renderer.setClearColor(0xffffff, 0)
 
     // this.renderer.shadowMap.enabled = true
@@ -1741,11 +1796,23 @@ class App extends mixin(EventEmitter, Component) {
   UICockpitButton () {
     if (this.state.controlType === 'fly') {
       return (
-        <button onClick={this.toggleMapControls.bind(this)} className='toggle-cockpit-controls'>Leave Cockpit Mode</button>
+        <button onClick={this.toggleTopView.bind(this)} className='toggle-cockpit-controls enter' />
       )
     } else {
       return (
-        <button onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls'>Enter Cockpit Mode</button>
+        <button onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls leave' />
+      )
+    }
+  }
+
+  UIUndersideButton () {
+    if (this.state.controlType !== 'underside') {
+      return (
+        <button onClick={this.toggleUndersideView.bind(this)} className='toggle-underside-view'>View Underside</button>
+      )
+    } else {
+      return (
+        <button onClick={this.toggleTopView.bind(this)} className='toggle-top-view'>View Top</button>
       )
     }
   }
@@ -1784,22 +1851,18 @@ class App extends mixin(EventEmitter, Component) {
       let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
       let txDataJSON = await txData.json()
 
-      this.animatingCamera = true
-
-      this.controls.dispose()
-      this.controls = null
-
-      this.toggleTxSearch()
-
       let posX = this.blockPositions[txDataJSON.block_height * 2 + 0]
       let posZ = this.blockPositions[txDataJSON.block_height * 2 + 1]
 
       let to = new THREE.Vector3(posX, 10000, posZ)
       let toTarget = new THREE.Vector3(posX, 0, posZ)
+      this.prepareCamAnim(
+        to,
+        toTarget
+      )
 
-      const easing = TWEEN.Easing.Quartic.InOut
-
-      let that = this
+      this.toggleSidebar()
+      this.toggleTxSearch()
 
       let diff = to.clone().sub(this.camera.position)
       diff.multiplyScalar(0.5)
@@ -1807,26 +1870,7 @@ class App extends mixin(EventEmitter, Component) {
       let midPoint = this.camera.position.clone().add(diff)
       midPoint.y = 1000000
 
-      let fromPosition = new THREE.Vector3().copy(this.camera.position)
-      let fromRotation = new THREE.Euler().copy(this.camera.rotation)
-
-      // set final position and grab final rotation
-
-      this.camera.position.set(to.x, to.y, to.z)
-
-      this.camera.lookAt(toTarget)
-      let toRotation = new THREE.Euler().copy(this.camera.rotation)
-
-      // reset original position and rotation
-      this.camera.position.set(fromPosition.x, fromPosition.y, fromPosition.z)
-      this.camera.rotation.set(fromRotation.x, fromRotation.y, fromRotation.z)
-
-      // rotate with slerp
-      let fromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
-      let toQuaternion = new THREE.Quaternion().setFromEuler(toRotation)
-      let moveQuaternion = new THREE.Quaternion()
-      this.camera.quaternion.set(moveQuaternion)
-
+      let that = this
       new TWEEN.Tween(this.camera.position)
         .to(midPoint, 5000)
         .onUpdate(function () {
@@ -1840,7 +1884,7 @@ class App extends mixin(EventEmitter, Component) {
             })
             .onComplete(() => {
               new TWEEN.Tween(this.camera.position)
-                .to(new THREE.Vector3(to.x, 500, to.z), 5000)
+                .to(new THREE.Vector3(that.camPosTo.x, 500, that.camPosTo.z), 5000)
                 .onUpdate(function () {
                   that.camera.position.set(this.x, this.y, this.z)
                 })
@@ -1861,24 +1905,28 @@ class App extends mixin(EventEmitter, Component) {
                 .easing(TWEEN.Easing.Linear.None)
                 .start()
             })
-            .easing(easing)
+            .easing(this.defaultCamEasing)
             .start()
         })
-        .easing(easing)
+        .easing(this.defaultCamEasing)
         .start()
 
-      let o = {t: 0}
-      new TWEEN.Tween(o)
-        .to({t: 1}, 10000)
-        .onUpdate(function () {
-          THREE.Quaternion.slerp(fromQuaternion, toQuaternion, moveQuaternion, o.t)
-          that.camera.quaternion.set(moveQuaternion.x, moveQuaternion.y, moveQuaternion.z, moveQuaternion.w)
-        })
-        .easing(easing)
-        .start()
+      this.animateCamRotation(10000)
     } catch (error) {
 
     }
+  }
+
+  animateCamRotation (duration) {
+    let o = {t: 0}
+    new TWEEN.Tween(o)
+      .to({t: 1}, duration)
+      .onUpdate(function () {
+        THREE.Quaternion.slerp(this.camFromQuaternion, this.camToQuaternion, this.camMoveQuaternion, o.t)
+        this.camera.quaternion.set(this.camMoveQuaternion.x, this.camMoveQuaternion.y, this.camMoveQuaternion.z, this.camMoveQuaternion.w)
+      }.bind(this))
+      .easing(this.defaultCamEasing)
+      .start()
   }
 
   updateSearchTXHash (e) {
@@ -1923,8 +1971,61 @@ class App extends mixin(EventEmitter, Component) {
     )
   }
 
-  lookupBlockFromHash () {
+  async lookupBlockFromHash () {
+    let blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
 
+    let blockDataJSON = await blockData.json()
+
+    this.toggleSidebar()
+
+    this.toggleBlockSearch()
+
+    let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
+    let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
+
+    let to = new THREE.Vector3(posX, 10000, posZ)
+    let toTarget = new THREE.Vector3(posX, 0, posZ)
+
+    this.prepareCamAnim(to, toTarget)
+
+    let diff = to.clone().sub(this.camera.position)
+    diff.multiplyScalar(0.5)
+
+    let midPoint = this.camera.position.clone().add(diff)
+    midPoint.y = 1000000
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(midPoint, 5000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        new TWEEN.Tween(that.camera.position)
+          .to(to, 5000)
+          .onUpdate(function () {
+            that.camera.position.set(this.x, this.y, this.z)
+          })
+          .onComplete(() => {
+            new TWEEN.Tween(this.camera.position)
+              .to(new THREE.Vector3(to.x, 500, to.z), 5000)
+              .onUpdate(function () {
+                that.camera.position.set(this.x, this.y, this.z)
+              })
+              .onComplete(() => {
+                that.toggleMapControls()
+                this.animatingCamera = false
+              })
+              .easing(TWEEN.Easing.Linear.None)
+              .start()
+          })
+          .easing(this.defaultCamEasing)
+          .start()
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(10000)
   }
 
   UITXSearchBox () {
@@ -1973,6 +2074,7 @@ class App extends mixin(EventEmitter, Component) {
           <div className='cockpit-border' />
           {this.UICockpit()}
           {this.UICockpitButton()}
+          {this.UIUndersideButton()}
           {this.UITXDetails()}
           <div className='block-details'>
             <h2>Block {this.state.closestBlock.blockData.hash}</h2>

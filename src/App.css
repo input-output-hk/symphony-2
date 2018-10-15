@@ -123,8 +123,27 @@ canvas#sketchboard {
 .toggle-cockpit-controls {
   position: absolute;
   z-index: 1;
-  right: 10px;
-  top: 10px;
+  right: 20px;
+  top: 20px;
+  background: url(./assets/images/cockpit.png);
+  border: none;
+  width: 58px;
+  height: 41px;
+  display: block;
+}
+
+
+.toggle-cockpit-controls:hover {
+  cursor: pointer;
+}
+
+.toggle-top-view,
+.toggle-underside-view {
+  position: absolute;
+  display: block;
+  left: 50%;
+  top: 20px;
+
 }
 
 .tx-details {

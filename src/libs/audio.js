@@ -434,6 +434,9 @@ export default class Audio extends EventEmitter {
     }`)
 
     let vol = this.getVol(frequencies.length)
+    if (typeof frequencies === 'undefined') {
+      return
+    }
     console.time('sineBank')
     let sineArray = this.sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
     console.timeEnd('sineBank')

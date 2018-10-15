@@ -74,7 +74,7 @@ void main() {
 		// float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
 
 		float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 3.0) * 0.3);
+		float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 4.0) * 1.0);
 
 		float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
@@ -215,6 +215,9 @@ void main() {
 
 		outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
 		outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
+
+		outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
+
 
 		outgoingLight.r += vIsHovered * (sideEdgeAmount * 2.0);
 		outgoingLight.r += vIsSelected * (sideEdgeAmount * 2.0);
