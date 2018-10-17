@@ -143,6 +143,12 @@ module.exports = {
             ]
           },
 
+          {
+            test: /\.worker\.js$/,
+            loader: 'worker-loader',
+            options: { inline: true, fallback: false }
+          },
+
           // "url" loader works just like "file" loader but it also embeds
           // assets smaller than specified size as data URLs to avoid requests.
           {

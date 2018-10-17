@@ -137,13 +137,27 @@ canvas#sketchboard {
   cursor: pointer;
 }
 
-.toggle-top-view,
-.toggle-underside-view {
+.flip-view-container {
   position: absolute;
-  display: block;
+  background: #1b2238;
+  padding: 20px;
   left: 50%;
   top: 20px;
+  border-radius: 50px;
+}
 
+.flip-view {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: url(./assets/images/flip-view.svg) no-repeat;
+  border: none;
+  opacity: 0.8;
+}
+
+.flip-view:hover {
+  cursor: pointer;
+  opacity: 1.0;
 }
 
 .tx-details {

@@ -18,18 +18,20 @@ import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 
+import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
+
 // post
 import {
   EffectComposer,
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass,
-  SSAARenderPass
+  SMAAPass
+  // SSAARenderPass
 } from './libs/post/EffectComposer'
 
 // import CopyShader from './libs/post/CopyShader'
-import HueSaturation from './libs/post/HueSaturation'
+// import HueSaturation from './libs/post/HueSaturation'
 // import BrightnessContrast from './libs/post/BrightnessContrast'
 import VignetteShader from './libs/post/Vignette'
 import FilmShader from './libs/post/Film'
@@ -495,7 +497,7 @@ class App extends mixin(EventEmitter, Component) {
     this.docRef = this.firebaseDB.collection('bitcoin_blocks')
     this.docRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
 
-    this.anonymousSignin()
+    // this.anonymousSignin()
 
     // send ready event
     this.emit('ready')
@@ -942,7 +944,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.crystal.material.side = THREE.FrontSide
 
-    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 1024)
+    let cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
     cubeCamera.position.copy(pos)
 
     cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1220,15 +1222,33 @@ class App extends mixin(EventEmitter, Component) {
         const zComponent = this.blockPositions[index * 2 + 1] - camVec.y
         const dist = (xComponent * xComponent) + (zComponent * zComponent)
 
-        if (typeof this.blockGeoDataObject[index] !== 'undefined') {
-          this.blockGeoDataObject[index].dist = dist
-        }
-
         if (dist < closestDist) {
           closestDist = dist
           this.closestHeight = index
         }
       }
+
+      // unload blocks n away from closest block
+      for (const height in this.blockGeoDataObject) {
+        if (this.blockGeoDataObject.hasOwnProperty(height)) {
+          if (
+            height < this.closestHeight - 10 ||
+            height > this.closestHeight + 10
+          ) {
+            delete this.blockGeoDataObject[height]
+            console.log('deleted blockdata at: ' + height)
+          }
+        }
+      }
+
+      this.loadedHeights.forEach((height, i) => {
+        if (
+          height < this.closestHeight - 10 ||
+          height > this.closestHeight + 10
+        ) {
+          delete this.loadedHeights[ i ]
+        }
+      })
 
       if (this.loadedHeights.indexOf(this.closestHeight) !== -1) {
         this.loading = false
@@ -1237,144 +1257,114 @@ class App extends mixin(EventEmitter, Component) {
 
       this.loadedHeights.push(this.closestHeight)
 
+      console.log(this.blockGeoDataObject)
+      console.log(this.loadedHeights)
+
       let closestBlocksData = []
       let closestBlocksGeoData = []
 
-      let blockData = this.docRef
-        .where('height', '>', this.closestHeight - 1)
-        .where('height', '<', this.closestHeight + 1)
-        .orderBy('height', 'asc')
-
-      let querySnapshot = await blockData.get()
-
-      querySnapshot.forEach(snapshot => {
-        let data = snapshot.data()
+      const nearestBlocksWorker = new NearestBlocksWorker()
+      nearestBlocksWorker.onmessage = async ({ data }) => {
         console.log(data)
-        if (typeof this.blockGeoDataObject[data.height] === 'undefined') {
-          closestBlocksData.push(data)
-        }
-      })
 
-      let blockGeoData = this.docRefGeo
-        .where('height', '>', this.closestHeight - 1)
-        .where('height', '<', this.closestHeight + 1)
-        .orderBy('height', 'asc')
+        closestBlocksData = data.closestBlocksData
+        closestBlocksGeoData = data.closestBlocksGeoData
 
-      let geoSnapshot = await blockGeoData.get()
-
-      geoSnapshot.forEach(snapshot => {
-        let data = snapshot.data()
-
-        if (typeof this.blockGeoDataObject[data.height] === 'undefined') {
-          let offsetJSON = JSON.parse(data.offsets)
-          let offsetsArray = Object.values(offsetJSON)
-
-          let scalesJSON = JSON.parse(data.scales)
-          let scalesArray = Object.values(scalesJSON)
-
-          let blockData = data
-
-          blockData.offsets = offsetsArray
-          blockData.scales = scalesArray
-
-          closestBlocksGeoData.push(data)
-        }
-      })
-
-      closestBlocksGeoData.forEach(async (blockGeoData, i) => {
-        if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-          if (typeof closestBlocksData[i] !== 'undefined') {
-            blockGeoData.blockData = closestBlocksData[i]
-
-            blockGeoData.blockData.pos = {}
-            blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
-            blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
-
-            blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
-
-            this.blockGeoDataObject[blockGeoData.height] = blockGeoData
-
-            this.planeGenerator.updateGeometry(blockGeoData)
-            this.treeGenerator.updateGeometry(blockGeoData)
-            this.crystalGenerator.updateGeometry(blockGeoData)
-            this.crystalAOGenerator.updateGeometry(blockGeoData)
-          }
-        }
-      })
-
-      if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
-        if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
-          this.heightsToLoad.push(this.closestHeight)
-        }
-      }
-
-      for (let i = 1; i < 10; i++) {
-        let next = this.closestHeight + i
-        let prev = this.closestHeight - i
-
-        if (typeof this.blockGeoDataObject[next] === 'undefined') {
-          if (next <= this.maxHeight && next >= 0) {
-            if (this.heightsToLoad.indexOf(next) === -1) {
-              this.heightsToLoad.push(next)
-            }
-          }
-        }
-
-        if (typeof this.blockGeoDataObject[prev] === 'undefined') {
-          if (prev <= this.maxHeight && prev >= 0) {
-            if (this.heightsToLoad.indexOf(prev) === -1) {
-              this.heightsToLoad.push(prev)
-            }
-          }
-        }
-      }
-
-      console.log(this.heightsToLoad)
-
-      this.heightsToLoad.forEach(async (height) => {
-        if (this.loadingMutex.indexOf(height) === -1) {
-          this.loadingMutex.push(height)
-
+        closestBlocksGeoData.forEach(async (blockGeoData, i) => {
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-            // let blockData = await window.fetch('https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+            if (typeof closestBlocksData[i] !== 'undefined') {
+              blockGeoData.blockData = closestBlocksData[i]
 
-            let blockGeoDataTemp = {}
-            blockGeoDataTemp.blockData = {}
-            blockGeoDataTemp.blockData.height = height
-            blockGeoDataTemp.blockData.pos = {}
-            blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
-            blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+              blockGeoData.blockData.pos = {}
+              blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
+              blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
 
-            this.planeGenerator.updateGeometry(blockGeoDataTemp)
-            this.treeGenerator.updateGeometry(blockGeoDataTemp)
+              blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
 
-            const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-            let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+              this.blockGeoDataObject[blockGeoData.height] = blockGeoData
 
-            let blockData = await window.fetch(url)
-            let blockDataJSON = await blockData.json()
-
-            // let blockDataSimple = await window.fetch('https://api.blockcypher.com/v1/btc/main/blocks/' + height + '?txstart=1&limit=1&token=92848af8183b455b8950e8c32753728c')
-            // let blockDataSimpleJSON = await blockDataSimple.json()
-
-            let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, height)
-
-            if (blockGeoData) {
+              this.planeGenerator.updateGeometry(blockGeoData)
+              this.treeGenerator.updateGeometry(blockGeoData)
               this.crystalGenerator.updateGeometry(blockGeoData)
               this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
           }
+        })
 
-          let heightIndex = this.heightsToLoad.indexOf(height)
-          if (heightIndex > -1) {
-            this.heightsToLoad.splice(heightIndex, 1)
-          }
-          let mutexIndex = this.loadingMutex.indexOf(height)
-          if (mutexIndex > -1) {
-            this.heightsToLoad.splice(mutexIndex, 1)
+        if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
+          if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
+            this.heightsToLoad.push(this.closestHeight)
           }
         }
-      })
+
+        for (let i = 1; i < 10; i++) {
+          let next = this.closestHeight + i
+          let prev = this.closestHeight - i
+
+          if (typeof this.blockGeoDataObject[next] === 'undefined') {
+            if (next <= this.maxHeight && next >= 0) {
+              if (this.heightsToLoad.indexOf(next) === -1) {
+                this.heightsToLoad.push(next)
+              }
+            }
+          }
+
+          if (typeof this.blockGeoDataObject[prev] === 'undefined') {
+            if (prev <= this.maxHeight && prev >= 0) {
+              if (this.heightsToLoad.indexOf(prev) === -1) {
+                this.heightsToLoad.push(prev)
+              }
+            }
+          }
+        }
+
+        console.log(this.heightsToLoad)
+
+        this.heightsToLoad.forEach(async (height) => {
+          if (this.loadingMutex.indexOf(height) === -1) {
+            this.loadingMutex.push(height)
+
+            if (typeof this.blockGeoDataObject[height] === 'undefined') {
+              let blockGeoDataTemp = {}
+              blockGeoDataTemp.blockData = {}
+              blockGeoDataTemp.blockData.height = height
+              blockGeoDataTemp.blockData.pos = {}
+              blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
+              blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+
+              this.planeGenerator.updateGeometry(blockGeoDataTemp)
+              this.treeGenerator.updateGeometry(blockGeoDataTemp)
+
+              const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
+              let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+
+              let blockData = await window.fetch(url)
+              let blockDataJSON = await blockData.json()
+
+              let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, height)
+
+              if (blockGeoData) {
+                if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+                  this.crystalGenerator.updateGeometry(blockGeoData)
+                  this.crystalAOGenerator.updateGeometry(blockGeoData)
+                }
+              }
+            }
+
+            let heightIndex = this.heightsToLoad.indexOf(height)
+            if (heightIndex > -1) {
+              this.heightsToLoad.splice(heightIndex, 1)
+            }
+            let mutexIndex = this.loadingMutex.indexOf(height)
+            if (mutexIndex > -1) {
+              this.heightsToLoad.splice(mutexIndex, 1)
+            }
+          }
+        })
+
+        nearestBlocksWorker.terminate()
+      }
+      nearestBlocksWorker.postMessage({ cmd: 'build', closestHeight: this.closestHeight, config: this.config })
 
       this.loading = false
       console.log('loaded')
@@ -1405,7 +1395,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (this.planetMesh) {
-      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.000000075)
+      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000005)
     }
 
     // if (this.plane) {
@@ -1497,8 +1487,10 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('keydown', (event) => {
       if (this.state.controlType === 'fly') {
         if (event.shiftKey) {
-          if (this.controls.movementSpeed < 1000) {
-            this.controls.movementSpeed += 10
+          if (this.controls) {
+            if (this.controls.movementSpeed < 1000) {
+              this.controls.movementSpeed += 10
+            }
           }
         }
       }
@@ -1507,7 +1499,9 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('keyup', (event) => {
       if (this.state.controlType === 'fly') {
         if (!event.shiftKey) {
-          this.controls.movementSpeed = 100
+          if (this.controls) {
+            this.controls.movementSpeed = 100
+          }
         }
       }
     })
@@ -1548,12 +1542,17 @@ class App extends mixin(EventEmitter, Component) {
 
     for (const height in this.audio.audioSources) {
       if (this.audio.audioSources.hasOwnProperty(height)) {
-        /*
-        src.stop()
-        delete this.audio.audioSources[height]
-        delete this.audio.buffers[height]
-        delete this.audio.gainNodes[height]
-        */
+        if (
+          height < this.closestBlock.blockData.height - 5 ||
+          height > this.closestBlock.blockData.height + 5
+        ) {
+          this.audio.audioSources[height].stop()
+          delete this.audio.audioSources[height]
+          delete this.audio.buffers[height]
+          delete this.audio.gainNodes[height]
+          console.log('stopped audio at height: ' + height)
+        }
+
         clearTimeout(this.audio.loops[height])
       }
     }
@@ -1808,11 +1807,15 @@ class App extends mixin(EventEmitter, Component) {
   UIUndersideButton () {
     if (this.state.controlType !== 'underside') {
       return (
-        <button onClick={this.toggleUndersideView.bind(this)} className='toggle-underside-view'>View Underside</button>
+        <div className='flip-view-container'>
+          <button onClick={this.toggleUndersideView.bind(this)} className='flip-view' />
+        </div>
       )
     } else {
       return (
-        <button onClick={this.toggleTopView.bind(this)} className='toggle-top-view'>View Top</button>
+        <div className='flip-view-container'>
+          <button onClick={this.toggleTopView.bind(this)} className='flip-view' />
+        </div>
       )
     }
   }

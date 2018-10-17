@@ -25,10 +25,10 @@ export default class Audio extends EventEmitter {
     this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
     this.biquadFilter.Q.setValueAtTime(0.1, this.audioContext.currentTime)
 
-    this.lowShelf = this.audioContext.createBiquadFilter()
-    this.lowShelf.type = 'lowshelf'
-    this.lowShelf.frequency.setValueAtTime(250, this.audioContext.currentTime)
-    this.lowShelf.gain.setValueAtTime(6.0, this.audioContext.currentTime)
+    // this.lowShelf = this.audioContext.createBiquadFilter()
+    // this.lowShelf.type = 'lowshelf'
+    // this.lowShelf.frequency.setValueAtTime(250, this.audioContext.currentTime)
+    // this.lowShelf.gain.setValueAtTime(6.0, this.audioContext.currentTime)
 
     const getImpulseBuffer = (audioContext, impulseUrl) => {
       return window.fetch(impulseUrl)
@@ -44,8 +44,9 @@ export default class Audio extends EventEmitter {
       this.masterBus.connect(this.convolver)
       // this.compressor.connect(this.convolver)
       this.convolver.connect(this.biquadFilter)
-      this.biquadFilter.connect(this.lowShelf)
-      this.lowShelf.connect(this.audioContext.destination)
+      this.biquadFilter.connect(this.audioContext.destination)
+      // this.biquadFilter.connect(this.lowShelf)
+      // this.lowShelf.connect(this.audioContext.destination)
     })
 
     this.sampleRate = 44100
