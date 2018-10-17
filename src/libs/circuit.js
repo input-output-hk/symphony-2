@@ -18,6 +18,11 @@ export default class Circuit extends EventEmitter {
         this.canvas.parentNode.removeChild(this.canvas)
       }
 
+      let oldCanvas = document.getElementById('sketchboard')
+      if (oldCanvas) {
+        oldCanvas.remove()
+      }
+
       // check storage
       let existingCanvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
 
