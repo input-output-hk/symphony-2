@@ -1,7 +1,6 @@
 // libs
 import React, { Component } from 'react'
 import * as THREE from 'three'
-import GLTFLoader from 'three-gltf-loader'
 import deepAssign from 'deep-assign'
 import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
@@ -18,9 +17,11 @@ import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 
+// Workers
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
+import GetBlockDataWorker from './workers/getBlockData.worker.js'
 
-// post
+// Post-Processing
 import {
   EffectComposer,
   ShaderPass,
@@ -63,7 +64,6 @@ class App extends mixin(EventEmitter, Component) {
     this.radius = 1000000
 
     this.loading = false
-    this.gltfLoader = new GLTFLoader()
     this.blockGeoDataObject = {}
     this.hashes = []
     this.timestampToLoad = this.setTimestampToLoad()
@@ -83,7 +83,6 @@ class App extends mixin(EventEmitter, Component) {
     this.loadedCircuits = []
 
     this.mousePos = new THREE.Vector2() // keep track of mouse position
-    this.mouseDelta = new THREE.Vector2() // keep track of mouse position
 
     this.blockAnimStartTime = 0
 
@@ -248,7 +247,6 @@ class App extends mixin(EventEmitter, Component) {
           mousePos: this.mousePos
         })
 
-        //     this.nodes.material.uniforms.nodeIsHovered.value = 1.0
         this.txIsHovered = true
         document.body.style.cursor = 'pointer'
       } else {
@@ -259,7 +257,6 @@ class App extends mixin(EventEmitter, Component) {
         this.hoveredLight.position.x = -999999
         this.hoveredLight.position.z = -999999
 
-        //     this.nodes.material.uniforms.nodeIsHovered.value = 0.0
         this.txIsHovered = false
         document.body.style.cursor = 'default'
       }
@@ -523,104 +520,15 @@ class App extends mixin(EventEmitter, Component) {
   async getBlockData (hash) {
     return new Promise(async (resolve, reject) => {
       // should block data be saved to firebase?
-      let shouldCache = false
+      // let shouldCache = false
 
-      // first check firebase
-      let blockRef = this.docRef.doc(hash)
-      let snapshot = await blockRef.get()
-
-      let blockData
-
-      if (!snapshot.exists) {
-        shouldCache = true
-      } else {
-        blockData = snapshot.data()
-        // check if block was cached more than a day ago
-        if (moment().valueOf() - blockData.cacheTime.toMillis() > 86400000) {
-          console.log('Block: ' + hash + ' is out of date, re-adding')
-          shouldCache = true
-        }
+      const getBlockDataWorker = new GetBlockDataWorker()
+      getBlockDataWorker.onmessage = async ({ data }) => {
+        console.log(data)
+        resolve(data.blockData)
+        getBlockDataWorker.terminate()
       }
-
-      // shouldCache = true
-
-      if (!shouldCache) {
-        console.log('Block data for: ' + hash + ' returned from cache')
-        resolve(blockData)
-      } else {
-        resolve(
-          await this.cacheBlockData(hash)
-        )
-      }
-    })
-  }
-
-  async cacheBlockData (hash) {
-    return new Promise((resolve, reject) => {
-      window.fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
-        .then((resp) => resp.json())
-        .then(function (block) {
-          block.tx.forEach(function (tx, index) {
-            let txValue = 0
-            tx.out.forEach((output, index) => {
-              txValue += output.value
-            })
-            tx.value = txValue
-          })
-
-          // this.sortTXData(block.tx)
-
-          let outputTotal = 0
-          let transactions = []
-
-          const txCount = block.tx.length
-
-          block.txTimes = []
-
-          for (let i = 0; i < block.tx.length; i++) {
-            const tx = block.tx[i]
-
-            let out = []
-            tx.out.forEach((output) => {
-              out.push({
-                spent: output.spent ? 1 : 0
-              })
-            })
-
-            if (typeof tx.value === 'undefined') {
-              tx.value = 0
-            }
-
-            transactions.push({
-              hash: tx.hash,
-              time: tx.time,
-              value: tx.value,
-              out: out
-            })
-
-            outputTotal += tx.value
-
-            let txTime = map(i, 0, txCount, 0, 20)
-            block.txTimes.push(txTime)
-          }
-
-          block.outputTotal = outputTotal
-          block.tx = transactions
-          block.cacheTime = new Date()
-
-          block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
-
-          // save to firebase
-          this.docRef.doc(block.hash).set(
-            block, { merge: false }
-          ).then(function () {
-            console.log('Block data for: ' + block.hash + ' successfully written!')
-          }).catch(function (error) {
-            console.log('Error writing document: ', error)
-          })
-
-          resolve(block)
-        }.bind(this))
+      getBlockDataWorker.postMessage({ cmd: 'get', config: this.config, hash: hash })
     })
   }
 
