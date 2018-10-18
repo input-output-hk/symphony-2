@@ -20,6 +20,7 @@ import TWEEN from 'tween.js'
 // Workers
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
 import GetBlockDataWorker from './workers/getBlockData.worker.js'
+import GetGeometryWorker from './workers/getGeometry.worker.js'
 
 // Post-Processing
 import {
@@ -519,32 +520,12 @@ class App extends mixin(EventEmitter, Component) {
    */
   async getBlockData (hash) {
     return new Promise(async (resolve, reject) => {
-      // should block data be saved to firebase?
-      // let shouldCache = false
-
       const getBlockDataWorker = new GetBlockDataWorker()
       getBlockDataWorker.onmessage = async ({ data }) => {
-        console.log(data)
         resolve(data.blockData)
         getBlockDataWorker.terminate()
       }
       getBlockDataWorker.postMessage({ cmd: 'get', config: this.config, hash: hash })
-    })
-  }
-
-  sortTXData (tx) {
-    tx.sort(function (a, b) {
-      let transactionValueA = 0
-      a.out.forEach((output, index) => {
-        transactionValueA += output.value
-      })
-
-      let transactionValueB = 0
-      b.out.forEach((output, index) => {
-        transactionValueB += output.value
-      })
-
-      return transactionValueA - transactionValueB
     })
   }
 
@@ -635,46 +616,40 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async getGeometry (hash, blockHeight = null) {
-    if (blockHeight && typeof this.blockGeoDataObject[blockHeight] !== 'undefined') {
-      return
-    }
-
-    let blockData = await this.getBlockData(hash)
-
-    // check for data in cache
-    let blockRefGeo = this.docRefGeo.doc(blockData.hash)
-    let snapshotGeo = await blockRefGeo.get()
-
-    let blockGeoData
-
-    if (!snapshotGeo.exists) {
-      blockGeoData = await this.crystalGenerator.save(blockData)
-    } else {
-      let rawData = snapshotGeo.data()
-
-      let offsetJSON = JSON.parse(rawData.offsets)
-      let offsetsArray = Object.values(offsetJSON)
-
-      let scalesJSON = JSON.parse(rawData.scales)
-      let scalesArray = Object.values(scalesJSON)
-
-      blockGeoData = {
-        offsets: offsetsArray,
-        scales: scalesArray
+    return new Promise(async (resolve, reject) => {
+      if (blockHeight && typeof this.blockGeoDataObject[blockHeight] !== 'undefined') {
+        return
       }
-    }
 
-    const height = parseInt(blockData.height, 10)
+      let blockData = await this.getBlockData(hash)
 
-    blockData.pos = {
-      x: this.blockPositions[height * 2 + 0],
-      z: this.blockPositions[height * 2 + 1]
-    }
+      const getGeometryWorker = new GetGeometryWorker()
+      getGeometryWorker.onmessage = ({ data }) => {
+        let blockGeoData = data.blockGeoData
 
-    this.blockGeoDataObject[height] = blockGeoData
-    this.blockGeoDataObject[height].blockData = blockData
+        const height = parseInt(blockData.height, 10)
 
-    return this.blockGeoDataObject[height]
+        blockData.pos = {
+          x: this.blockPositions[height * 2 + 0],
+          z: this.blockPositions[height * 2 + 1]
+        }
+
+        this.blockGeoDataObject[height] = blockGeoData
+        this.blockGeoDataObject[height].blockData = blockData
+
+        // console.log(blockGeoData)
+
+        getGeometryWorker.terminate()
+
+        resolve(this.blockGeoDataObject[height])
+      }
+      getGeometryWorker.postMessage({
+        cmd: 'get',
+        config: this.config,
+        blockData: blockData,
+        planeSize: this.planeSize
+      })
+    })
   }
 
   async initEnvironment () {
@@ -1173,8 +1148,6 @@ class App extends mixin(EventEmitter, Component) {
 
       const nearestBlocksWorker = new NearestBlocksWorker()
       nearestBlocksWorker.onmessage = async ({ data }) => {
-        console.log(data)
-
         closestBlocksData = data.closestBlocksData
         closestBlocksGeoData = data.closestBlocksGeoData
 

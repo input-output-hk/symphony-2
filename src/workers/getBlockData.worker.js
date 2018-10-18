@@ -1,5 +1,6 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
+import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
 import { map } from '../utils/math'
@@ -19,6 +20,11 @@ self.addEventListener('message', async function (e) {
       firebase.firestore().settings(settings)
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
+
+      firebase.auth().signInAnonymously().catch(function (error) {
+        console.log(error.code)
+        console.log(error.message)
+      })
 
       // first check firebase
       let blockRef = docRef.doc(data.hash)
@@ -62,70 +68,84 @@ self.addEventListener('message', async function (e) {
 }, false)
 
 const cacheBlockData = async function (hash, docRef) {
-  return new Promise((resolve, reject) => {
-    fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + config.blockchainInfo.apiCode)
-      .then((resp) => resp.json())
-      .then(function (block) {
-        block.tx.forEach(function (tx, index) {
-          let txValue = 0
-          tx.out.forEach((output, index) => {
-            txValue += output.value
-          })
-          tx.value = txValue
-        })
+  return new Promise(async (resolve, reject) => {
+    let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + config.blockchainInfo.apiCode)
+    let block = await result.json()
 
-        // sortTXData(block.tx)
-
-        let outputTotal = 0
-        let transactions = []
-
-        const txCount = block.tx.length
-
-        block.txTimes = []
-
-        for (let i = 0; i < block.tx.length; i++) {
-          const tx = block.tx[i]
-
-          let out = []
-          tx.out.forEach((output) => {
-            out.push({
-              spent: output.spent ? 1 : 0
-            })
-          })
-
-          if (typeof tx.value === 'undefined') {
-            tx.value = 0
-          }
-
-          transactions.push({
-            hash: tx.hash,
-            time: tx.time,
-            value: tx.value,
-            out: out
-          })
-
-          outputTotal += tx.value
-
-          let txTime = map(i, 0, txCount, 0, 20)
-          block.txTimes.push(txTime)
-        }
-
-        block.outputTotal = outputTotal
-        block.tx = transactions
-        block.cacheTime = new Date()
-
-        block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
-
-        // save to firebase
-        docRef.doc(block.hash).set(
-          block, { merge: false }
-        ).then(function () {
-          console.log('Block data for: ' + block.hash + ' successfully written!')
-        }).catch(function (error) {
-          console.log('Error writing document: ', error)
-        })
-
-        resolve(block)
+    block.tx.forEach(function (tx, index) {
+      let txValue = 0
+      tx.out.forEach((output, index) => {
+        txValue += output.value
       })
+      tx.value = txValue
+    })
+
+    // sortTXData(block.tx)
+
+    let outputTotal = 0
+    let transactions = []
+
+    const txCount = block.tx.length
+
+    block.txTimes = []
+
+    for (let i = 0; i < block.tx.length; i++) {
+      const tx = block.tx[i]
+
+      let out = []
+      tx.out.forEach((output) => {
+        out.push({
+          spent: output.spent ? 1 : 0
+        })
+      })
+
+      if (typeof tx.value === 'undefined') {
+        tx.value = 0
+      }
+
+      transactions.push({
+        hash: tx.hash,
+        time: tx.time,
+        value: tx.value,
+        out: out
+      })
+
+      outputTotal += tx.value
+
+      let txTime = map(i, 0, txCount, 0, 20)
+      block.txTimes.push(txTime)
+    }
+
+    block.outputTotal = outputTotal
+    block.tx = transactions
+    block.cacheTime = new Date()
+
+    block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
+
+    // save to firebase
+    try {
+      await docRef.doc(block.hash).set(block, { merge: false })
+      console.log('Block data for: ' + block.hash + ' successfully written!')
+      resolve(block)
+    } catch (error) {
+      reject(block)
+      console.log(error)
+    }
+  })
+}
+
+const sortTXData = function (tx) {
+  tx.sort(function (a, b) {
+    let transactionValueA = 0
+    a.out.forEach((output, index) => {
+      transactionValueA += output.value
+    })
+
+    let transactionValueB = 0
+    b.out.forEach((output, index) => {
+      transactionValueB += output.value
+    })
+
+    return transactionValueA - transactionValueB
   })
 }
