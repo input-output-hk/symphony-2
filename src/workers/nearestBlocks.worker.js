@@ -5,7 +5,7 @@ import 'firebase/storage'
 self.addEventListener('message', async function (e) {
   let data = e.data
   switch (data.cmd) {
-    case 'build':
+    case 'get':
 
       firebase.initializeApp(data.config.fireBase)
 

@@ -144,7 +144,7 @@ class App extends mixin(EventEmitter, Component) {
   async initStage () {
     await this.initFirebase()
 
-    this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef})
+    this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
     this.audio = new Audio({FBStorageAudioRef: this.FBStorageAudioRef})
 
     this.crystalGenerator = new Crystal({
@@ -1364,7 +1364,7 @@ class App extends mixin(EventEmitter, Component) {
 
         nearestBlocksWorker.terminate()
       }
-      nearestBlocksWorker.postMessage({ cmd: 'build', closestHeight: this.closestHeight, config: this.config })
+      nearestBlocksWorker.postMessage({ cmd: 'get', closestHeight: this.closestHeight, config: this.config })
 
       this.loading = false
       console.log('loaded')
