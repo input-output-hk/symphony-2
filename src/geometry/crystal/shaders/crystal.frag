@@ -43,10 +43,10 @@ varying float vSpentRatio;
 #include <uv_pars_fragment>
 #include <uv2_pars_fragment>
 #include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <aomap_pars_fragment>
+// #include <alphamap_pars_fragment>
+// #include <aomap_pars_fragment>
 #include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
+// #include <emissivemap_pars_fragment>
 #include <bsdfs>
 #include <cube_uv_reflection_fragment>
 #include <envmap_pars_fragment>
@@ -55,183 +55,112 @@ varying float vSpentRatio;
 #include <lights_pars_begin>
 #include <lights_physical_pars_fragment>
 #include <shadowmap_pars_fragment>
-#include <bumpmap_pars_fragment>
+// #include <bumpmap_pars_fragment>
 #include <normalmap_pars_fragment>
-#include <roughnessmap_pars_fragment>
-#include <metalnessmap_pars_fragment>
+//#include <roughnessmap_pars_fragment>
+//#include <metalnessmap_pars_fragment>
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
 void main() {
 
+	#include <clipping_planes_fragment>
+
+	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
+	float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 4.0) * 1.0);
+
+	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
+
+	vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 1.3  )  );
 	
+	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
+	#include <normal_fragment_begin>
+	#include <normal_fragment_maps>
 
-		#include <clipping_planes_fragment>
+	diffuseColor.rgb *= packNormalToRGB( normal + 0.6 );
 
-		// vec2 dt = fwidth(vUv);
-		// vec2 dtFace = dt * 200.0;
-		// float maxDerivativeFace = clamp(max(dtFace.t, dtFace.s), 0.0, 1.0);
+	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-		float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 4.0) * 1.0);
+	vec3 totalEmissiveRadiance = vec3(clamp((1.0-vSpentRatio + (vEnvelope )), 0.0, 2.5) * 0.2);
 
-		float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
+	#include <logdepthbuf_fragment>
+	#include <map_fragment>
+	#include <color_fragment>
+	// #include <alphamap_fragment>
+	#include <alphatest_fragment>
+	#include <roughnessmap_fragment>
+	#include <metalnessmap_fragment>
 
-		// vec2 dtEdge = dt * 10.0;
-		// float maxDerivativeEdge = clamp(max(dtEdge.t, dtEdge.s), 0.0, 1.0);
-		// edgeAmount *= 1.0-maxDerivativeEdge;
+	// #include <emissivemap_fragment>
 
-		vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 1.3  )  );
-		
-		vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
+	// accumulation
+	#include <lights_physical_fragment>
+	#include <lights_fragment_begin>
 
-		//diffuseColor -= clamp(d, 0.99, 1.0) * vIsHovered ;
+	#include <lights_fragment_maps>
+	#include <lights_fragment_end>
 
-		ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
+	// modulation
+	#include <aomap_fragment>
 
-		vec3 totalEmissiveRadiance = vec3(clamp((1.0-vSpentRatio + (vEnvelope )), 0.0, 2.5) * 0.2);
+	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-		#include <logdepthbuf_fragment>
-		#include <map_fragment>
-		#include <color_fragment>
-		#include <alphamap_fragment>
-		#include <alphatest_fragment>
-		#include <roughnessmap_fragment>
-		#include <metalnessmap_fragment>
-		#include <normal_fragment_begin>
-		#include <normal_fragment_maps>
-		#include <emissivemap_fragment>
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 3.0), uTime * 0.00025)) * 0.1;
 
-		// accumulation
-		 #include <lights_physical_fragment>
-		 #include <lights_fragment_begin>
+	outgoingLight += noiseAmount * 0.5;
 
-		// GeometricContext geometry;
+	vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 0.5);
+	vec2 ipos = floor(st);  // integer
+	vec2 fpos = fract(st);  // fraction
 
-		// geometry.position = - vViewPosition;
-		// geometry.normal = normal;
-		// geometry.viewDir = normalize( vViewPosition );
+	vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.00005);
 
-		// IncidentLight directLight;
+	// Maze
+	float color = 0.0;
+	color = smoothstep(tile.x-0.3, tile.x, tile.y)-
+			smoothstep(tile.x, tile.x+0.3, tile.y);
 
-		// #if defined( RE_IndirectDiffuse )
+	// further smoothing    
+	color -= smoothstep(tile.x+0.3,tile.x,0.0)-
+			smoothstep(tile.x,tile.x-0.3,-0.15);
+	
+	color -= smoothstep(tile.y+0.3,tile.y,0.0)-
+			smoothstep(tile.y,tile.y-0.3,-0.15);
+	
+	color -= smoothstep(tile.x+0.3,tile.x,1.15)-
+			smoothstep(tile.x,tile.x-0.3,1.0);
+	
+	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
+			smoothstep(tile.y,tile.y-0.3,1.0);
 
-		// 	vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
+	float finalColor = color * 2.0;
+	finalColor *= abs(noiseAmount) * 15.0;
 
-		// 	#if ( NUM_HEMI_LIGHTS > 0 )
+	finalColor = (clamp(finalColor, 0.0, 1.0) );
 
-		// 		#pragma unroll_loop
-		// 		for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
 
-		// 			irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );
+	outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
+	outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
-		// 		}
+	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
-		// 	#endif
 
-		// #endif
+	outgoingLight.r += vIsHovered * (sideEdgeAmount * 2.0);
+	outgoingLight.r += vIsSelected * (sideEdgeAmount * 2.0);
+	outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsHovered;
+	outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsSelected;
 
-		// #if defined( RE_IndirectSpecular )
+	// outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.1;
+	//outgoingLight += packNormalToRGB(normal ) * 0.1;
 
-		// 	vec3 radiance = vec3( 0.0 );
-		// 	vec3 clearCoatRadiance = vec3( 0.0 );
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));
 
-		// #endif
-
-
-
-
-
-
-
-
-		 #include <lights_fragment_maps>
-		 #include <lights_fragment_end>
-
-		// modulation
-		#include <aomap_fragment>
-
-			
-		// float spentRatio = clamp(vSpentRatio, 0.0, 1.0);
-		// totalEmissiveRadiance += (1.0 - (vSpentRatio * 0.01));
-		//totalEmissiveRadiance *= 0.5;
-
-		//totalEmissiveRadiance = clamp(totalEmissiveRadiance * (vEnvelope), 0.0, 0.7);
-		//totalEmissiveRadiance *= (vEnvelope*2.0);
-
-
-
-		vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-
-
-		// float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-		// float edgeAmount = pow(clamp( (1.0 - d), 0.0, 1.0), 6.0) * 0.07;
-
-		float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
-
-		// outgoingLight += edgeAmount;
-		outgoingLight += noiseAmount * 0.5;
-
-		//  outgoingLight += 0.02;
-
-		//  outgoingLight.b += 0.08;
-		//  outgoingLight.g += 0.04;
-
-		vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 0.5);
-		vec2 ipos = floor(st);  // integer
-		vec2 fpos = fract(st);  // fraction
-
-		vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.00005);
-
-
-
-		// Maze
-		float color = 0.0;
-		color = smoothstep(tile.x-0.3, tile.x, tile.y)-
-				smoothstep(tile.x, tile.x+0.3, tile.y);
-
-		// further smoothing    
-		color -= smoothstep(tile.x+0.3,tile.x,0.0)-
-				smoothstep(tile.x,tile.x-0.3,-0.15);
-		
-		color -= smoothstep(tile.y+0.3,tile.y,0.0)-
-				smoothstep(tile.y,tile.y-0.3,-0.15);
-		
-		color -= smoothstep(tile.x+0.3,tile.x,1.15)-
-				smoothstep(tile.x,tile.x-0.3,1.0);
-		
-		color -= smoothstep(tile.y+0.3,tile.y,1.15)-
-				smoothstep(tile.y,tile.y-0.3,1.0);
-
-		// float finalColor = mix(color,1.0, maxDerivativeFace * 0.5) * (1.0- maxDerivativeFace * 0.7);
-
-
-		float finalColor = color;
-		finalColor *= abs(noiseAmount) * 15.0;
-
-		finalColor = (clamp(finalColor, 0.0, 1.0) );
-
-
-		outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
-		outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
-
-		outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
-
-
-		outgoingLight.r += vIsHovered * (sideEdgeAmount * 2.0);
-		outgoingLight.r += vIsSelected * (sideEdgeAmount * 2.0);
-		outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsHovered;
-		outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsSelected;
-
-
-		gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));
-
-		#include <tonemapping_fragment>
-		#include <encodings_fragment>
-		#include <fog_fragment>
-		#include <premultiplied_alpha_fragment>
-		#include <dithering_fragment>
+	#include <tonemapping_fragment>
+	#include <encodings_fragment>
+	#include <fog_fragment>
+	#include <premultiplied_alpha_fragment>
+	#include <dithering_fragment>
 	
 
 }

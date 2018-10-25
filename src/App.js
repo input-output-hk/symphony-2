@@ -21,6 +21,7 @@ import TWEEN from 'tween.js'
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
 import GetBlockDataWorker from './workers/getBlockData.worker.js'
 import GetGeometryWorker from './workers/getGeometry.worker.js'
+import BlockHeightWorker from './workers/blockHeight.worker.js'
 
 // Post-Processing
 import {
@@ -76,7 +77,7 @@ class App extends mixin(EventEmitter, Component) {
     this.topside = null
     this.closestBlockReadyForUpdate = false
     this.drawCircuits = true
-    this.firstLoop = false
+    this.firstLoop = true
     this.geoAdded = false
     this.clock = new THREE.Clock()
 
@@ -386,7 +387,7 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.isSelected.array = selectedArray
       this.crystal.geometry.attributes.isSelected.needsUpdate = true
     } else {
-      if (mouseMoveVec.lengthSq() > 100) {
+      if (mouseMoveVec.lengthSq() > 10) {
         return
       }
 
@@ -454,7 +455,7 @@ class App extends mixin(EventEmitter, Component) {
     // this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.3, 0.97)
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.25, 2.5, 0.6)
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
@@ -636,8 +637,6 @@ class App extends mixin(EventEmitter, Component) {
 
         this.blockGeoDataObject[height] = blockGeoData
         this.blockGeoDataObject[height].blockData = blockData
-
-        // console.log(blockGeoData)
 
         getGeometryWorker.terminate()
 
@@ -827,7 +826,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.crystal.material.side = THREE.FrontSide
 
-    let cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
+    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 1024)
     cubeCamera.position.copy(pos)
 
     cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -839,16 +838,6 @@ class App extends mixin(EventEmitter, Component) {
     this.plane.material.envMap = cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
-  }
-
-  initSound () {
-    return new Promise((resolve, reject) => {
-
-    })
-  }
-
-  playSound () {
-
   }
 
   initControls () {
@@ -1003,11 +992,6 @@ class App extends mixin(EventEmitter, Component) {
     this.setCameraSettings()
   }
 
-  animate () {
-    window.requestAnimationFrame(this.animate.bind(this))
-    this.renderFrame()
-  }
-
   getClosestBlock () {
     if (this.camera.position.y >= 2000) {
       this.setState({closestBlock: null})
@@ -1100,7 +1084,9 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      for (let index = 0; index < this.blockPositions.length / 2; index++) {
+      let start = this.closestHeight ? this.closestHeight - 20 : 0
+
+      for (let index = start; index < this.blockPositions.length / 2; index++) {
         const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
         const zComponent = this.blockPositions[index * 2 + 1] - camVec.y
         const dist = (xComponent * xComponent) + (zComponent * zComponent)
@@ -1119,19 +1105,20 @@ class App extends mixin(EventEmitter, Component) {
             height > this.closestHeight + 10
           ) {
             delete this.blockGeoDataObject[height]
+
             console.log('deleted blockdata at: ' + height)
           }
         }
       }
 
-      this.loadedHeights.forEach((height, i) => {
-        if (
-          height < this.closestHeight - 10 ||
-          height > this.closestHeight + 10
-        ) {
-          delete this.loadedHeights[ i ]
-        }
-      })
+      // this.loadedHeights.forEach((height, i) => {
+      //   if (
+      //     height < this.closestHeight - 10 ||
+      //     height > this.closestHeight + 10
+      //   ) {
+      //     delete this.loadedHeights[ i ]
+      //   }
+      // })
 
       if (this.loadedHeights.indexOf(this.closestHeight) !== -1) {
         this.loading = false
@@ -1139,9 +1126,6 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       this.loadedHeights.push(this.closestHeight)
-
-      console.log(this.blockGeoDataObject)
-      console.log(this.loadedHeights)
 
       let closestBlocksData = []
       let closestBlocksGeoData = []
@@ -1154,6 +1138,14 @@ class App extends mixin(EventEmitter, Component) {
         closestBlocksGeoData.forEach(async (blockGeoData, i) => {
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
             if (typeof closestBlocksData[i] !== 'undefined') {
+              if (
+                blockGeoData.height < this.closestHeight - 10 ||
+                blockGeoData.height > this.closestHeight + 10
+              ) {
+                console.log('moved too far away from block at height: ' + blockGeoData.height)
+                return
+              }
+
               blockGeoData.blockData = closestBlocksData[i]
 
               blockGeoData.blockData.pos = {}
@@ -1178,7 +1170,7 @@ class App extends mixin(EventEmitter, Component) {
           }
         }
 
-        for (let i = 1; i < 10; i++) {
+        for (let i = 1; i < 5; i++) {
           let next = this.closestHeight + i
           let prev = this.closestHeight - i
 
@@ -1206,6 +1198,14 @@ class App extends mixin(EventEmitter, Component) {
             this.loadingMutex.push(height)
 
             if (typeof this.blockGeoDataObject[height] === 'undefined') {
+              if (
+                height < this.closestHeight - 10 ||
+                height > this.closestHeight + 10
+              ) {
+                console.log('moved too far away from block at height: ' + height)
+                return
+              }
+
               let blockGeoDataTemp = {}
               blockGeoDataTemp.blockData = {}
               blockGeoDataTemp.blockData.height = height
@@ -1216,20 +1216,32 @@ class App extends mixin(EventEmitter, Component) {
               this.planeGenerator.updateGeometry(blockGeoDataTemp)
               this.treeGenerator.updateGeometry(blockGeoDataTemp)
 
-              const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-              let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+              const blockHeightWorker = new BlockHeightWorker()
+              blockHeightWorker.onmessage = async ({ data }) => {
+                if (typeof data.blockDataJSON !== 'undefined') {
+                  console.log(data)
 
-              let blockData = await window.fetch(url)
-              let blockDataJSON = await blockData.json()
+                  let blockGeoData = await this.getGeometry(data.blockDataJSON.blocks[0].hash, height)
 
-              let blockGeoData = await this.getGeometry(blockDataJSON.blocks[0].hash, height)
+                  if (
+                    height < this.closestHeight - 10 ||
+                    height > this.closestHeight + 10
+                  ) {
+                    console.log('moved too far away from block at height: ' + height)
+                    return
+                  }
 
-              if (blockGeoData) {
-                if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-                  this.crystalGenerator.updateGeometry(blockGeoData)
-                  this.crystalAOGenerator.updateGeometry(blockGeoData)
+                  if (blockGeoData) {
+                    if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+                      this.crystalGenerator.updateGeometry(blockGeoData)
+                      this.crystalAOGenerator.updateGeometry(blockGeoData)
+                    }
+                  }
+
+                  blockHeightWorker.terminate()
                 }
               }
+              blockHeightWorker.postMessage({ cmd: 'get', config: this.config, height: height })
             }
 
             let heightIndex = this.heightsToLoad.indexOf(height)
@@ -1266,6 +1278,11 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
+  animate () {
+    window.requestAnimationFrame(this.animate.bind(this))
+    this.renderFrame()
+  }
+
   renderFrame () {
     let delta = this.clock.getDelta()
 
@@ -1279,42 +1296,10 @@ class App extends mixin(EventEmitter, Component) {
       this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000005)
     }
 
-    // if (this.plane) {
-    //   if (this.camera.position.y < 0) {
-    //     this.plane.renderOrder = 1
-    //   } else {
-    //     this.plane.renderOrder = 2
-    //   }
-    // }
-
-    // check if camera is inside occluder
-    // if (this.occluder) {
-    //   // this.occluder.updateMatrixWorld(true)
-    //   let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
-    //   let inverseBox = this.occluder.clone()
-    //   // this.camera.updateMatrixWorld()
-    //   // this.camera.updateMatrix()
-    //   let inversePoint = this.camera.position.clone()
-    //   inverseBox.applyMatrix(boxMatrixInverse)
-    //   inversePoint.applyMatrix4(boxMatrixInverse)
-    //   let boundingBox = new THREE.Box3().setFromObject(inverseBox)
-
-    //   boundingBox.expandByScalar(0.015)
-    //   boundingBox.translate(new THREE.Vector3(0, 0, 0.015))
-
-    //   // if (this.crystal) {
-    //   //   if (boundingBox.containsPoint(inversePoint)) {
-    //   //     this.crystal.visible = false
-    //   //   } else {
-    //   //     this.crystal.visible = true
-    //   //   }
-    //   // }
-    // }
-
     if (this.picker) {
       this.updatePicker()
     }
-    if (this.geoAdded) {
+    if (this.blockReady) {
       this.loadNearestBlocks()
     }
     this.getClosestBlock()
@@ -1356,6 +1341,9 @@ class App extends mixin(EventEmitter, Component) {
 
     document.addEventListener('mouseup', (e) => {
       if (e.target.className !== 'cockpit-border') {
+        return
+      }
+      if (e.button !== 0) {
         return
       }
       this.onMouseUp()
@@ -1446,12 +1434,35 @@ class App extends mixin(EventEmitter, Component) {
 
     await this.updateClosestTrees()
 
-    this.updateMerkleDetail(this.closestBlock, 0)
+    let undersideTexture1 = null
+    let undersideTexture2 = null
+    let undersideTexture3 = null
+
+    const nTX1 = Object.keys(this.closestBlock.blockData.tx).length
+    undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
+
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height - 1], 1)
+      let block2 = this.blockGeoDataObject[this.closestBlock.blockData.height - 1]
+      const nTX2 = Object.keys(block2.blockData.tx).length
+      undersideTexture2 = await this.circuit.draw(nTX2, block2)
     }
+
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2)
+      let block3 = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
+      const nTX3 = Object.keys(block3.blockData.tx).length
+      undersideTexture3 = await this.circuit.draw(nTX3, block3)
+    }
+
+    if (undersideTexture1) {
+      this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
+    }
+
+    if (undersideTexture2) {
+      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height - 1], 1, undersideTexture2)
+    }
+
+    if (undersideTexture3) {
+      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2, undersideTexture3)
     }
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
@@ -1508,9 +1519,11 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
-  async updateMerkleDetail (blockGeoData, circuitIndex) {
+  async updateMerkleDetail (blockGeoData, circuitIndex, texture) {
     let undersidePlane
     let topsidePlane
+
+    texture.needsUpdate = true
 
     switch (circuitIndex) {
       case 0:
@@ -1532,9 +1545,6 @@ class App extends mixin(EventEmitter, Component) {
         break
     }
 
-    const nTX = Object.keys(blockGeoData.blockData.tx).length
-    let undersideTexture = await this.circuit.draw(nTX, blockGeoData)
-
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[blockGeoData.blockData.height]
 
     // get rotation
@@ -1545,9 +1555,9 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 3]
     )
 
-    undersideTexture.minFilter = THREE.LinearMipMapLinearFilter
+    texture.minFilter = THREE.LinearMipMapLinearFilter
 
-    undersidePlane.material.map = undersideTexture
+    undersidePlane.material.map = texture
     undersidePlane.material.needsUpdate = true
 
     undersidePlane.visible = false
@@ -1562,7 +1572,7 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.updateMatrix()
     undersidePlane.visible = true
 
-    topsidePlane.material.map = undersideTexture
+    topsidePlane.material.map = texture
     topsidePlane.material.needsUpdate = true
 
     topsidePlane.visible = false
@@ -1635,6 +1645,7 @@ class App extends mixin(EventEmitter, Component) {
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
+
     // this.renderer.toneMapping = THREE.NoToneMapping
     // this.renderer.toneMappingExposure = 1.5
     this.renderer.setClearColor(0xffffff, 0)

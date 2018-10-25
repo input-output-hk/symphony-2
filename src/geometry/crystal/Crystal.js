@@ -45,11 +45,11 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 0.87,
+      opacity: 0.85,
       color: 0x000000,
       emissive: 0x000000,
-      metalness: 0.8,
-      roughness: 0.15,
+      metalness: 0.85,
+      roughness: 0.1,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
@@ -459,6 +459,8 @@ export default class Crystal extends Base {
     )
 
     this.txCount += blockGeoData.blockData.tx.length
+
+    this.updateBlockStartTimes(blockGeoData.blockData)
   }
 
   update (time, firstLoop) {

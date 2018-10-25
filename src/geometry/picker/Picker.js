@@ -95,11 +95,11 @@ export default class Picker extends Base {
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
+      if (txValue > 800) {
+        txValue = 800
       }
-      if (txValue < 1) {
-        txValue = 1
+      if (txValue < 5) {
+        txValue = 5
       }
 
       this.txMap[i] = tx.hash
@@ -175,11 +175,11 @@ export default class Picker extends Base {
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
+      if (txValue > 800) {
+        txValue = 800
       }
-      if (txValue < 1) {
-        txValue = 1
+      if (txValue < 5) {
+        txValue = 5
       }
 
       this.txMap[i] = tx.hash

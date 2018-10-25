@@ -19,8 +19,6 @@ attribute float scale;
 attribute float spentRatio;
 attribute vec3 barycentric;
 attribute float topVertex;
-// attribute float centerTopVertex;
-// attribute float centerBottomVertex;
 attribute float txValue;
 attribute vec4 quaternion;
 attribute float txTime;
@@ -35,8 +33,6 @@ varying float vSpentRatio;
 varying vec3 vBarycentric;
 varying float vTopVertex;
 varying float vBottomVertex;
-// varying float vCenterTopVertex;
-// varying float vCenterBottomVertex;
 varying float vEnvelope;
 varying vec3 vPickerColor;
 
@@ -49,11 +45,8 @@ varying vec3 vPickerColor;
 #include <common>
 #include <uv_pars_vertex>
 #include <uv2_pars_vertex>
-#include <displacementmap_pars_vertex>
 #include <color_pars_vertex>
 #include <fog_pars_vertex>
-#include <morphtarget_pars_vertex>
-#include <skinning_pars_vertex>
 #include <shadowmap_pars_vertex>
 #include <logdepthbuf_pars_vertex>
 #include <clipping_planes_pars_vertex>
@@ -70,9 +63,7 @@ void main() {
 	#include <color_vertex>
 
 	#include <beginnormal_vertex>
-	#include <morphnormal_vertex>
-	#include <skinbase_vertex>
-	#include <skinnormal_vertex>
+	
 	#include <defaultnormal_vertex>
 
 #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
@@ -156,9 +147,6 @@ void main() {
 
 	vScale = scale;
 
-	#include <morphtarget_vertex>
-	#include <skinning_vertex>
-	#include <displacementmap_vertex>
 	#include <project_vertex>
 	#include <logdepthbuf_vertex>
 	#include <clipping_planes_vertex>

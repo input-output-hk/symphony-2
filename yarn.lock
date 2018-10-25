@@ -4157,10 +4157,10 @@ got@^6.7.1:
     unzip-response "^2.0.1"
     url-parse-lax "^1.0.0"
 
-gpu.js@^1.8.1:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.8.1.tgz#1a378d2bb9005918d81a10e3b2f2a220ca405e4f"
-  integrity sha512-Glpgu8JihpzLo3OZXtdoKCWIE/W61cjNGwb27RXvXAhCnE/DSz3/PeL6rYpk56yZAvjMgXlgAN6NM7fot0NNFQ==
+gpu.js@^1.9.1:
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/gpu.js/-/gpu.js-1.9.1.tgz#34e41a69668e000006d1a0bd66af72c66629f1c7"
+  integrity sha512-Hq/6EkJJd7htaE5yeNSVWv82zcVau3poZEohYVpB7KkoAopMooZFetcV47NJejlf0bFgYvcRpILZwmyEh/RE0A==
   dependencies:
     acorn "^5.1.1"
 

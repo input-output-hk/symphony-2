@@ -126,6 +126,8 @@ export default class CrystalAO extends Base {
     )
 
     this.txCount += blockGeoData.blockData.tx.length
+
+    this.updateBlockStartTimes(blockGeoData.blockData)
   }
 }
 

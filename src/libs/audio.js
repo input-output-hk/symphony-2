@@ -2,11 +2,11 @@ import EventEmitter from 'eventemitter3'
 import { map } from '../utils/math'
 import GPU from 'gpu.js'
 
+import AudioWorker from '../workers/audio.worker.js'
+
 export default class Audio extends EventEmitter {
   constructor (args) {
     super(args)
-
-    this.FBStorageAudioRef = args.FBStorageAudioRef
 
     this.gpu = new GPU()
     this.audioContext = new window.AudioContext()
@@ -50,7 +50,7 @@ export default class Audio extends EventEmitter {
     })
 
     this.sampleRate = 44100
-    this.soundDuration = 30 // (seconds)
+    this.soundDuration = 20 // (seconds)
     this.notes = {
       27.5000: 'A0',
       29.1352: 'A#0',
@@ -267,8 +267,6 @@ export default class Audio extends EventEmitter {
 
     this.times = []
 
-    this.txCount = 0
-
     // keep standard js happy
     let custom_smoothstep = () => {}
     let custom_step = () => {}
@@ -294,14 +292,14 @@ export default class Audio extends EventEmitter {
         let attack = custom_smoothstep(time, time + 5.0, currentTime)
         let release = (1.0 - custom_smoothstep(time + 5.0, time + 10.0, currentTime))
 
-        let spent1 = custom_step(1.0, spentRatio) * 1
-        let spent2 = custom_step(2.0, spentRatio) * 1
-        let spent3 = custom_step(3.0, spentRatio) * 1
-        let spent4 = custom_step(4.0, spentRatio) * 1
-        let spent5 = custom_step(5.0, spentRatio) * 1
-        let spent6 = custom_step(6.0, spentRatio) * 1
-        let spent7 = custom_step(7.0, spentRatio) * 1
-        let spent8 = custom_step(8.0, spentRatio) * 1
+        let spent1 = custom_step(1.0, spentRatio)
+        let spent2 = custom_step(2.0, spentRatio)
+        let spent3 = custom_step(3.0, spentRatio)
+        let spent4 = custom_step(4.0, spentRatio)
+        let spent5 = custom_step(5.0, spentRatio)
+        let spent6 = custom_step(6.0, spentRatio)
+        let spent7 = custom_step(7.0, spentRatio)
+        let spent8 = custom_step(8.0, spentRatio)
         // let spent9 = custom_step(9.0, spentRatio) * 1
         // let spent10 = custom_step(10.0, spentRatio) * 1
         // let spent11 = custom_step(11.0, spentRatio) * 1
@@ -328,150 +326,213 @@ export default class Audio extends EventEmitter {
         // Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
         // Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
-        wave /= 4.0
+        wave *= 0.25
 
         sum += wave * attack * release * vol
       }
 
       return sum
-    }, {loopMaxIterations: 3000}).setOutput([this.sampleRate * this.soundDuration])
-  }
-
-  async generate (blockData) {
-    // compute number from hash
-    let total = 0
-    for (let i = 0; i < blockData.hash.length; i++) {
-      // convert from base 16
-      total += parseInt(blockData.hash[i], 16)
-    }
-
-    // set unique mode for this block hash
-    let modeIndex = total % Object.keys(this.modes).length
-    this.mode = this.modes[Object.keys(this.modes)[modeIndex]]
-
-    let minOutput = Number.MAX_SAFE_INTEGER
-    let maxOutput = 0
-
-    if (blockData.tx.length === 1) {
-      minOutput = 0
-      maxOutput = blockData.tx[0].value * 2
-    } else {
-      for (let index = 0; index < blockData.tx.length; index++) {
-        const transaction = blockData.tx[index]
-        minOutput = Math.min(transaction.value, minOutput)
-        maxOutput = Math.max(transaction.value, maxOutput)
-      }
-    }
-
-    minOutput = Math.log(minOutput + 1.0)
-    maxOutput = Math.log(maxOutput + 1.0)
-
-    if (minOutput === maxOutput) {
-      minOutput -= (minOutput * 0.5)
-      maxOutput += (maxOutput * 0.5)
-    }
-
-    // filter out notes not in mode
-    let filteredNotes = {}
-    for (const frequency in this.notes) {
-      if (this.notes.hasOwnProperty(frequency)) {
-        const note = this.notes[frequency]
-        const noteName = note.replace(/[0-9]/g, '')
-        if (this.mode.indexOf(noteName) !== -1) { // filter out notes not in mode
-          filteredNotes[frequency] = note
-        }
-      }
-    }
-
-    this.buffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
-
-    let frequencies = []
-
-    // let health = blockData.healthRatio
-    let health = (blockData.fee / blockData.outputTotal) * 2000 // 0 == healthy
-
-    let spent = []
-
-    for (let i = 0; i < blockData.tx.length; i++) {
-      const tx = blockData.tx[i]
-
-      let spentCount = 0
-      for (let index = 0; index < tx.out.length; index++) {
-        spentCount += tx.out[index].spent
-      }
-
-      let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 8.0, 1.0)
-
-      spent.push(mappedSpentRatio)
-
-      const filteredNoteKeys = Object.keys(filteredNotes)
-
-      let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, filteredNoteKeys.length, 0))
-
-      let j = 0
-      for (const frequency in filteredNotes) {
-        if (filteredNotes.hasOwnProperty(frequency)) {
-          if (pitchIndex === j) {
-            frequencies.push(parseFloat(frequency))
-            break
-          }
-          j++
-        }
-      }
-    }
-
-    this.txCount += blockData.tx.length
+    }, {loopMaxIterations: 2000}).setOutput([this.sampleRate * this.soundDuration])
 
     this.sineBank.addNativeFunction('custom_smoothstep', `highp float custom_smoothstep(float edge0, float edge1, float x) {
-        return smoothstep(edge0, edge1, x);
-    }`)
+      return smoothstep(edge0, edge1, x);
+  }`)
 
     this.sineBank.addNativeFunction('custom_step', `highp float custom_step(float edge, float x) {
-        return step(edge, x);
-    }`)
+      return step(edge, x);
+  }`)
 
     this.sineBank.addNativeFunction('custom_random', `highp float custom_random(float n){
-        return fract(sin(n) * 43758.5453123);
-    }`)
+      return fract(sin(n) * 43758.5453123);
+  }`)
 
-    let vol = this.getVol(frequencies.length)
-    if (typeof frequencies === 'undefined') {
-      return
+    // use OffscreenCanvas if available
+    if (typeof window.OffscreenCanvas !== 'undefined') {
+      this.offscreenMode = true
     }
-    console.time('sineBank')
-    let sineArray = this.sineBank(frequencies, blockData.txTimes, spent, vol, health, frequencies.length)
-    console.timeEnd('sineBank')
+  }
 
-    console.time('fillBuffer')
-    let lArray = this.buffers[blockData.height].getChannelData(0)
-    let rArray = this.buffers[blockData.height].getChannelData(1)
-    for (let index = 0; index < sineArray.length; index++) {
-      lArray[index] = sineArray[index]
-      rArray[index] = sineArray[Math.floor(index * 0.99)] // right channel slightly out of phase with left for stereo effect
+  generate (blockData) {
+    if (this.offscreenMode) {
+      const audioWorker = new AudioWorker()
+      audioWorker.onmessage = async ({ data }) => {
+        if (typeof data.lArray !== 'undefined') {
+          this.buffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
+
+          let lArray = this.buffers[blockData.height].getChannelData(0)
+          let rArray = this.buffers[blockData.height].getChannelData(1)
+
+          for (let index = 0; index < data.lArray.length; index++) {
+            lArray[index] = data.lArray[index]
+          }
+
+          for (let index = 0; index < data.lArray.length; index++) {
+            rArray[index] = data.rArray[index]
+          }
+
+          this.audioSources[blockData.height] = this.audioContext.createBufferSource()
+          this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
+
+          this.gainNodes[blockData.height] = this.audioContext.createGain()
+
+          this.audioSources[blockData.height].connect(this.gainNodes[blockData.height])
+
+          this.gainNodes[blockData.height].connect(this.masterBus)
+
+          this.audioSources[blockData.height].loop = true
+
+          this.loops[blockData.height] = () => {
+            setTimeout(function () {
+              this.emit('loopend', blockData)
+              this.loops[blockData.height](blockData)
+            }.bind(this), this.soundDuration * 1000)
+          }
+
+          this.loops[blockData.height](blockData)
+
+          this.audioSources[blockData.height].start()
+        }
+        audioWorker.terminate()
+      }
+
+      audioWorker.postMessage({
+        cmd: 'get',
+        blockData: blockData,
+        modes: this.modes,
+        notes: this.notes
+
+      })
+    } else {
+      console.time('audioGenerate')
+      // compute number from hash
+      let total = 0
+      for (let i = 0; i < blockData.hash.length; i++) {
+        // convert from base 16
+        total += parseInt(blockData.hash[i], 16)
+      }
+
+      // set unique mode for this block hash
+      let modeIndex = total % Object.keys(this.modes).length
+      this.mode = this.modes[Object.keys(this.modes)[modeIndex]]
+
+      let minOutput = Number.MAX_SAFE_INTEGER
+      let maxOutput = 0
+
+      if (blockData.tx.length === 1) {
+        minOutput = 0
+        maxOutput = blockData.tx[0].value * 2
+      } else {
+        for (let index = 0; index < blockData.tx.length; index++) {
+          const transaction = blockData.tx[index]
+          minOutput = Math.min(transaction.value, minOutput)
+          maxOutput = Math.max(transaction.value, maxOutput)
+        }
+      }
+
+      minOutput = Math.log(minOutput + 1.0)
+      maxOutput = Math.log(maxOutput + 1.0)
+
+      if (minOutput === maxOutput) {
+        minOutput -= (minOutput * 0.5)
+        maxOutput += (maxOutput * 0.5)
+      }
+
+      // filter out notes not in mode
+      let filteredNotes = {}
+      for (const frequency in this.notes) {
+        if (this.notes.hasOwnProperty(frequency)) {
+          const note = this.notes[frequency]
+          const noteName = note.replace(/[0-9]/g, '')
+          if (this.mode.indexOf(noteName) !== -1) { // filter out notes not in mode
+            filteredNotes[frequency] = note
+          }
+        }
+      }
+
+      this.buffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
+
+      let frequencies = []
+
+      // let health = blockData.healthRatio
+      let health = (blockData.fee / blockData.outputTotal) * 2000 // 0 == healthy
+
+      let spent = []
+
+      let txTimes = []
+      const txCount = blockData.tx.length
+
+      for (let i = 0; i < txCount; i++) {
+        const tx = blockData.tx[i]
+
+        let txTime = map(i, 0, txCount, 0, 10)
+        txTimes.push(txTime)
+
+        let spentCount = 0
+        for (let index = 0; index < tx.out.length; index++) {
+          spentCount += tx.out[index].spent
+        }
+
+        let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 8.0, 1.0)
+
+        spent.push(mappedSpentRatio)
+
+        const filteredNoteKeys = Object.keys(filteredNotes)
+
+        let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, filteredNoteKeys.length, 0))
+
+        let j = 0
+        for (const frequency in filteredNotes) {
+          if (filteredNotes.hasOwnProperty(frequency)) {
+            if (pitchIndex === j) {
+              frequencies.push(parseFloat(frequency))
+              break
+            }
+            j++
+          }
+        }
+      }
+
+      console.timeEnd('audioGenerate')
+
+      let vol = this.getVol(frequencies.length)
+      if (typeof frequencies === 'undefined') {
+        return
+      }
+      console.time('sineBank')
+      let sineArray = this.sineBank(frequencies, txTimes, spent, vol, health, 2000)
+      console.timeEnd('sineBank')
+
+      console.time('fillBuffer')
+      let lArray = this.buffers[blockData.height].getChannelData(0)
+      let rArray = this.buffers[blockData.height].getChannelData(1)
+      for (let index = 0; index < sineArray.length; index++) {
+        lArray[index] = sineArray[index]
+        rArray[index] = sineArray[Math.floor(index * 0.99)] // right channel slightly out of phase with left for stereo effect
+      }
+      console.timeEnd('fillBuffer')
+
+      this.audioSources[blockData.height] = this.audioContext.createBufferSource()
+      this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
+
+      this.gainNodes[blockData.height] = this.audioContext.createGain()
+
+      this.audioSources[blockData.height].connect(this.gainNodes[blockData.height])
+
+      this.gainNodes[blockData.height].connect(this.masterBus)
+
+      this.audioSources[blockData.height].loop = true
+
+      this.loops[blockData.height] = () => {
+        setTimeout(function () {
+          this.emit('loopend', blockData)
+          this.loops[blockData.height](blockData)
+        }.bind(this), this.soundDuration * 1000)
+      }
+
+      this.loops[blockData.height](blockData)
+
+      this.audioSources[blockData.height].start()
     }
-    console.timeEnd('fillBuffer')
-
-    this.audioSources[blockData.height] = this.audioContext.createBufferSource()
-    this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
-
-    this.gainNodes[blockData.height] = this.audioContext.createGain()
-
-    this.audioSources[blockData.height].connect(this.gainNodes[blockData.height])
-
-    this.gainNodes[blockData.height].connect(this.masterBus)
-
-    this.audioSources[blockData.height].loop = true
-
-    this.loops[blockData.height] = () => {
-      setTimeout(function () {
-        this.emit('loopend', blockData)
-        this.loops[blockData.height](blockData)
-      }.bind(this), this.soundDuration * 1000)
-    }
-
-    this.loops[blockData.height](blockData)
-
-    this.audioSources[blockData.height].start()
   }
 
   getVol (frequencies) {

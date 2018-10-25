@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-
+import { map } from '../../utils/math'
 export default class Base {
   constructor (args) {
     this.planeSize = args.planeSize
@@ -40,20 +40,14 @@ export default class Base {
     txTimesAttr
   ) {
     let blockPosition = blockGeoData.blockData.pos
-    const txTimes = blockGeoData.blockData.txTimes
-
-    if (typeof txTimes === 'undefined') {
-      return
-    }
 
     this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount
 
-    for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
+    let blockTxCount = blockGeoData.blockData.tx.length
+    for (let i = 0; i < blockTxCount; i++) {
       const tx = blockGeoData.blockData.tx[i]
 
       const txIndexOffset = this.txCount + i
-
-      const txTime = txTimes[i]
 
       let x = blockGeoData.offsets[i * 2 + 0]
       let y = 0
@@ -84,8 +78,8 @@ export default class Base {
       if (txValue > 800) {
         txValue = 800
       }
-      if (txValue < 1) {
-        txValue = 1
+      if (txValue < 5) {
+        txValue = 5
       }
 
       txValuesAttr.setX(
@@ -97,6 +91,8 @@ export default class Base {
         txIndexOffset,
         txValue
       )
+
+      let txTime = map(i, 0, blockTxCount, 0, 10)
 
       txTimesAttr.setX(
         txIndexOffset,
