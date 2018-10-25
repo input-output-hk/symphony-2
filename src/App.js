@@ -683,7 +683,6 @@ class App extends mixin(EventEmitter, Component) {
     // TODO: use GPU.js for this loop
     console.time('posLoop')
     for (let i = this.maxHeight; i > 0; i--) {
-    // for (let i = 0; i <= this.maxHeight; i++) {
       let away = awayStep * theta
       xOffset = Math.cos(theta) * away
       zOffset = Math.sin(theta) * away
@@ -960,8 +959,10 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(5000)
   }
 
-  toggleUndersideView () {
-    let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -200, this.closestBlock.blockData.pos.z - 100)
+  async toggleUndersideView () {
+    await this.updateClosestTrees()
+
+    let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -300, this.closestBlock.blockData.pos.z - 100)
     let toTarget = new THREE.Vector3(this.closestBlock.blockData.pos.x - 90, 0, this.closestBlock.blockData.pos.z - 90)
 
     this.prepareCamAnim(
@@ -1084,7 +1085,8 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      let start = this.closestHeight ? this.closestHeight - 20 : 0
+      // let start = this.closestHeight ? this.closestHeight - 20 : 0
+      let start = 0
 
       for (let index = start; index < this.blockPositions.length / 2; index++) {
         const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
@@ -1132,135 +1134,134 @@ class App extends mixin(EventEmitter, Component) {
 
       const nearestBlocksWorker = new NearestBlocksWorker()
       nearestBlocksWorker.onmessage = async ({ data }) => {
-        closestBlocksData = data.closestBlocksData
-        closestBlocksGeoData = data.closestBlocksGeoData
+        if (typeof data.closestBlocksData !== 'undefined') {
+          closestBlocksData = data.closestBlocksData
+          closestBlocksGeoData = data.closestBlocksGeoData
 
-        closestBlocksGeoData.forEach(async (blockGeoData, i) => {
-          if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-            if (typeof closestBlocksData[i] !== 'undefined') {
-              if (
-                blockGeoData.height < this.closestHeight - 10 ||
+          closestBlocksGeoData.forEach(async (blockGeoData, i) => {
+            if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+              if (typeof closestBlocksData[i] !== 'undefined') {
+                if (
+                  blockGeoData.height < this.closestHeight - 10 ||
                 blockGeoData.height > this.closestHeight + 10
-              ) {
-                console.log('moved too far away from block at height: ' + blockGeoData.height)
-                return
+                ) {
+                  console.log('moved too far away from block at height: ' + blockGeoData.height)
+                  return
+                }
+
+                blockGeoData.blockData = closestBlocksData[i]
+
+                blockGeoData.blockData.pos = {}
+                blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
+                blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
+
+                blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
+
+                this.blockGeoDataObject[blockGeoData.height] = blockGeoData
+
+                this.planeGenerator.updateGeometry(blockGeoData)
+                this.treeGenerator.updateGeometry(blockGeoData)
+                this.crystalGenerator.updateGeometry(blockGeoData)
+                this.crystalAOGenerator.updateGeometry(blockGeoData)
               }
-
-              blockGeoData.blockData = closestBlocksData[i]
-
-              blockGeoData.blockData.pos = {}
-              blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
-              blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
-
-              blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
-
-              this.blockGeoDataObject[blockGeoData.height] = blockGeoData
-
-              this.planeGenerator.updateGeometry(blockGeoData)
-              this.treeGenerator.updateGeometry(blockGeoData)
-              this.crystalGenerator.updateGeometry(blockGeoData)
-              this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
-          }
-        })
+          })
 
-        if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
-          if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
-            this.heightsToLoad.push(this.closestHeight)
-          }
-        }
-
-        for (let i = 1; i < 5; i++) {
-          let next = this.closestHeight + i
-          let prev = this.closestHeight - i
-
-          if (typeof this.blockGeoDataObject[next] === 'undefined') {
-            if (next <= this.maxHeight && next >= 0) {
-              if (this.heightsToLoad.indexOf(next) === -1) {
-                this.heightsToLoad.push(next)
-              }
+          if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
+            if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
+              this.heightsToLoad.push(this.closestHeight)
             }
           }
 
-          if (typeof this.blockGeoDataObject[prev] === 'undefined') {
-            if (prev <= this.maxHeight && prev >= 0) {
-              if (this.heightsToLoad.indexOf(prev) === -1) {
-                this.heightsToLoad.push(prev)
-              }
-            }
-          }
-        }
+          for (let i = 1; i < 10; i++) {
+            let next = this.closestHeight + i
+            let prev = this.closestHeight - i
 
-        console.log(this.heightsToLoad)
-
-        this.heightsToLoad.forEach(async (height) => {
-          if (this.loadingMutex.indexOf(height) === -1) {
-            this.loadingMutex.push(height)
-
-            if (typeof this.blockGeoDataObject[height] === 'undefined') {
-              if (
-                height < this.closestHeight - 10 ||
-                height > this.closestHeight + 10
-              ) {
-                console.log('moved too far away from block at height: ' + height)
-                return
-              }
-
-              let blockGeoDataTemp = {}
-              blockGeoDataTemp.blockData = {}
-              blockGeoDataTemp.blockData.height = height
-              blockGeoDataTemp.blockData.pos = {}
-              blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
-              blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
-
-              this.planeGenerator.updateGeometry(blockGeoDataTemp)
-              this.treeGenerator.updateGeometry(blockGeoDataTemp)
-
-              const blockHeightWorker = new BlockHeightWorker()
-              blockHeightWorker.onmessage = async ({ data }) => {
-                if (typeof data.blockDataJSON !== 'undefined') {
-                  console.log(data)
-
-                  let blockGeoData = await this.getGeometry(data.blockDataJSON.blocks[0].hash, height)
-
-                  if (
-                    height < this.closestHeight - 10 ||
-                    height > this.closestHeight + 10
-                  ) {
-                    console.log('moved too far away from block at height: ' + height)
-                    return
-                  }
-
-                  if (blockGeoData) {
-                    if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-                      this.crystalGenerator.updateGeometry(blockGeoData)
-                      this.crystalAOGenerator.updateGeometry(blockGeoData)
-                    }
-                  }
-
-                  blockHeightWorker.terminate()
+            if (typeof this.blockGeoDataObject[next] === 'undefined') {
+              if (next <= this.maxHeight && next >= 0) {
+                if (this.heightsToLoad.indexOf(next) === -1) {
+                  this.heightsToLoad.push(next)
                 }
               }
-              blockHeightWorker.postMessage({ cmd: 'get', config: this.config, height: height })
             }
 
-            let heightIndex = this.heightsToLoad.indexOf(height)
-            if (heightIndex > -1) {
-              this.heightsToLoad.splice(heightIndex, 1)
-            }
-            let mutexIndex = this.loadingMutex.indexOf(height)
-            if (mutexIndex > -1) {
-              this.heightsToLoad.splice(mutexIndex, 1)
+            if (typeof this.blockGeoDataObject[prev] === 'undefined') {
+              if (prev <= this.maxHeight && prev >= 0) {
+                if (this.heightsToLoad.indexOf(prev) === -1) {
+                  this.heightsToLoad.push(prev)
+                }
+              }
             }
           }
-        })
 
-        nearestBlocksWorker.terminate()
+          console.log(this.heightsToLoad)
+
+          this.heightsToLoad.forEach(async (height) => {
+            if (this.loadingMutex.indexOf(height) === -1) {
+              this.loadingMutex.push(height)
+
+              if (typeof this.blockGeoDataObject[height] === 'undefined') {
+                if (
+                  height < this.closestHeight - 10 ||
+                height > this.closestHeight + 10
+                ) {
+                  console.log('moved too far away from block at height: ' + height)
+                  return
+                }
+
+                let blockGeoDataTemp = {}
+                blockGeoDataTemp.blockData = {}
+                blockGeoDataTemp.blockData.height = height
+                blockGeoDataTemp.blockData.pos = {}
+                blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
+                blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+
+                this.planeGenerator.updateGeometry(blockGeoDataTemp)
+                this.treeGenerator.updateGeometry(blockGeoDataTemp)
+
+                const blockHeightWorker = new BlockHeightWorker()
+                blockHeightWorker.onmessage = async ({ data }) => {
+                  if (typeof data.blockDataJSON !== 'undefined') {
+                    let blockGeoData = await this.getGeometry(data.blockDataJSON.blocks[0].hash, height)
+
+                    if (
+                      height < this.closestHeight - 10 ||
+                    height > this.closestHeight + 10
+                    ) {
+                      console.log('moved too far away from block at height: ' + height)
+                      return
+                    }
+
+                    if (blockGeoData) {
+                      if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+                        this.crystalGenerator.updateGeometry(blockGeoData)
+                        this.crystalAOGenerator.updateGeometry(blockGeoData)
+                      }
+                    }
+
+                    let heightIndex = this.heightsToLoad.indexOf(height)
+                    if (heightIndex > -1) {
+                      this.heightsToLoad.splice(heightIndex, 1)
+                    }
+                    let mutexIndex = this.loadingMutex.indexOf(height)
+                    if (mutexIndex > -1) {
+                      this.heightsToLoad.splice(mutexIndex, 1)
+                    }
+
+                    blockHeightWorker.terminate()
+                  }
+                }
+                blockHeightWorker.postMessage({ cmd: 'get', config: this.config, height: height })
+              }
+            }
+          })
+
+          this.loading = false
+
+          nearestBlocksWorker.terminate()
+        }
       }
       nearestBlocksWorker.postMessage({ cmd: 'get', closestHeight: this.closestHeight, config: this.config })
-
-      this.loading = false
-      console.log('loaded')
     }
   }
 
@@ -1431,8 +1432,6 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
-
-    await this.updateClosestTrees()
 
     let undersideTexture1 = null
     let undersideTexture2 = null

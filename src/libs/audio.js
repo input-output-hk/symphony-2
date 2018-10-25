@@ -12,12 +12,12 @@ export default class Audio extends EventEmitter {
     this.audioContext = new window.AudioContext()
     this.masterBus = this.audioContext.createGain()
 
-    this.compressor = this.audioContext.createDynamicsCompressor()
-    this.compressor.threshold.setValueAtTime(-30, this.audioContext.currentTime)
-    this.compressor.knee.setValueAtTime(10, this.audioContext.currentTime)
-    this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
-    this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
-    this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
+    // this.compressor = this.audioContext.createDynamicsCompressor()
+    // this.compressor.threshold.setValueAtTime(-30, this.audioContext.currentTime)
+    // this.compressor.knee.setValueAtTime(10, this.audioContext.currentTime)
+    // this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
+    // this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
+    // this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
 
     this.biquadFilter = this.audioContext.createBiquadFilter()
     this.biquadFilter.type = 'notch'
@@ -43,13 +43,14 @@ export default class Audio extends EventEmitter {
       // this.masterBus.connect(this.compressor)
       this.masterBus.connect(this.convolver)
       // this.compressor.connect(this.convolver)
-      this.convolver.connect(this.biquadFilter)
-      this.biquadFilter.connect(this.audioContext.destination)
+      // this.convolver.connect(this.biquadFilter)
+      this.convolver.connect(this.audioContext.destination)
+      // this.biquadFilter.connect(this.audioContext.destination)
       // this.biquadFilter.connect(this.lowShelf)
       // this.lowShelf.connect(this.audioContext.destination)
     })
 
-    this.sampleRate = 44100
+    this.sampleRate = 22050
     this.soundDuration = 20 // (seconds)
     this.notes = {
       27.5000: 'A0',
@@ -275,7 +276,7 @@ export default class Audio extends EventEmitter {
     this.sineBank = this.gpu.createKernel(function (frequencies, times, spent, vol, health, length) {
       let sum = 0
       let twoPI = 6.28318530718
-      let currentTime = (this.thread.x / 44100)
+      let currentTime = (this.thread.x / 22050)
 
       for (var i = 0; i < length; i++) {
         let ANGULAR_FREQUENCY = frequencies[i] * twoPI

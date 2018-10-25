@@ -1,7 +1,7 @@
 import GPU from 'gpu.js'
 import { map } from '../utils/math'
 
-const sampleRate = 44100
+const sampleRate = 22050
 const soundDuration = 20
 
 // keep standard js happy
@@ -14,7 +14,7 @@ const gpu = new GPU()
 const sineBank = gpu.createKernel(function (frequencies, times, spent, vol, health, length) {
   let sum = 0
   let twoPI = 6.28318530718
-  let currentTime = (this.thread.x / 44100)
+  let currentTime = (this.thread.x / 22050)
 
   for (var i = 0; i < length; i++) {
     let ANGULAR_FREQUENCY = frequencies[i] * twoPI
@@ -65,7 +65,7 @@ const sineBank = gpu.createKernel(function (frequencies, times, spent, vol, heal
     //   Math.sin(currentAngleMod * (15.0 + (custom_random(ANGULAR_FREQUENCY * 15.0) * health))) * spent15 +
     //   Math.sin(currentAngleMod * (16.0 + (custom_random(ANGULAR_FREQUENCY * 16.0) * health))) * spent16
 
-    wave *= 0.25
+    wave /= 8.0
 
     sum += wave * attack * release * vol
   }
@@ -182,10 +182,8 @@ self.addEventListener('message', async function (e) {
 
       console.timeEnd('audioGenerate')
 
-      let vol = getVol(frequencies.length, soundDuration)
-      if (typeof frequencies === 'undefined') {
-        return
-      }
+      let vol = getVol(frequencies.length > 2000 ? 2000 : txCount, soundDuration)
+
       console.time('sineBank')
       let sineArray = sineBank(frequencies, txTimes, spent, vol, health, 2000)
       console.timeEnd('sineBank')
@@ -221,9 +219,5 @@ const getVol = function (frequencies, soundDuration) {
   let noteLength = 3.0
   let vol = (soundDuration / noteLength) / frequencies
 
-  if (vol > 0.5) {
-    return 0.5
-  } else {
-    return vol
-  }
+  return vol
 }
