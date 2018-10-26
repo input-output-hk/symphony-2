@@ -12,18 +12,23 @@ export default class Audio extends EventEmitter {
     this.audioContext = new window.AudioContext()
     this.masterBus = this.audioContext.createGain()
 
-    // this.compressor = this.audioContext.createDynamicsCompressor()
-    // this.compressor.threshold.setValueAtTime(-30, this.audioContext.currentTime)
-    // this.compressor.knee.setValueAtTime(10, this.audioContext.currentTime)
-    // this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
-    // this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
-    // this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
+    this.compressor = this.audioContext.createDynamicsCompressor()
+    this.compressor.threshold.setValueAtTime(-10, this.audioContext.currentTime)
+    this.compressor.knee.setValueAtTime(0, this.audioContext.currentTime)
+    this.compressor.ratio.setValueAtTime(5, this.audioContext.currentTime)
+    this.compressor.attack.setValueAtTime(0, this.audioContext.currentTime)
+    this.compressor.release.setValueAtTime(1.0, this.audioContext.currentTime)
 
     this.biquadFilter = this.audioContext.createBiquadFilter()
     this.biquadFilter.type = 'notch'
     this.biquadFilter.frequency.setValueAtTime(700, this.audioContext.currentTime)
     this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
     this.biquadFilter.Q.setValueAtTime(0.1, this.audioContext.currentTime)
+
+    this.highShelf = this.audioContext.createBiquadFilter()
+    this.highShelf.type = 'highshelf'
+    this.highShelf.gain.setValueAtTime(-10.0, this.audioContext.currentTime)
+    this.highShelf.frequency.setValueAtTime(1000, this.audioContext.currentTime)
 
     // this.lowShelf = this.audioContext.createBiquadFilter()
     // this.lowShelf.type = 'lowshelf'
@@ -40,17 +45,14 @@ export default class Audio extends EventEmitter {
 
     getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
       this.convolver.buffer = buffer
-      // this.masterBus.connect(this.compressor)
-      this.masterBus.connect(this.convolver)
-      // this.compressor.connect(this.convolver)
-      // this.convolver.connect(this.biquadFilter)
+      this.masterBus.connect(this.highShelf)
+      this.highShelf.connect(this.biquadFilter)
+      this.biquadFilter.connect(this.compressor)
+      this.compressor.connect(this.convolver)
       this.convolver.connect(this.audioContext.destination)
-      // this.biquadFilter.connect(this.audioContext.destination)
-      // this.biquadFilter.connect(this.lowShelf)
-      // this.lowShelf.connect(this.audioContext.destination)
     })
 
-    this.sampleRate = 22050
+    this.sampleRate = 44100
     this.soundDuration = 20 // (seconds)
     this.notes = {
       27.5000: 'A0',

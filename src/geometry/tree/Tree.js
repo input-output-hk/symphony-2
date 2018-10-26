@@ -201,8 +201,8 @@ export default class Tree extends Base {
    * @param {*} blockData
    */
   async get (blockData) {
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(999999)
-    let quatArray = new Float32Array(this.instanceTotal * 4)
+    let planeOffsetsArray = new Float32Array(2)
+    let quatArray = new Float32Array(4)
 
     // set up base geometry
     let treeMesh = await this.loadTreeModel(Object.keys(blockData.tx).length)
@@ -240,7 +240,7 @@ export default class Tree extends Base {
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
     let quaternions = new THREE.InstancedBufferAttribute(quatArray, 4)
-    let display = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal).fill(1), 1)
+    let display = new THREE.InstancedBufferAttribute(new Float32Array(1).fill(1), 1)
 
     geometry.addAttribute('planeOffset', planeOffsets)
     geometry.addAttribute('quaternion', quaternions)

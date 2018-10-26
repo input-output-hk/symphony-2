@@ -1437,17 +1437,20 @@ class App extends mixin(EventEmitter, Component) {
     let undersideTexture2 = null
     let undersideTexture3 = null
 
+    let prevBlock = this.blockGeoDataObject[this.closestBlock.blockData.height - 1]
+    let nextBlock = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
+
     const nTX1 = Object.keys(this.closestBlock.blockData.tx).length
     undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
 
-    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      let block2 = this.blockGeoDataObject[this.closestBlock.blockData.height - 1]
+    if (typeof prevBlock !== 'undefined') {
+      let block2 = prevBlock
       const nTX2 = Object.keys(block2.blockData.tx).length
       undersideTexture2 = await this.circuit.draw(nTX2, block2)
     }
 
-    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      let block3 = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
+    if (typeof nextBlock !== 'undefined') {
+      let block3 = nextBlock
       const nTX3 = Object.keys(block3.blockData.tx).length
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
     }
@@ -1457,11 +1460,11 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (undersideTexture2) {
-      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height - 1], 1, undersideTexture2)
+      this.updateMerkleDetail(prevBlock, 1, undersideTexture2)
     }
 
     if (undersideTexture3) {
-      this.updateMerkleDetail(this.blockGeoDataObject[this.closestBlock.blockData.height + 1], 2, undersideTexture3)
+      this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
