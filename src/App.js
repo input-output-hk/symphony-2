@@ -12,7 +12,7 @@ import moment from 'moment'
 import { map } from './utils/math'
 import FlyControls from './libs/FlyControls'
 import MapControls from './libs/MapControls'
-import Audio from './libs/audio'
+import AudioManager from './libs/audio/audioManager'
 import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
@@ -146,7 +146,7 @@ class App extends mixin(EventEmitter, Component) {
     await this.initFirebase()
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
-    this.audio = new Audio({FBStorageAudioRef: this.FBStorageAudioRef})
+    this.audio = new AudioManager({sampleRate: this.config.audio.sampleRate, soundDuration: this.config.audio.soundDuration})
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,

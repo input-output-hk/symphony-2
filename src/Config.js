@@ -20,6 +20,10 @@ const Config = {
     debugPicker: false,
     showGUI: false
   },
+  audio: {
+    sampleRate: 44100,
+    soundDuration: 20 // (seconds)
+  },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
   },
