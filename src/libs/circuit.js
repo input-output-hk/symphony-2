@@ -37,7 +37,7 @@ export default class Circuit extends EventEmitter {
         oldCanvas.remove()
       }
 
-      // // check storage
+      // check storage
       let existingCanvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
 
       // Create a reference from a Google Cloud Storage URI
@@ -76,7 +76,7 @@ export default class Circuit extends EventEmitter {
             try {
               canvasRef.put(blob).then(function (snapshot) {
                 let texture = new THREE.Texture(this.canvas)
-                texture.needsUpdate = true
+                
                 resolve(texture)
               }.bind(this))
             } catch (error) {

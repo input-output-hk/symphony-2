@@ -30,11 +30,11 @@ varying float vEnvelope;
 varying vec3 vViewPosition;
 varying float vSpentRatio;
 
-#ifndef FLAT_SHADED
+// #ifndef FLAT_SHADED
 
 	varying vec3 vNormal;
 
-#endif
+// #endif
 
 #include <common>
 #include <packing>
@@ -76,9 +76,20 @@ void main() {
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
 	#include <normal_fragment_begin>
+
+	vec3 normalSmooth = normalize( vNormal );
+	#ifdef DOUBLE_SIDED
+		normalSmooth = normalSmooth * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+	#endif
+
+
 	#include <normal_fragment_maps>
 
 	diffuseColor.rgb *= packNormalToRGB( normal + 0.6 );
+
+	vec3 dispersion = diffuseColor.rgb * packNormalToRGB( normalSmooth + 0.8 );
+
+	 diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 

@@ -176,8 +176,8 @@ self.addEventListener('message', async function (e) {
 
       // normalize
       for (let index = 0; index < sineArray.length; index++) {
-        lArray[index] = map(sineArray[index], min, max, -0.9, 0.9)
-        rArray[index] = map(sineArray[Math.floor(index * 0.99)], min, max, -0.9, 0.9) // right channel slightly out of phase with left for stereo effect
+        lArray[index] = map(sineArray[index], min, max, -0.5, 0.5)
+        rArray[index] = map(sineArray[Math.floor(index * 0.99)], min, max, -0.5, 0.5) // right channel slightly out of phase with left for stereo effect
       }
 
       let returnData = {

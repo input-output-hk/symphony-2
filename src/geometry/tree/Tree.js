@@ -40,6 +40,8 @@ export default class Tree extends Base {
     })
 
     this.indexHeightMap = {}
+
+    this.loadedModels = {}
   }
 
   async loadTreeModel (nTX) {
@@ -68,13 +70,36 @@ export default class Tree extends Base {
         1: 2
       }
 
+      if (typeof this.loadedModels[merkleMap[nTX]] !== 'undefined') {
+        resolve(this.loadedModels[merkleMap[nTX]].clone())
+      }
+
       // Load a glTF resource
-      this.binaryTree = await this.gltfLoader.load(
+      await this.gltfLoader.load(
         'assets/models/gltf/binary-tree-' + merkleMap[nTX] + '.gltf',
         function (gltf) {
-          let mesh = gltf.scene.children[0]
-          resolve(mesh)
-        },
+          let treeMesh = gltf.scene.children[0]
+
+          let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
+          let tubeMesh = new THREE.Mesh(tubeGeo)
+          tubeMesh.rotateZ(Math.PI / 2)
+
+          let singleGeometry = new THREE.Geometry()
+          tubeMesh.updateMatrix()
+          singleGeometry.merge(tubeMesh.geometry, tubeMesh.matrix)
+          treeMesh.updateMatrix()
+          let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
+          singleGeometry.merge(treeGeo, treeMesh.matrix)
+          let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
+          let geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
+
+          geometry.computeVertexNormals()
+          geometry.translate(0, -383.0, 0)
+
+          this.loadedModels[merkleMap[nTX]] = geometry
+
+          resolve(geometry.clone())
+        }.bind(this),
         function () {},
         function (error) {
           console.log('An error happened')
@@ -94,23 +119,7 @@ export default class Tree extends Base {
       nTX = 256
     }
 
-    let treeMesh = await this.loadTreeModel(nTX)
-
-    let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
-    let tubeMesh = new THREE.Mesh(tubeGeo)
-    tubeMesh.rotateZ(Math.PI / 2)
-
-    let singleGeometry = new THREE.Geometry()
-    tubeMesh.updateMatrix()
-    singleGeometry.merge(tubeMesh.geometry, tubeMesh.matrix)
-    treeMesh.updateMatrix()
-    let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
-    singleGeometry.merge(treeGeo, treeMesh.matrix)
-    let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
-    this.geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
-
-    this.geometry.computeVertexNormals()
-    this.geometry.translate(0, -383.0, 0)
+    this.geometry = await this.loadTreeModel(nTX)
 
     let blockPosition = blockGeoData.blockData.pos
 
@@ -205,23 +214,7 @@ export default class Tree extends Base {
     let quatArray = new Float32Array(4)
 
     // set up base geometry
-    let treeMesh = await this.loadTreeModel(Object.keys(blockData.tx).length)
-
-    let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
-    let tubeMesh = new THREE.Mesh(tubeGeo)
-    tubeMesh.rotateZ(Math.PI / 2)
-
-    let singleGeometry = new THREE.Geometry()
-    tubeMesh.updateMatrix()
-    singleGeometry.merge(tubeMesh.geometry, tubeMesh.matrix)
-    treeMesh.updateMatrix()
-    let treeGeo = new THREE.Geometry().fromBufferGeometry(treeMesh.geometry)
-    singleGeometry.merge(treeGeo, treeMesh.matrix)
-    let bufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
-    let geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
-
-    geometry.computeVertexNormals()
-    geometry.translate(0, -383.0, 0)
+    let geometry = await this.loadTreeModel(Object.keys(blockData.tx).length)
 
     let blockPosition = blockData.pos
 
@@ -249,7 +242,6 @@ export default class Tree extends Base {
     let mesh = new THREE.Mesh(geometry, this.material)
 
     mesh.frustumCulled = false
-
     return mesh
   }
 }

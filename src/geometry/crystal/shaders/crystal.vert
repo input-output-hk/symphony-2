@@ -36,11 +36,11 @@ varying float vBottomVertex;
 varying float vEnvelope;
 varying vec3 vPickerColor;
 
-#ifndef FLAT_SHADED
+// #ifndef FLAT_SHADED
 
 	varying vec3 vNormal;
 
-#endif
+// #endif
 
 #include <common>
 #include <uv_pars_vertex>
@@ -66,11 +66,11 @@ void main() {
 	
 	#include <defaultnormal_vertex>
 
-#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
+//#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
 
 	vNormal = normalize( transformedNormal );
 
-#endif
+//#endif
 
 	#include <begin_vertex>
 

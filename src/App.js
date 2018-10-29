@@ -1384,28 +1384,6 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.blockAnimStartTime = window.performance.now()
 
-    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
-    this.originOffset = new THREE.Vector2(
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-    )
-
-    this.planetMesh.position.x = 0
-    this.planetMesh.position.z = 0
-    this.planetMesh.position.x -= this.originOffset.x
-    this.planetMesh.position.z -= this.originOffset.y
-
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-
-    this.treeGenerator.updateOriginOffset(this.originOffset)
-    this.planeGenerator.updateOriginOffset(this.originOffset)
-    this.crystalGenerator.updateOriginOffset(this.originOffset)
-    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
-    this.diskGenerator.updateOriginOffset(this.originOffset)
-
-    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
-
     this.setState({
       closestBlock: this.closestBlock
     })
@@ -1454,6 +1432,28 @@ class App extends mixin(EventEmitter, Component) {
       const nTX3 = Object.keys(block3.blockData.tx).length
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
     }
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    this.originOffset = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
+    this.planetMesh.position.x = 0
+    this.planetMesh.position.z = 0
+    this.planetMesh.position.x -= this.originOffset.x
+    this.planetMesh.position.z -= this.originOffset.y
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+
+    this.treeGenerator.updateOriginOffset(this.originOffset)
+    this.planeGenerator.updateOriginOffset(this.originOffset)
+    this.crystalGenerator.updateOriginOffset(this.originOffset)
+    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    this.diskGenerator.updateOriginOffset(this.originOffset)
+
+    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
 
     if (undersideTexture1) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
@@ -1525,8 +1525,6 @@ class App extends mixin(EventEmitter, Component) {
     let undersidePlane
     let topsidePlane
 
-    texture.needsUpdate = true
-
     switch (circuitIndex) {
       case 0:
         undersidePlane = this.underside
@@ -1560,9 +1558,6 @@ class App extends mixin(EventEmitter, Component) {
     texture.minFilter = THREE.LinearMipMapLinearFilter
 
     undersidePlane.material.map = texture
-    undersidePlane.material.needsUpdate = true
-
-    undersidePlane.visible = false
     undersidePlane.rotation.x = 0
     undersidePlane.rotation.y = 0
     undersidePlane.rotation.z = 0
@@ -1575,9 +1570,6 @@ class App extends mixin(EventEmitter, Component) {
     undersidePlane.visible = true
 
     topsidePlane.material.map = texture
-    topsidePlane.material.needsUpdate = true
-
-    topsidePlane.visible = false
     topsidePlane.rotation.x = 0
     topsidePlane.rotation.y = 0
     topsidePlane.rotation.z = 0
