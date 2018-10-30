@@ -1,7 +1,6 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/storage'
-import * as THREE from 'three'
 
 import MerkleTools from '../utils/merkleTools'
 

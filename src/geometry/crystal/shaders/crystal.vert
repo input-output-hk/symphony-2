@@ -7,7 +7,6 @@
 
 uniform float uTime;
 uniform float uAudioTime;
-uniform float uFirstLoop;
 
 uniform vec2 uOriginOffset;
 
@@ -23,6 +22,7 @@ attribute float txValue;
 attribute vec4 quaternion;
 attribute float txTime;
 attribute float blockStartTime;
+attribute float blockLoadTime;
 
 varying float vIsHovered;
 varying float vIsSelected;
@@ -75,76 +75,45 @@ void main() {
 	#include <begin_vertex>
 
 	float offsetTime = uAudioTime - blockStartTime;
+	float loadTime = uAudioTime - blockLoadTime;
 
 	// envelope
 	float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
 	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
 
+	float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
+
 	float blockActive = (blockStartTime == 0.0) ? 0.0 : 1.0;
 
 	vEnvelope = (attack * release) * blockActive;
 
-
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
+	//if (loadTime < 30000.0) {
+	  	transformed.xz *= (scale * attackLoad);
+		transformed.y *= (offset.y * attackLoad);
+		transformed.y += (offset.y * 0.5) * attackLoad;
+	//} else {
+	//  	transformed.xz *= scale;
+	//	transformed.y *= offset.y;
+	//	transformed.y += (offset.y * 0.5);
+	//}
 
-	//float scaledTime = (timeMod * 0.002);
+	transformed.y += (1.0 * isSelected);
 
-	if (uFirstLoop == 1.0) {
-	  	transformed.xz *= (scale * attack);
-		transformed.y *= (offset.y * attack);
-	} else {
-		transformed.xz *= scale;
-		transformed.y *= offset.y;
-	}
+	transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
+	mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), (uTime*0.0002) * isSelected);
 
-		transformed.y += offset.y * 0.5;
+	vec4 newPos = rotation * vec4( transformed, 1.0 );
 
-		transformed.y += (1.0 * isSelected);
-
-		transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
-		mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), (uTime*0.0002) * isSelected);
-		// transformed.y += abs(sin( ((uTime+(txTime*1000.0))*0.0005) )) * 2.5 ;
-		// mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), ((uTime+(txTime*1000.0))*0.0002) );
-
-		vec4 newPos = rotation * vec4( transformed, 1.0 );
-
-		transformed.xyz = newPos.xyz;
+	transformed.xyz = newPos.xyz;
 		
-	//if (timeMod < 500.0) {
-    	//transformed.xz *= (scale * scaledTime);
-//	} else {
-  //  	transformed.xz *= scale;
-//	}
-
-	
-	// if (timeMod < 500.0 && offset.y > 0.0) {
-    // 	transformed.y *= (scaledTime * offset.y);
-	// 	transformed.y += (scaledTime * offset.y) * 0.5;
-	// } else {
-    // 	transformed.y *= offset.y;
-
-	// }
-
-    //transformed.y *= offset.y;
     transformed.xz += (offset.xz - uOriginOffset.xy);
-
-	//transformed.x += (random(originalTransform.x) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-	//transformed.z += (random(originalTransform.y) * (scale * 0.4) - (scale * 0.2)) * centerTopVertex;
-
-	// transformed.y += (random(offset.z) * (offset.y * 0.02) - (offset.y * 0.01)) * topVertex * (1.0 - centerTopVertex);
-	// transformed.y += (offset.y * 0.02) * centerTopVertex;
-
-	//transformed.y -= (offset.y * 0.03) * centerBottomVertex;
-
-	// transformed.y -= 4.5 * centerBottomVertex;
 
 	vTransformed = transformed;
 	vTopVertex = topVertex;
 	vBottomVertex = 1.0 - topVertex;
-	//vCenterBottomVertex = centerBottomVertex;
-
 	vScale = scale;
 
 	#include <project_vertex>

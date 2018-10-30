@@ -111,8 +111,8 @@ canvas#sketchboard {
   height: 156%;
   margin-left: -10%;
   margin-top: -15%;
-  border: 40em solid rgba(18,23,38,0.3);
-  border-radius: 569px;
+  /* border: 40em solid rgba(18,23,38,0.3);
+  border-radius: 569px; */
 }
 
 .block-details ul {

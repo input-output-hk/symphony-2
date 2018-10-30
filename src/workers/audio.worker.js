@@ -12,7 +12,10 @@ self.addEventListener('message', async function (e) {
       const sampleRate = data.sampleRate
       const soundDuration = data.soundDuration
 
-      const audioUtils = new AudioUtils({sampleRate: sampleRate, soundDuration: soundDuration})
+      const audioUtils = new AudioUtils({
+        sampleRate: sampleRate,
+        soundDuration: soundDuration
+      })
 
       const gpu = new GPU()
 

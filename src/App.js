@@ -77,7 +77,6 @@ class App extends mixin(EventEmitter, Component) {
     this.topside = null
     this.closestBlockReadyForUpdate = false
     this.drawCircuits = true
-    this.firstLoop = true
     this.geoAdded = false
     this.clock = new THREE.Clock()
 
@@ -116,7 +115,7 @@ class App extends mixin(EventEmitter, Component) {
     if (this.camera.position.y > 0) {
       this.trees.renderOrder = 1
       this.plane.renderOrder = 2
-      this.crystalAO.renderOrder = 3
+      // this.crystalAO.renderOrder = 3
       this.underside.renderOrder = 4
       this.undersideL.renderOrder = 4
       this.undersideR.renderOrder = 4
@@ -126,7 +125,7 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.renderOrder = 5
     } else {
       this.crystal.renderOrder = 1
-      this.crystalAO.renderOrder = 2
+      // this.crystalAO.renderOrder = 2
       this.plane.renderOrder = 3
       this.underside.renderOrder = 4
       this.undersideL.renderOrder = 4
@@ -146,32 +145,41 @@ class App extends mixin(EventEmitter, Component) {
     await this.initFirebase()
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
-    this.audio = new AudioManager({sampleRate: this.config.audio.sampleRate, soundDuration: this.config.audio.soundDuration})
+    this.audio = new AudioManager({
+      sampleRate: this.config.audio.sampleRate,
+      soundDuration: this.config.audio.soundDuration
+    })
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
-      planeSize: this.planeSize
+      planeSize: this.planeSize,
+      config: this.config
     })
 
     this.pickerGenerator = new Picker({
-      planeSize: this.planeSize
+      planeSize: this.planeSize,
+      config: this.config
     })
 
-    this.crystalAOGenerator = new CrystalAO({
-      firebaseDB: this.firebaseDB,
-      planeSize: this.planeSize
-    })
+    // this.crystalAOGenerator = new CrystalAO({
+    //   firebaseDB: this.firebaseDB,
+    //   planeSize: this.planeSize,
+    //   config: this.config
+    // })
 
     this.planeGenerator = new Plane({
-      planeSize: this.planeSize
+      planeSize: this.planeSize,
+      config: this.config
     })
 
     this.treeGenerator = new Tree({
-      planeSize: this.planeSize
+      planeSize: this.planeSize,
+      config: this.config
     })
 
     this.diskGenerator = new Disk({
-      planeSize: this.planeSize
+      planeSize: this.planeSize,
+      config: this.config
     })
 
     this.heightsToLoad = []
@@ -351,7 +359,7 @@ class App extends mixin(EventEmitter, Component) {
 
           this.animatingCamera = false
         })
-        .easing(TWEEN.Easing.Linear.None)
+        .easing(this.defaultCamEasing)
         .start()
 
       this.animateCamRotation(2000)
@@ -718,9 +726,9 @@ class App extends mixin(EventEmitter, Component) {
 
               this.group.add(this.crystal)
 
-              this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
-              this.crystalAO.translateY(0.1)
-              this.group.add(this.crystalAO)
+              // this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
+              // this.crystalAO.translateY(0.1)
+              // this.group.add(this.crystalAO)
 
               this.trees = await this.treeGenerator.init(blockGeoData)
               this.group.add(this.trees)
@@ -746,7 +754,7 @@ class App extends mixin(EventEmitter, Component) {
               this.treeGenerator.updateOriginOffset(this.originOffset)
               this.planeGenerator.updateOriginOffset(this.originOffset)
               this.crystalGenerator.updateOriginOffset(this.originOffset)
-              this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+              // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
               this.diskGenerator.updateOriginOffset(this.originOffset)
 
               this.planetMesh.position.x -= this.originOffset.x
@@ -757,7 +765,7 @@ class App extends mixin(EventEmitter, Component) {
               this.planeGenerator.updateGeometry(blockGeoData)
               this.treeGenerator.updateGeometry(blockGeoData)
               this.crystalGenerator.updateGeometry(blockGeoData)
-              this.crystalAOGenerator.updateGeometry(blockGeoData)
+              // this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
           }
           addCount++
@@ -843,14 +851,21 @@ class App extends mixin(EventEmitter, Component) {
     this.toggleMapControls()
   }
 
-  toggleMapControls (setPos = true) {
+  toggleMapControls (setPos = true, target) {
     this.switchControls('map')
     if (this.closestBlock) {
       if (setPos) {
-        this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
-        this.camera.position.x = this.closestBlock.blockData.pos.x
-        this.camera.position.y = 500
-        this.camera.position.z = this.closestBlock.blockData.pos.z
+        if (target) {
+          this.controls.target = target
+          this.camera.position.x = target.x
+          this.camera.position.y = 500
+          this.camera.position.z = target.z
+        } else {
+          this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+          this.camera.position.x = this.closestBlock.blockData.pos.x
+          this.camera.position.y = 500
+          this.camera.position.z = this.closestBlock.blockData.pos.z
+        }
       }
     }
   }
@@ -1018,7 +1033,7 @@ class App extends mixin(EventEmitter, Component) {
           // delete this.audio.gainNodes[height]
           // clearTimeout(this.audio.loops[height])
 
-            let vol = map((blockDist * 0.001), 0, 300, 1.0, 0.0)
+            let vol = map((blockDist * 0.001), 0, 500, 1.0, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -1162,7 +1177,7 @@ class App extends mixin(EventEmitter, Component) {
                 this.planeGenerator.updateGeometry(blockGeoData)
                 this.treeGenerator.updateGeometry(blockGeoData)
                 this.crystalGenerator.updateGeometry(blockGeoData)
-                this.crystalAOGenerator.updateGeometry(blockGeoData)
+                // this.crystalAOGenerator.updateGeometry(blockGeoData)
               }
             }
           })
@@ -1173,7 +1188,7 @@ class App extends mixin(EventEmitter, Component) {
             }
           }
 
-          for (let i = 1; i < 10; i++) {
+          for (let i = 1; i < 5; i++) {
             let next = this.closestHeight + i
             let prev = this.closestHeight - i
 
@@ -1235,7 +1250,7 @@ class App extends mixin(EventEmitter, Component) {
                     if (blockGeoData) {
                       if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
                         this.crystalGenerator.updateGeometry(blockGeoData)
-                        this.crystalAOGenerator.updateGeometry(blockGeoData)
+                        // this.crystalAOGenerator.updateGeometry(blockGeoData)
                       }
                     }
 
@@ -1279,6 +1294,58 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
+  goToRandomBlock () {
+    const randomHeight = Math.round(Math.random() * this.maxHeight)
+
+    console.log(randomHeight)
+
+    this.toggleSidebar()
+
+    let posX = this.blockPositions[randomHeight * 2 + 0]
+    let posZ = this.blockPositions[randomHeight * 2 + 1]
+
+    let to = new THREE.Vector3(posX, 1000000, posZ)
+    let toTarget = new THREE.Vector3(posX, 0, posZ)
+
+    this.prepareCamAnim(to, toTarget)
+
+    let aboveStart = this.camera.position.clone()
+    aboveStart.y = 1000000
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(aboveStart, 5000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        new TWEEN.Tween(that.camera.position)
+          .to(to, 5000)
+          .onUpdate(function () {
+            that.camera.position.set(this.x, this.y, this.z)
+          })
+          .onComplete(() => {
+            new TWEEN.Tween(this.camera.position)
+              .to(new THREE.Vector3(to.x, 500, to.z), 5000)
+              .onUpdate(function () {
+                that.camera.position.set(this.x, this.y, this.z)
+              })
+              .onComplete(() => {
+                this.toggleMapControls(true, toTarget)
+                this.animatingCamera = false
+              })
+              .easing(this.defaultCamEasing)
+              .start()
+          })
+          .easing(this.defaultCamEasing)
+          .start()
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(10000)
+  }
+
   animate () {
     window.requestAnimationFrame(this.animate.bind(this))
     this.renderFrame()
@@ -1309,9 +1376,9 @@ class App extends mixin(EventEmitter, Component) {
       this.setRenderOrder()
 
       this.diskGenerator.update({time: window.performance.now(), camPos: this.camera.position})
-      this.crystalGenerator.update(window.performance.now(), this.firstLoop)
-      this.crystalAOGenerator.update(window.performance.now(), this.firstLoop)
-      this.treeGenerator.update(window.performance.now() - this.blockAnimStartTime, this.firstLoop)
+      this.crystalGenerator.update(window.performance.now())
+      // this.crystalAOGenerator.update(window.performance.now())
+      this.treeGenerator.update(window.performance.now() - this.blockAnimStartTime)
     }
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.00001
@@ -1335,7 +1402,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.audio.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
-      this.crystalAOGenerator.updateBlockStartTimes(blockData)
+      // this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
@@ -1382,11 +1449,11 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    // this.blockAnimStartTime = window.performance.now()
-
     this.setState({
       closestBlock: this.closestBlock
     })
+
+    this.pickerGenerator.updateGeometry(this.closestBlock)
 
     for (const height in this.audio.audioSources) {
       if (this.audio.audioSources.hasOwnProperty(height)) {
@@ -1408,7 +1475,7 @@ class App extends mixin(EventEmitter, Component) {
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
-      this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
+      // this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
     let undersideTexture1 = null
@@ -1450,7 +1517,7 @@ class App extends mixin(EventEmitter, Component) {
     this.treeGenerator.updateOriginOffset(this.originOffset)
     this.planeGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
-    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
     this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
@@ -1466,8 +1533,6 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
-
-    this.pickerGenerator.updateGeometry(this.closestBlock)
   }
 
   async updateClosestTrees () {
@@ -1640,7 +1705,7 @@ class App extends mixin(EventEmitter, Component) {
       canvas: this.canvas
     })
 
-    // this.renderer.toneMapping = THREE.NoToneMapping
+    this.renderer.toneMapping = THREE.LinearToneMapping
     // this.renderer.toneMappingExposure = 1.5
     this.renderer.setClearColor(0xffffff, 0)
 
@@ -1753,15 +1818,12 @@ class App extends mixin(EventEmitter, Component) {
       this.toggleSidebar()
       this.toggleTxSearch()
 
-      let diff = to.clone().sub(this.camera.position)
-      diff.multiplyScalar(0.5)
-
-      let midPoint = this.camera.position.clone().add(diff)
-      midPoint.y = 1000000
+      let aboveStart = this.camera.position.clone()
+      aboveStart.y = 1000000
 
       let that = this
       new TWEEN.Tween(this.camera.position)
-        .to(midPoint, 5000)
+        .to(aboveStart, 5000)
         .onUpdate(function () {
           that.camera.position.set(this.x, this.y, this.z)
         })
@@ -1773,12 +1835,12 @@ class App extends mixin(EventEmitter, Component) {
             })
             .onComplete(() => {
               new TWEEN.Tween(this.camera.position)
-                .to(new THREE.Vector3(that.camPosTo.x, 500, that.camPosTo.z), 5000)
+                .to(new THREE.Vector3(that.camPosTo.x, 1000, that.camPosTo.z), 5000)
                 .onUpdate(function () {
                   that.camera.position.set(this.x, this.y, this.z)
                 })
                 .onComplete(() => {
-                  that.toggleMapControls()
+                  // that.toggleMapControls(true, toTarget)
                   if (this.state.searchTXHash) {
                     let foundTXID = 0
 
@@ -1791,7 +1853,7 @@ class App extends mixin(EventEmitter, Component) {
                     this.selectTX(foundTXID, this.state.searchTXHash)
                   }
                 })
-                .easing(TWEEN.Easing.Linear.None)
+                .easing(this.defaultCamEasing)
                 .start()
             })
             .easing(this.defaultCamEasing)
@@ -1853,6 +1915,7 @@ class App extends mixin(EventEmitter, Component) {
               <button className='search' onClick={this.toggleSidebar.bind(this)} />
               <span onClick={this.toggleBlockSearch.bind(this)}>Locate Block</span>
               <span onClick={this.toggleTxSearch.bind(this)}>Locate Transaction</span>
+              <span onClick={this.goToRandomBlock.bind(this)}>Random Block</span>
             </li>
           </ul>
         </div>
@@ -1872,20 +1935,17 @@ class App extends mixin(EventEmitter, Component) {
     let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
     let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
 
-    let to = new THREE.Vector3(posX, 10000, posZ)
+    let to = new THREE.Vector3(posX, 1000000, posZ)
     let toTarget = new THREE.Vector3(posX, 0, posZ)
 
     this.prepareCamAnim(to, toTarget)
 
-    let diff = to.clone().sub(this.camera.position)
-    diff.multiplyScalar(0.5)
-
-    let midPoint = this.camera.position.clone().add(diff)
-    midPoint.y = 1000000
+    let aboveStart = this.camera.position.clone()
+    aboveStart.y = 1000000
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(midPoint, 5000)
+      .to(aboveStart, 5000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
@@ -1902,10 +1962,10 @@ class App extends mixin(EventEmitter, Component) {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
-                that.toggleMapControls()
+                this.toggleMapControls(true, toTarget)
                 this.animatingCamera = false
               })
-              .easing(TWEEN.Easing.Linear.None)
+              .easing(this.defaultCamEasing)
               .start()
           })
           .easing(this.defaultCamEasing)

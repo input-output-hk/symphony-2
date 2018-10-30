@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { map } from '../../utils/math'
 export default class Base {
   constructor (args) {
+    this.config = args.config
     this.planeSize = args.planeSize
     this.planeOffsetMultiplier = args.planeOffsetMultiplier
     this.planeMargin = args.planeMargin
@@ -75,8 +76,8 @@ export default class Base {
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 800) {
-        txValue = 800
+      if (txValue > 2000) {
+        txValue = 2000
       }
       if (txValue < 5) {
         txValue = 5
@@ -92,7 +93,7 @@ export default class Base {
         txValue
       )
 
-      let txTime = map(i, 0, blockTxCount, 0, 10)
+      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration / 2)
 
       txTimesAttr.setX(
         txIndexOffset,

@@ -24,7 +24,7 @@ export default class Crystal extends Base {
 
     this.voronoi = new Voronoi()
 
-    this.instanceTotal = 20 * 3000
+    this.instanceTotal = 10 * 3000
 
     this.txCount = 0
 
@@ -231,6 +231,7 @@ export default class Crystal extends Base {
     let isHovered = new THREE.InstancedBufferAttribute(this.isHovered, 1)
     let isSelected = new THREE.InstancedBufferAttribute(this.isSelected, 1)
     let blockStartTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    let blockLoadTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
 
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
@@ -254,6 +255,7 @@ export default class Crystal extends Base {
     this.geometry.addAttribute('quaternion', quaternions)
     this.geometry.addAttribute('txTime', txTimes)
     this.geometry.addAttribute('blockStartTime', blockStartTimes)
+    this.geometry.addAttribute('blockLoadTime', blockLoadTimes)
     this.geometry.addAttribute('isHovered', isHovered)
     this.geometry.addAttribute('isSelected', isSelected)
 
@@ -436,6 +438,17 @@ export default class Crystal extends Base {
     this.geometry.attributes.blockStartTime.needsUpdate = true
   }
 
+  updateBlockLoadTimes (blockData) {
+    const txIndexOffset = this.txIndexOffsets[blockData.height]
+    const offsetTime = window.performance.now()
+
+    for (let i = 0; i < blockData.tx.length; i++) {
+      this.geometry.attributes.blockLoadTime.array[txIndexOffset + i] = offsetTime
+    }
+
+    this.geometry.attributes.blockLoadTime.needsUpdate = true
+  }
+
   async updateGeometry (blockGeoData) {
     if (this.txCount + blockGeoData.blockData.tx.length > this.instanceTotal) {
       this.txCount = 0
@@ -461,12 +474,12 @@ export default class Crystal extends Base {
     this.txCount += blockGeoData.blockData.tx.length
 
     this.updateBlockStartTimes(blockGeoData.blockData)
+    this.updateBlockLoadTimes(blockGeoData.blockData)
   }
 
-  update (time, firstLoop) {
+  update (time) {
     this.material.uniforms.uTime.value = time
     this.material.uniforms.uAudioTime.value = time
-    this.material.uniforms.uFirstLoop.value = firstLoop
   }
 }
 
@@ -485,11 +498,6 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uAudioTime = {
       type: 'f',
       value: 0.0
-    }
-
-    this.uniforms.uFirstLoop = {
-      type: 'f',
-      value: 1.0
     }
 
     this.uniforms.uOriginOffset = {

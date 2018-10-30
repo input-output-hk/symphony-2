@@ -22,7 +22,7 @@ vec2 spiral(vec2 uv, float a, float radius) {
 	ang += ceil(turn) * twoPI;
 	float d = arclength(a, ang) + uOffset;
 
-	if (d < 154387. || d > 690032.0) {
+	if (d < 154387. || d > 700000.0) {
 		vec2 dt = fwidth(uv) * 0.0;
 		float maxDerivative =  clamp(max(dt.t, dt.s), 0.0, 0.00001); 
 		return vec2(maxDerivative,0.0);
@@ -40,8 +40,8 @@ float plane(vec2 uv, vec2 quadUV) {
     float bottom = smoothstep(0.475 * (1.0-maxDerivative), 0.476 + maxDerivative *0.3, uv.y);
     float left = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), uv.x);
     float right = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), 1.0-uv.x);
-    float pct = top * bottom * left * right;
-    // float pct = top * bottom;
+    //float pct = top * bottom * left * right;
+     float pct = top * bottom;
     return pct;
 }
 

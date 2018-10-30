@@ -82,7 +82,7 @@ export default class Audio extends EventEmitter {
     for (let i = 0; i < txCount; i++) {
       const tx = blockData.tx[i]
 
-      let txTime = map(i, 0, txCount, 0, 10)
+      let txTime = map(i, 0, txCount, 0, this.soundDuration / 2)
       txTimes.push(txTime)
 
       let spentCount = 0
@@ -158,7 +158,7 @@ export default class Audio extends EventEmitter {
 
       // envelope
       let attack = custom_smoothstep(time, time + 5.0, currentTime)
-      let release = (1.0 - custom_smoothstep(time + 5.0, time + 10.0, currentTime))
+      let release = (1.0 - custom_smoothstep(time + 5.0, time + 15.0, currentTime))
 
       let spent1 = 1.0
       let spent2 = custom_step(2.0, spentRatio)
