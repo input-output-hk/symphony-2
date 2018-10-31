@@ -14,7 +14,7 @@ const Config = {
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
-    fogDensity: 0.0004
+    fogDensity: 0.001
   },
   debug: {
     debugPicker: false,

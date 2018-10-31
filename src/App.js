@@ -94,7 +94,10 @@ class App extends mixin(EventEmitter, Component) {
     this.camFromPosition = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camFromRotation = new THREE.Vector3(0.0, 0.0, 0.0)
 
-    this.defaultCamEasing = TWEEN.Easing.Quartic.InOut
+    this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
+
+    this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
+    this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
 
     this.state = {
       closestBlock: null,
@@ -833,16 +836,16 @@ class App extends mixin(EventEmitter, Component) {
 
     this.crystal.material.side = THREE.FrontSide
 
-    let cubeCamera = new THREE.CubeCamera(1.0, 3000, 1024)
-    cubeCamera.position.copy(pos)
+    console.time('cubemap')
+    this.cubeCamera.position.copy(pos)
 
-    cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
-    cubeCamera.update(this.renderer, this.scene)
+    this.cubeCamera.update(this.renderer, this.scene)
+    console.timeEnd('cubemap')
 
-    this.crystal.material.envMap = cubeCamera.renderTarget.texture
+    this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
     this.crystal.material.side = THREE.DoubleSide
 
-    this.plane.material.envMap = cubeCamera.renderTarget.texture
+    this.plane.material.envMap = this.cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
   }
@@ -1033,7 +1036,7 @@ class App extends mixin(EventEmitter, Component) {
           // delete this.audio.gainNodes[height]
           // clearTimeout(this.audio.loops[height])
 
-            let vol = map((blockDist * 0.001), 0, 500, 1.0, 0.0)
+            let vol = map((blockDist * 0.001), 0, 300, 1.0, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -1326,7 +1329,7 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 500, to.z), 5000)
+              .to(new THREE.Vector3(to.x, 500, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
@@ -1472,6 +1475,12 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    this.originOffset = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
@@ -1499,12 +1508,6 @@ class App extends mixin(EventEmitter, Component) {
       const nTX3 = Object.keys(block3.blockData.tx).length
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
     }
-
-    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
-    this.originOffset = new THREE.Vector2(
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-    )
 
     this.planetMesh.position.x = 0
     this.planetMesh.position.z = 0

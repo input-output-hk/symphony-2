@@ -61,18 +61,18 @@ export default class Audio extends EventEmitter {
     })
 
     this.notes = {
-      27.5000: 'A0',
-      29.1352: 'A#0',
-      30.8677: 'B0',
-      32.7032: 'C1',
-      34.6478: 'C#1',
-      36.7081: 'D1',
-      38.8909: 'D#1',
-      41.2034: 'E1',
-      43.6535: 'F1',
-      46.2493: 'F#1',
-      48.9994: 'G1',
-      51.9131: 'G#1',
+      // 27.5000: 'A0',
+      // 29.1352: 'A#0',
+      // 30.8677: 'B0',
+      // 32.7032: 'C1',
+      // 34.6478: 'C#1',
+      // 36.7081: 'D1',
+      // 38.8909: 'D#1',
+      // 41.2034: 'E1',
+      // 43.6535: 'F1',
+      // 46.2493: 'F#1',
+      // 48.9994: 'G1',
+      // 51.9131: 'G#1',
       55.000: 'A1',
       58.2705: 'A#1',
       61.7354: 'B1',
@@ -337,7 +337,7 @@ export default class Audio extends EventEmitter {
         soundDuration: this.soundDuration
       })
     } else {
-      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: 3000}).setOutput([this.sampleRate * this.soundDuration])
+      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: 1500}).setOutput([this.sampleRate * this.soundDuration])
       sineBank.addNativeFunction('custom_smoothstep', this.audioUtils.customSmoothstep)
       sineBank.addNativeFunction('custom_step', this.audioUtils.customStep)
       sineBank.addNativeFunction('custom_random', this.audioUtils.customRandom)
