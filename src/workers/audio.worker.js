@@ -19,21 +19,23 @@ self.addEventListener('message', async function (e) {
 
       const blockAudio = audioUtils.generateBlockAudio(blockData, modes, notes)
 
-      let chunkSize = 200
+      let parts = 10
 
       const gpu = new GPU()
 
       console.time('sineBank')
 
-      let frequencyTotalChunk = Math.ceil(
-        (blockAudio.frequencies.length / chunkSize)
-      )
 
-      let simultaneousFrequencies = blockAudio.frequencies.length / frequencyTotalChunk
+
+      let simultaneousFrequencies = blockAudio.frequencies.length / parts
+
+
 
       let audioChunkTime = Math.floor(
-        (soundDuration / frequencyTotalChunk)
+        (soundDuration / parts)
       )
+
+
 
       const sineBank = gpu.createKernel(audioUtils.sineBank, {loopMaxIterations: 1500}).setOutput([
         Math.floor(
@@ -47,13 +49,12 @@ self.addEventListener('message', async function (e) {
       let sineArrayChunks = []
 
       let i = 0
-      for (let index = 0; index < blockAudio.frequencies.length; index += chunkSize) {
-        let startIndex = Math.floor(index - (simultaneousFrequencies * 3.0))
+      for (let index = 0; index < parts; index++) {
+        let startIndex = Math.floor(((index) * simultaneousFrequencies) - 300)
         if (startIndex < 0) {
           startIndex = 0
         }
 
-        // startIndex = 0
         console.log(startIndex)
 
         let sineArray = sineBank(
@@ -61,7 +62,7 @@ self.addEventListener('message', async function (e) {
           blockAudio.txTimes,
           blockAudio.spent,
           blockAudio.health,
-          blockAudio.frequencies.length > 1500 ? 1500 : blockAudio.frequencies.length,
+          blockAudio.frequencies.length,
           sampleRate,
           i * audioChunkTime,
           startIndex

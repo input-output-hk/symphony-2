@@ -78,8 +78,8 @@ void main() {
 	float loadTime = uAudioTime - blockLoadTime;
 
 	// envelope
-	float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
-	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
+	float attack = smoothstep(txTime, txTime + 2.0, offsetTime * 0.001);
+	float release = (1.0 - smoothstep(txTime + 2.0, txTime + 4.0, offsetTime * 0.001));
 
 	float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
 
@@ -92,7 +92,7 @@ void main() {
 
 	//if (loadTime < 30000.0) {
 	  	transformed.xz *= (scale * attackLoad);
-		transformed.y *= (offset.y * attackLoad);
+		transformed.y *= ((offset.y+ (5.0 * vEnvelope)) * attackLoad);
 		transformed.y += (offset.y * 0.5) * attackLoad;
 	//} else {
 	//  	transformed.xz *= scale;

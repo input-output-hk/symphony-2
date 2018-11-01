@@ -77,12 +77,12 @@ export default class Audio extends EventEmitter {
     let spent = []
 
     let txTimes = []
-    const txCount = blockData.tx.length > 2000 ? 2000 : blockData.tx.length
+    const txCount = blockData.tx.length > 1500 ? 1500 : blockData.tx.length
 
     for (let i = 0; i < txCount; i++) {
       const tx = blockData.tx[i]
 
-      let txTime = map(i, 0, txCount, 0, this.soundDuration - 7)
+      let txTime = map(i, 0, txCount, 0, this.soundDuration - 5)
       txTimes.push(txTime)
 
       let spentCount = 0
@@ -147,9 +147,9 @@ export default class Audio extends EventEmitter {
     let twoPI = 6.28318530718
     let currentTime = (this.thread.x / sampleRate) + timeOffset
 
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i + chunkIndex < length; i++) {
       let time = times[i + chunkIndex]
-      if (Math.abs(currentTime - time) > 0) {
+      if (Math.abs(currentTime - time) < 6) {
         let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
 
         let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI

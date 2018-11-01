@@ -71,7 +71,7 @@ void main() {
 
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
-	vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 1.3  )  );
+	vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 2.0  )  );
 	
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 

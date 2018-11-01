@@ -832,15 +832,16 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   createCubeMap (pos) {
+    console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
     this.crystal.material.side = THREE.FrontSide
 
-    console.time('cubemap')
+    this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
     this.cubeCamera.position.copy(pos)
 
+    this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
     this.cubeCamera.update(this.renderer, this.scene)
-    console.timeEnd('cubemap')
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
     this.crystal.material.side = THREE.DoubleSide
@@ -848,6 +849,7 @@ class App extends mixin(EventEmitter, Component) {
     this.plane.material.envMap = this.cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
+    console.timeEnd('cubemap')
   }
 
   initControls () {
@@ -1481,6 +1483,8 @@ class App extends mixin(EventEmitter, Component) {
       this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
     )
 
+    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
+
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
@@ -1522,8 +1526,6 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalGenerator.updateOriginOffset(this.originOffset)
     // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
-
-    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
 
     if (undersideTexture1) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)

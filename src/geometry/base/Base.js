@@ -93,7 +93,7 @@ export default class Base {
         txValue
       )
 
-      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration / 2)
+      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration - 5)
 
       txTimesAttr.setX(
         txIndexOffset,

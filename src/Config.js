@@ -22,7 +22,7 @@ const Config = {
   },
   audio: {
     sampleRate: 22050,
-    soundDuration: 30 // (seconds)
+    soundDuration: 40 // (seconds)
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
@@ -36,7 +36,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 70,
+    fov: 60,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
