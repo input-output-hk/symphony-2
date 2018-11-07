@@ -45,7 +45,7 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 0.85,
+      opacity: 0.75,
       color: 0x000000,
       emissive: 0x000000,
       metalness: 0.85,
@@ -477,9 +477,11 @@ export default class Crystal extends Base {
     this.updateBlockLoadTimes(blockGeoData.blockData)
   }
 
-  update (time) {
-    this.material.uniforms.uTime.value = time
-    this.material.uniforms.uAudioTime.value = time
+  update (args) {
+    this.material.uniforms.uTime.value = args.time
+    this.material.uniforms.uAudioTime.value = args.time
+    this.material.uniforms.uCamPos.value = args.camPos
+    this.material.uniforms.uAutoPilot.value = args.autoPilot
   }
 }
 
@@ -493,6 +495,16 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uTime = {
       type: 'f',
       value: 0.0
+    }
+
+    this.uniforms.uAutoPilot = {
+      type: 'f',
+      value: 0.0
+    }
+
+    this.uniforms.uCamPos = {
+      type: 'v3',
+      value: new THREE.Vector3(0.0, 0.0, 0.0)
     }
 
     this.uniforms.uAudioTime = {

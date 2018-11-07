@@ -25,17 +25,13 @@ self.addEventListener('message', async function (e) {
 
       console.time('sineBank')
 
+      const txCount = blockAudio.frequencies.length > 1500 ? 1500 : blockAudio.frequencies.length
 
-
-      let simultaneousFrequencies = blockAudio.frequencies.length / parts
-
-
+      let simultaneousFrequencies = txCount / parts
 
       let audioChunkTime = Math.floor(
         (soundDuration / parts)
       )
-
-
 
       const sineBank = gpu.createKernel(audioUtils.sineBank, {loopMaxIterations: 1500}).setOutput([
         Math.floor(
@@ -55,14 +51,12 @@ self.addEventListener('message', async function (e) {
           startIndex = 0
         }
 
-        console.log(startIndex)
-
         let sineArray = sineBank(
           blockAudio.frequencies,
           blockAudio.txTimes,
           blockAudio.spent,
           blockAudio.health,
-          blockAudio.frequencies.length,
+          txCount,
           sampleRate,
           i * audioChunkTime,
           startIndex
@@ -80,7 +74,8 @@ self.addEventListener('message', async function (e) {
 
       let returnData = {
         lArray: arrayBuffers.lArray,
-        rArray: arrayBuffers.rArray
+        rArray: arrayBuffers.rArray,
+        blockAudio: blockAudio
       }
 
       self.postMessage(returnData)

@@ -14,7 +14,7 @@ const Config = {
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
-    fogDensity: 0.001
+    fogDensity: 0.0001
   },
   debug: {
     debugPicker: false,
@@ -22,7 +22,8 @@ const Config = {
   },
   audio: {
     sampleRate: 22050,
-    soundDuration: 40 // (seconds)
+    soundDuration: 40, // (seconds)
+    noteDuration: 15 // (seconds)
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
@@ -36,7 +37,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 60,
+    fov: 65,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType

@@ -3,6 +3,7 @@ import GPU from 'gpu.js'
 import AudioUtils from './audioUtils'
 
 import AudioWorker from '../../workers/audio.worker.js'
+import NoteWorker from '../../workers/note.worker.js'
 
 export default class Audio extends EventEmitter {
   constructor (args) {
@@ -10,14 +11,17 @@ export default class Audio extends EventEmitter {
 
     this.sampleRate = args.sampleRate
     this.soundDuration = args.soundDuration
+    this.noteDuration = args.noteDuration
 
     this.audioUtils = new AudioUtils({
       sampleRate: this.sampleRate,
-      soundDuration: this.soundDuration
+      soundDuration: this.soundDuration,
+      noteDuration: this.noteDuration
     })
 
     this.gpu = new GPU()
     this.audioContext = new window.AudioContext()
+    this.blockAudioBus = this.audioContext.createGain()
     this.masterBus = this.audioContext.createGain()
 
     this.compressor = this.audioContext.createDynamicsCompressor()
@@ -50,29 +54,32 @@ export default class Audio extends EventEmitter {
     }
 
     this.convolver = this.audioContext.createConvolver()
+    this.delay = this.audioContext.createDelay(5.0)
 
     getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
       this.convolver.buffer = buffer
+      this.blockAudioBus.connect(this.masterBus)
       this.masterBus.connect(this.highShelf)
       this.highShelf.connect(this.biquadFilter)
       this.biquadFilter.connect(this.compressor)
-      this.compressor.connect(this.convolver)
+      this.compressor.connect(this.delay)
+      this.delay.connect(this.convolver)
       this.convolver.connect(this.audioContext.destination)
     })
 
     this.notes = {
-      // 27.5000: 'A0',
-      // 29.1352: 'A#0',
-      // 30.8677: 'B0',
-      // 32.7032: 'C1',
-      // 34.6478: 'C#1',
-      // 36.7081: 'D1',
-      // 38.8909: 'D#1',
-      // 41.2034: 'E1',
-      // 43.6535: 'F1',
-      // 46.2493: 'F#1',
-      // 48.9994: 'G1',
-      // 51.9131: 'G#1',
+      27.5000: 'A0',
+      29.1352: 'A#0',
+      30.8677: 'B0',
+      32.7032: 'C1',
+      34.6478: 'C#1',
+      36.7081: 'D1',
+      38.8909: 'D#1',
+      41.2034: 'E1',
+      43.6535: 'F1',
+      46.2493: 'F#1',
+      48.9994: 'G1',
+      51.9131: 'G#1',
       55.000: 'A1',
       58.2705: 'A#1',
       61.7354: 'B1',
@@ -270,9 +277,13 @@ export default class Audio extends EventEmitter {
       ]
     }
     this.buffers = []
+    this.noteBuffers = []
     this.gainNodes = []
     this.audioSources = []
+    this.noteSources = []
     this.loops = {}
+
+    this.blockAudioData = {}
 
     this.times = []
 
@@ -300,7 +311,7 @@ export default class Audio extends EventEmitter {
 
     this.audioSources[blockData.height].connect(this.gainNodes[blockData.height])
 
-    this.gainNodes[blockData.height].connect(this.masterBus)
+    this.gainNodes[blockData.height].connect(this.blockAudioBus)
 
     this.audioSources[blockData.height].loop = true
 
@@ -323,6 +334,8 @@ export default class Audio extends EventEmitter {
       const audioWorker = new AudioWorker()
       audioWorker.onmessage = async ({ data }) => {
         if (typeof data.lArray !== 'undefined') {
+          this.blockAudioData[blockData.height] = data.blockAudio
+
           return this.startAudio(blockData, data)
         }
         audioWorker.terminate()
@@ -352,5 +365,77 @@ export default class Audio extends EventEmitter {
 
       return this.startAudio(blockData, arrayBuffers)
     }
+  }
+
+  playNote (blockData, txID) {
+    if (typeof this.blockAudioData[blockData.height] === 'undefined') {
+      return
+    }
+
+    if (this.offscreenMode) {
+      const noteWorker = new NoteWorker()
+      noteWorker.onmessage = async ({ data }) => {
+        if (typeof data.lArray !== 'undefined') {
+          return this.startNote(blockData, data)
+        }
+        noteWorker.terminate()
+      }
+
+      noteWorker.postMessage({
+        cmd: 'get',
+        blockAudioData: this.blockAudioData[blockData.height],
+        txID: txID,
+        sampleRate: this.sampleRate,
+        soundDuration: this.soundDuration,
+        noteDuration: this.noteDuration
+      })
+    }
+  }
+
+  stopNotes () {
+    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 3)
+
+    this.noteSources.forEach((source) => {
+      source.stop()
+    })
+
+    this.noteSources = []
+    this.noteBuffers = []
+  }
+
+  startNote (blockData, arrayBuffers) {
+    this.stopNotes()
+
+    this.noteBuffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.noteDuration, this.sampleRate)
+
+    const buffer = this.noteBuffers[blockData.height]
+
+    console.time('fillBuffer')
+
+    let lArray = buffer.getChannelData(0)
+    let rArray = buffer.getChannelData(1)
+    for (let index = 0; index < arrayBuffers.lArray.length; index++) {
+      lArray[index] = arrayBuffers.lArray[index]
+      rArray[index] = arrayBuffers.rArray[index]
+    }
+    console.timeEnd('fillBuffer')
+
+    this.noteSources[blockData.height] = this.audioContext.createBufferSource()
+
+    let noteSource = this.noteSources[blockData.height]
+
+    noteSource.buffer = buffer
+
+    const gainNode = this.audioContext.createGain()
+
+    this.blockAudioBus.gain.setTargetAtTime(0.1, this.audioContext.currentTime, 1)
+
+    noteSource.connect(gainNode)
+
+    gainNode.connect(this.masterBus)
+
+    noteSource.loop = true
+
+    noteSource.start()
   }
 }

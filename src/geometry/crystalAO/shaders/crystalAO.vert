@@ -15,6 +15,7 @@ attribute float txValue;
 attribute vec4 quaternion;
 attribute float txTime;
 attribute float blockStartTime;
+attribute float blockLoadTime;
 
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
@@ -61,18 +62,17 @@ void main() {
 	#include <begin_vertex>
 	
 	float offsetTime = uAudioTime - blockStartTime;
+	float loadTime = uAudioTime - blockLoadTime;
 
 	// envelope
 	float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
 	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
 
+	float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
+
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
-	 if (uFirstLoop == 1.0) {
-     	transformed.xz *= ((scale * 2.7) * attack);
-	 } else {
-	    transformed.xz *= (scale * 2.7);
-	 }
+   	transformed.xz *= ((scale * 2.7) * attackLoad);
     
 	transformed.xz += (offset.xz - uOriginOffset.xy);
 

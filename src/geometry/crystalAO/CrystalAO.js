@@ -53,6 +53,7 @@ export default class CrystalAO extends Base {
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
     let blockStartTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    let blockLoadTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
 
     let object = new THREE.Object3D()
     object.position.set(blockPosition.x, 0, blockPosition.z)
@@ -76,6 +77,7 @@ export default class CrystalAO extends Base {
     this.geometry.addAttribute('quaternion', quaternions)
     this.geometry.addAttribute('txTime', txTimes)
     this.geometry.addAttribute('blockStartTime', blockStartTimes)
+    this.geometry.addAttribute('blockLoadTime', blockLoadTimes)
 
     this.txCount += blockGeoData.blockData.tx.length
 
@@ -95,6 +97,17 @@ export default class CrystalAO extends Base {
     }
 
     this.geometry.attributes.blockStartTime.needsUpdate = true
+  }
+
+  updateBlockLoadTimes (blockData) {
+    const txIndexOffset = this.txIndexOffsets[blockData.height]
+    const offsetTime = window.performance.now()
+
+    for (let i = 0; i < blockData.tx.length; i++) {
+      this.geometry.attributes.blockLoadTime.array[txIndexOffset + i] = offsetTime
+    }
+
+    this.geometry.attributes.blockLoadTime.needsUpdate = true
   }
 
   update (time, firstLoop) {
@@ -128,6 +141,7 @@ export default class CrystalAO extends Base {
     this.txCount += blockGeoData.blockData.tx.length
 
     this.updateBlockStartTimes(blockGeoData.blockData)
+    this.updateBlockLoadTimes(blockGeoData.blockData)
   }
 }
 

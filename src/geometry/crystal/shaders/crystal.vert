@@ -7,6 +7,8 @@
 
 uniform float uTime;
 uniform float uAudioTime;
+uniform vec3 uCamPos;
+uniform float uAutoPilot;
 
 uniform vec2 uOriginOffset;
 
@@ -90,15 +92,10 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	//if (loadTime < 30000.0) {
-	  	transformed.xz *= (scale * attackLoad);
-		transformed.y *= ((offset.y+ (5.0 * vEnvelope)) * attackLoad);
-		transformed.y += (offset.y * 0.5) * attackLoad;
-	//} else {
-	//  	transformed.xz *= scale;
-	//	transformed.y *= offset.y;
-	//	transformed.y += (offset.y * 0.5);
-	//}
+	transformed.xz *= (scale * attackLoad);
+	// transformed.xz *= scale;
+	transformed.y *= ((offset.y+ (5.0 * vEnvelope)) * attackLoad);
+	transformed.y += (offset.y * 0.5) * attackLoad;
 
 	transformed.y += (1.0 * isSelected);
 
@@ -108,8 +105,19 @@ void main() {
 	vec4 newPos = rotation * vec4( transformed, 1.0 );
 
 	transformed.xyz = newPos.xyz;
+
+    transformed.xz += offset.xz;
+
+	vec2 distVec = transformed.xz - uCamPos.xz;
+
+	if (uAutoPilot > 0.0) {
+		float camDistSq = dot(distVec, distVec);
+		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
+	}
+
+	transformed.y = max(transformed.y, 0.2) * topVertex;
 		
-    transformed.xz += (offset.xz - uOriginOffset.xy);
+    transformed.xz -= (uOriginOffset.xy);
 
 	vTransformed = transformed;
 	vTopVertex = topVertex;

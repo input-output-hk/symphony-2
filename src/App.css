@@ -383,3 +383,8 @@ canvas#sketchboard {
 .search-action:hover {
   cursor: pointer;
 }
+
+.autopilot-container {
+  position: absolute;
+  z-index: 10;
+}

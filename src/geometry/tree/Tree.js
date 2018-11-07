@@ -15,7 +15,7 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 30
+    this.instanceTotal = 100
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -71,7 +71,7 @@ export default class Tree extends Base {
       }
 
       if (typeof this.loadedModels[merkleMap[nTX]] !== 'undefined') {
-        resolve(this.loadedModels[merkleMap[nTX]].clone())
+        resolve(this.loadedModels[merkleMap[nTX]])
       }
 
       // Load a glTF resource
@@ -98,11 +98,11 @@ export default class Tree extends Base {
 
           this.loadedModels[merkleMap[nTX]] = geometry
 
-          resolve(geometry.clone())
+          resolve(geometry)
         }.bind(this),
         function () {},
         function (error) {
-          console.log('An error happened')
+          console.log('An error occurred')
           reject(new Error(error))
         }
       )
@@ -119,7 +119,8 @@ export default class Tree extends Base {
       nTX = 256
     }
 
-    this.geometry = await this.loadTreeModel(nTX)
+    let geometry = await this.loadTreeModel(nTX)
+    this.geometry = geometry.clone()
 
     let blockPosition = blockGeoData.blockData.pos
 
@@ -214,7 +215,8 @@ export default class Tree extends Base {
     let quatArray = new Float32Array(4)
 
     // set up base geometry
-    let geometry = await this.loadTreeModel(Object.keys(blockData.tx).length)
+    let geometryTemp = await this.loadTreeModel(Object.keys(blockData.tx).length)
+    let geometry = geometryTemp.clone()
 
     let blockPosition = blockData.pos
 
