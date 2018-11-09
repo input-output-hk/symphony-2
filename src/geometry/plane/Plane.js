@@ -130,11 +130,6 @@ class PlaneMaterial extends THREE.MeshStandardMaterial {
       value: 0.0
     }
 
-    this.uniforms.uCubePos = {
-      type: 'v3',
-      value: new THREE.Vector3(0, 0, 0)
-    }
-
     this.uniforms.uOriginOffset = {
       type: 'v2',
       value: new THREE.Vector2(0.0, 0.0)

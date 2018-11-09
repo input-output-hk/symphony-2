@@ -117,7 +117,7 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 3.0), uTime * 0.00025)) * 0.1;
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += noiseAmount * 0.5;
 
@@ -145,11 +145,12 @@ void main() {
 	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
-	float finalColor = color * 2.0;
+	// color = (clamp(color, 0.0, 1.0) );
+
+	float finalColor = pow(color, 3.0) * 3.0;
 	finalColor *= abs(noiseAmount) * 15.0;
 
-	finalColor = (clamp(finalColor, 0.0, 1.0) );
-
+	//finalColor = (clamp(finalColor, 0.0, 1.0) );
 
 	outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
 	outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
@@ -169,7 +170,23 @@ void main() {
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
-	#include <fog_fragment>
+
+	#ifdef USE_FOG
+
+		#ifdef FOG_EXP2
+
+			float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
+
+		#else
+
+			float fogFactor = smoothstep( fogNear, fogFar, fogDepth );
+
+		#endif
+
+		gl_FragColor.a = mix( gl_FragColor.a, 0.0, fogFactor );
+
+	#endif
+
 	#include <premultiplied_alpha_fragment>
 	#include <dithering_fragment>
 	

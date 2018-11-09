@@ -105,6 +105,23 @@ canvas#sketchboard {
   font-weight: bold;
 }
 
+.auto-pilot-controls {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 9;
+  background: rgba(18,23,38,0.9);
+  padding: 20px 25px 10px;
+  box-shadow: 0 0 3px rgba(255,255,255,0.4), 0 5px 10px rgba(18,23,38,0.6);
+  -webkit-transition: opacity .5s;
+  -moz-transition: opacity .5s;
+  -o-transition: opacity .5s;
+  transition: opacity .5s;
+  left: 80%;
+  width: 200px;
+  height: 171px;
+  bottom: 0;
+}
+
 .cockpit-border {
   position: absolute;
   width: 120%;

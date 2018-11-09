@@ -27,15 +27,16 @@ export default class Audio extends EventEmitter {
 
   generateBlockAudio (blockData, modes, notes) {
     // compute number from hash
-    let total = 0
-    for (let i = 0; i < blockData.hash.length; i++) {
-      // convert from base 16
-      total += parseInt(blockData.hash[i], 16)
-    }
+    // let total = 0
+    // for (let i = 0; i < blockData.hash.length; i++) {
+    //   // convert from base 16
+    //   total += parseInt(blockData.hash[i], 16)
+    // }
 
-    // set unique mode for this block hash
-    let modeIndex = total % Object.keys(modes).length
-    let mode = modes[Object.keys(modes)[modeIndex]]
+    // // set unique mode for this block hash
+    // let modeIndex = total % Object.keys(modes).length
+    //    let mode = modes[Object.keys(modes)[modeIndex]]
+    let mode = modes['aeolian']
 
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
@@ -120,8 +121,6 @@ export default class Audio extends EventEmitter {
   }
 
   fillBuffer (sineArray, vol = 1.0, soundDuration = this.soundDuration) {
-    console.log(soundDuration)
-
     let lArray = new Float32Array(this.sampleRate * soundDuration)
     let rArray = new Float32Array(this.sampleRate * soundDuration)
     let min = Number.MAX_SAFE_INTEGER

@@ -18,8 +18,6 @@ varying vec3 vOffset;
 varying vec2 vPlaneOffset;
 varying vec3 vPosition;
 
-uniform vec3 uCubePos;
-
 #ifndef FLAT_SHADED
 
 	varying vec3 vNormal;

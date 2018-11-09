@@ -77,6 +77,7 @@ export default class Disk extends Base {
     this.material.uniforms.uCamPos.value = args.camPos
     this.material.uniforms.uRadiusMultiplier.value = this.uRadiusMultiplier
     this.material.uniforms.uOffset.value = this.uOffset
+    this.material.uniforms.uMaxHeight.value = args.maxHeight
   }
 }
 
@@ -110,6 +111,11 @@ class DiskMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uOriginOffset = {
       type: 'v2',
       value: new THREE.Vector2(0.0, 0.0)
+    }
+
+    this.uniforms.uMaxHeight = {
+      type: 'f',
+      value: 0.0
     }
 
     this.vertexShader = vertexShader
