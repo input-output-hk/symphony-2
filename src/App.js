@@ -1532,12 +1532,11 @@ class App extends mixin(EventEmitter, Component) {
     if (this.picker) {
       this.updatePicker()
     }
+    
+    this.getClosestBlock()
+    
     if (this.blockReady) {
       this.loadNearestBlocks()
-    }
-    this.getClosestBlock()
-
-    if (this.blockReady) {
       this.setRenderOrder()
 
       this.diskGenerator.update({
@@ -1931,10 +1930,12 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
       logarithmicDepthBuffer: true,
-      canvas: this.canvas
+      canvas: this.canvas,
+      preserveDrawingBuffer: true,
+      autoClear: false
     })
 
-    this.renderer.setClearColor(0xffffff, 0)
+    //    this.renderer.setClearColor(0xffffff, 0)
   }
 
   /**

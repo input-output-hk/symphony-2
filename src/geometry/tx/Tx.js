@@ -14,31 +14,10 @@ export default class Tx extends Base {
 
     this.instanceTotal = 10000
 
-    this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/walkoffame-e/')
-      .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
-      ])
-
     this.material = new TxMaterial({
       flatShading: true,
-      color: 0xffffff,
-      // emissive: 0xfeffaf
-      emissive: 0xffffff,
-      metalness: 1.0,
-      roughness: 0.0,
-      opacity: 0.75,
-      transparent: true,
-      // side: THREE.DoubleSide,
-      // fog: false
-      envMap: this.cubeMap
-    //   normalMap: this.normalMap,
-    //   normalScale: new THREE.Vector2(0.009, 0.009)
+      color: 0x869cff,
+      transparent: true
     })
   }
 
@@ -49,7 +28,7 @@ export default class Tx extends Base {
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
 
     // set up base geometry
-    let coneGeo = new THREE.ConeGeometry(10, 200000, 6)
+    let coneGeo = new THREE.ConeGeometry(10, 25000, 3)
     let coneBufferGeo = new THREE.BufferGeometry().fromGeometry(coneGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(coneBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
@@ -65,7 +44,7 @@ export default class Tx extends Base {
       let z = blockPositions[randHeight * 2 + 1]
 
       this.offsetsArray[index * 3 + 0] = x
-      this.offsetsArray[index * 3 + 1] = 300 + Math.random() * 1700
+      this.offsetsArray[index * 3 + 1] = 400 + Math.random() * 1700
       this.offsetsArray[index * 3 + 2] = z
 
       let object = new THREE.Object3D()
@@ -91,6 +70,36 @@ export default class Tx extends Base {
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('quaternion', quaternions)
 
+    let topVertex = [
+      1, 1, 0,
+      1, 1, 0,
+      1, 1, 0,
+
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0,
+
+      0, 0, 0,
+      0, 0, 0,
+      0, 0, 0
+    ]
+
+    const TVArray = new Float32Array(topVertex)
+    const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
+    this.geometry.addAttribute('topVertex', TVAttribute)
+
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 
     this.mesh.frustumCulled = false
@@ -103,7 +112,7 @@ export default class Tx extends Base {
   }
 }
 
-class TxMaterial extends THREE.MeshStandardMaterial {
+class TxMaterial extends THREE.MeshBasicMaterial {
   constructor (cfg) {
     super(cfg)
     this.type = 'ShaderMaterial'
