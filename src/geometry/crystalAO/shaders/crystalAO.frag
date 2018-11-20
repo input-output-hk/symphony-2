@@ -84,7 +84,23 @@ void main() {
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
-	#include <fog_fragment>
+
+	#ifdef USE_FOG
+
+		#ifdef FOG_EXP2
+
+			float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
+
+		#else
+
+			float fogFactor = smoothstep( fogNear, fogFar, fogDepth );
+
+		#endif
+
+		gl_FragColor.a = mix( gl_FragColor.a, 0.0, fogFactor );
+
+	#endif
+
 	#include <premultiplied_alpha_fragment>
 	#include <dithering_fragment>
 

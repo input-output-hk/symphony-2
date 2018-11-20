@@ -14,7 +14,7 @@ const Config = {
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
-    fogDensity: 0.00020
+    fogDensity: 0.00025
   },
   debug: {
     debugPicker: false,
@@ -37,7 +37,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 75,
+    fov: 50,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType

@@ -28,7 +28,7 @@ export default class Tx extends Base {
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
 
     // set up base geometry
-    let coneGeo = new THREE.ConeGeometry(10, 25000, 3)
+    let coneGeo = new THREE.ConeGeometry(10, 20000, 3)
     let coneBufferGeo = new THREE.BufferGeometry().fromGeometry(coneGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(coneBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
@@ -44,7 +44,7 @@ export default class Tx extends Base {
       let z = blockPositions[randHeight * 2 + 1]
 
       this.offsetsArray[index * 3 + 0] = x
-      this.offsetsArray[index * 3 + 1] = 400 + Math.random() * 1700
+      this.offsetsArray[index * 3 + 1] = 800 + Math.random() * 1200
       this.offsetsArray[index * 3 + 2] = z
 
       let object = new THREE.Object3D()

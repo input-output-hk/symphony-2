@@ -66,12 +66,16 @@ void main() {
 
 	#include <clipping_planes_fragment>
 
+	// vec2 dt = fwidth(vUv) * 50.0;
+	// float maxDerivative = clamp(max(dt.t, dt.s), 0.0, 1.0);
+	//maxDerivative *= maxDerivative;
+
 	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
 	float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 4.0) * 1.0);
 
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
-	vec3 diffuseVar = vec3( clamp( max(0.1, 1.0-vSpentRatio) + vEnvelope, 0.0, 2.0  )  );
+	vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
 	
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
@@ -89,11 +93,11 @@ void main() {
 
 	vec3 dispersion = diffuseColor.rgb * packNormalToRGB( normalSmooth + 0.8 );
 
-	 diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
+	diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	vec3 totalEmissiveRadiance = vec3(clamp((1.0-vSpentRatio + (vEnvelope )), 0.0, 2.5) * 0.2);
+	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.6);
 
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>
@@ -128,45 +132,48 @@ void main() {
 	vec2 tile = truchetPattern(fpos, random( ipos ) * uTime * 0.00005);
 
 	// Maze
-	float color = 0.0;
-	color = smoothstep(tile.x-0.3, tile.x, tile.y)-
+	float tileColor = 0.0;
+	tileColor = smoothstep(tile.x-0.3, tile.x, tile.y)-
 			smoothstep(tile.x, tile.x+0.3, tile.y);
 
 	// further smoothing    
-	color -= smoothstep(tile.x+0.3,tile.x,0.0)-
+	tileColor -= smoothstep(tile.x+0.3,tile.x,0.0)-
 			smoothstep(tile.x,tile.x-0.3,-0.15);
 	
-	color -= smoothstep(tile.y+0.3,tile.y,0.0)-
+	tileColor -= smoothstep(tile.y+0.3,tile.y,0.0)-
 			smoothstep(tile.y,tile.y-0.3,-0.15);
 	
-	color -= smoothstep(tile.x+0.3,tile.x,1.15)-
+	tileColor -= smoothstep(tile.x+0.3,tile.x,1.15)-
 			smoothstep(tile.x,tile.x-0.3,1.0);
 	
-	color -= smoothstep(tile.y+0.3,tile.y,1.15)-
+	tileColor -= smoothstep(tile.y+0.3,tile.y,1.15)-
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
-	// color = (clamp(color, 0.0, 1.0) );
+	float absNoise = abs(noiseAmount) * 15.0;
+	float tileNoiseColor = (pow(tileColor, 3.0) * 3.0) * absNoise;
 
-	float finalColor = pow(color, 3.0) * 3.0;
-	finalColor *= abs(noiseAmount) * 15.0;
+	
 
-	//finalColor = (clamp(finalColor, 0.0, 1.0) );
+	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
-	outgoingLight.b += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
-	outgoingLight.g += (finalColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
+
+	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
+	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
+	//outgoingLight += 0.05;
+	outgoingLight.r += (1.0-vSpentRatio) * 0.4;
 
-	outgoingLight.r += vIsHovered * (sideEdgeAmount * 2.0);
-	outgoingLight.r += vIsSelected * (sideEdgeAmount * 2.0);
-	outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsHovered;
-	outgoingLight.r += (1.0 - step(edgeAmount , 0.95)) * 2.0 * vIsSelected;
+	outgoingLight += vIsHovered * (sideEdgeAmount * 1.2);
+	outgoingLight += vIsSelected * (sideEdgeAmount * 1.2);
+	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
+	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 
-	// outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.1;
+	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.05;
 	//outgoingLight += packNormalToRGB(normal ) * 0.1;
 
-	gl_FragColor = vec4( outgoingLight, diffuseColor.a + (abs(noiseAmount) * 1.0));
+	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>

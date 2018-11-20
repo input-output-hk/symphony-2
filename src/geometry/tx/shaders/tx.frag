@@ -57,7 +57,7 @@ void main() {
 	vec3 outgoingLight = reflectedLight.indirectDiffuse;
 
 	diffuseColor.a *= vTopVertex;
-	diffuseColor.a = pow(diffuseColor.a, 4.0);
+	diffuseColor.a = pow(diffuseColor.a, 10.0);
 
 	#include <envmap_fragment>
 

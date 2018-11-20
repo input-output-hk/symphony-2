@@ -616,15 +616,15 @@ class App extends mixin(EventEmitter, Component) {
       color: 0xffe083
     })
 
-    this.sunLight = new THREE.PointLight(0xffffff, 0.3, 0.0, 0.0)
+    this.sunLight = new THREE.PointLight(0xffffff, 0.5, 0.0, 0.0)
     this.sunLight.position.set(0, 100000, 20000000)
     this.group.add(this.sunLight)
 
-    this.hoveredLight = new THREE.PointLight(0xff0000, 0.1, 500.0)
+    this.hoveredLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
     this.hoveredLight.position.set(-999999, 5, -999999)
     this.group.add(this.hoveredLight)
 
-    this.selectedLight = new THREE.PointLight(0xff0000, 0.1, 500.0)
+    this.selectedLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
     this.selectedLight.position.set(-999999, 5, -999999)
     this.group.add(this.selectedLight)
   }
@@ -839,7 +839,7 @@ class App extends mixin(EventEmitter, Component) {
     console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.crystal.material.side = THREE.FrontSide
+    // this.crystal.material.side = THREE.FrontSide
 
     this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
     this.cubeCamera.position.copy(pos)
@@ -848,9 +848,11 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeCamera.update(this.renderer, this.scene)
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
-    this.crystal.material.side = THREE.DoubleSide
+    // this.crystal.material.side = THREE.DoubleSide
 
     this.plane.material.envMap = this.cubeCamera.renderTarget.texture
+
+    this.trees.material.envMap = this.cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
     console.timeEnd('cubemap')
@@ -1532,9 +1534,9 @@ class App extends mixin(EventEmitter, Component) {
     if (this.picker) {
       this.updatePicker()
     }
-    
+
     this.getClosestBlock()
-    
+
     if (this.blockReady) {
       this.loadNearestBlocks()
       this.setRenderOrder()
@@ -1696,7 +1698,11 @@ class App extends mixin(EventEmitter, Component) {
       this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
     )
 
-    this.createCubeMap(new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0], 2, this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]))
+    this.createCubeMap(
+      new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+        100,
+        this.plane.geometry.attributes.planeOffset.array[indexOffset + 1])
+    )
 
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)

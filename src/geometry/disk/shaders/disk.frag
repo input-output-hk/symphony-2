@@ -140,11 +140,17 @@ void main() {
 	vec4 distVec = vWorldPosition - vec4(uCamPos, 0);
 	float distToFragmentSq = dot(distVec, distVec);
 
-	s.x *= min(1.0, distToFragmentSq* 0.000000001);
+	s.x *= min(1.0, distToFragmentSq * 0.000000001);
+
+	s.x *= smoothstep(0.0, 500.0, abs(uCamPos.y));
 
 	outgoingLight += (1.0-(s.y*0.0000013)) * 0.3;
 	//outgoingLight -= sin(1.0-((s.y + uTime) *0.002 )) * 0.025;
 	outgoingLight -= sin(1.0-((s.y ) *0.002 )) * 0.025;
+
+	float toCenter = (1.0-length(vUv-0.5));
+
+	outgoingLight.r += pow(toCenter, 30.0) * 1.0;
 
 	gl_FragColor = vec4( outgoingLight, s.x );
 
