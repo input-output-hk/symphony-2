@@ -33,7 +33,13 @@ export default class Tree extends Base {
       emissive: 0x000000,
       metalness: 0.8,
       roughness: 0.2,
+      opacity: 1.0,
       transparent: true,
+      // depthTest: false,
+      // depthWrite: false,
+      // side: THREE.DoubleSide,
+      // blending: THREE.AdditiveBlending,
+      // depthWrite: false,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.03, 0.03)
@@ -215,8 +221,10 @@ export default class Tree extends Base {
     let quatArray = new Float32Array(4)
 
     // set up base geometry
+    console.time('treeModel')
     let geometryTemp = await this.loadTreeModel(Object.keys(blockData.tx).length)
     let geometry = geometryTemp.clone()
+    console.timeEnd('treeModel')
 
     let blockPosition = blockData.pos
 

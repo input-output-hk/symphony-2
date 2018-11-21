@@ -37,6 +37,7 @@ varying float vTopVertex;
 varying float vBottomVertex;
 varying float vEnvelope;
 varying vec3 vPickerColor;
+varying vec4 vWorldPosition;
 
 // #ifndef FLAT_SHADED
 
@@ -95,8 +96,10 @@ void main() {
 	transformed.xz *= (scale * attackLoad);
 	// transformed.xz *= scale;
 	transformed.y *= ((offset.y+ (5.0 * vEnvelope)) * attackLoad);
-	transformed.y += (offset.y * 0.5) * attackLoad;
+	//transformed.y += (offset.y * 0.5) * attackLoad;
+	//transformed.y -= offset.y * 0.5;
 
+	transformed.y *= 2.0;
 	transformed.y += (1.0 * isSelected);
 
 	transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
@@ -115,7 +118,7 @@ void main() {
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
 	}
 
-	transformed.y = max(transformed.y, 0.2) * topVertex;
+	//transformed.y = max(transformed.y, 0.2) * topVertex;
 		
     transformed.xz -= (uOriginOffset.xy);
 
@@ -135,6 +138,8 @@ void main() {
 	vBarycentric = barycentric;
 
 	#include <worldpos_vertex>
+	vWorldPosition = worldPosition;
+
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
 

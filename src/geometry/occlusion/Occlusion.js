@@ -5,10 +5,10 @@ import * as THREE from 'three'
 import Base from '../base/Base'
 
 // shaders
-import fragmentShader from './shaders/plane.frag'
-import vertexShader from './shaders/plane.vert'
+import fragmentShader from './shaders/occlusion.frag'
+import vertexShader from './shaders/occlusion.vert'
 
-export default class Plane extends Base {
+export default class Occlusion extends Base {
   constructor (args) {
     super(args)
 
@@ -32,19 +32,10 @@ export default class Plane extends Base {
         '0003.png'
       ])
 
-    this.material = new PlaneMaterial({
-      flatShading: true,
+    this.material = new OcclusionMaterial({
       color: 0xffffff,
-      emissive: 0x000000,
-      metalness: 0.9,
-      roughness: 0.1,
-      opacity: 0.6,
-      transparent: true,
-      side: THREE.FrontSide,
-      envMap: this.cubeMap
-      // normalMap: this.normalMap,
-      // normalScale: new THREE.Vector2(0.009, 0.009)
-      // fog: false
+      emissive: 0xffffff,
+      transparent: true
     })
   }
 
@@ -53,12 +44,41 @@ export default class Plane extends Base {
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 1, 1, 1, 1)
-    let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize * 0.18, 0.01, 1, 1, 1)
+    let planeGeoTop = planeGeo.clone()
+    let planeGeoBottom = planeGeo.clone()
+
+    planeGeo.rotateX(Math.PI / 2)
+    planeGeo.rotateY(Math.PI / 2)
+    planeGeo.translate(-300, -1.05, 0)
+    planeGeo.scale(1, 1, 1.1)
+
+    planeGeoTop.rotateX(Math.PI / 2)
+    planeGeoTop.scale(1.18, 1, 10)
+    planeGeoTop.translate(0, -1.05, -705)
+
+    planeGeoBottom.rotateX(Math.PI / 2)
+    planeGeoBottom.scale(1.18, 1, 10)
+    planeGeoBottom.translate(0, -1.05, 705)
+
+    let planeMesh = new THREE.Mesh(planeGeo)
+    let planeMeshTop = new THREE.Mesh(planeGeoTop)
+    let planeMeshBottom = new THREE.Mesh(planeGeoBottom)
+
+    let singleGeometry = new THREE.Geometry()
+
+    planeMesh.updateMatrix()
+    singleGeometry.merge(planeMesh.geometry, planeMesh.matrix)
+
+    planeMeshTop.updateMatrix()
+    singleGeometry.merge(planeMeshTop.geometry, planeMeshTop.matrix)
+
+    planeMeshBottom.updateMatrix()
+    singleGeometry.merge(planeMeshBottom.geometry, planeMeshBottom.matrix)
+
+    let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(singleGeometry)
+
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
-    this.geometry.rotateX(Math.PI / 2)
-    this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -0.5, 0)
 
     let blockPosition = blockGeoData.blockData.pos
 
@@ -118,7 +138,7 @@ export default class Plane extends Base {
   }
 }
 
-class PlaneMaterial extends THREE.MeshStandardMaterial {
+class OcclusionMaterial extends THREE.MeshStandardMaterial {
   constructor (cfg) {
     super(cfg)
     this.type = 'ShaderMaterial'

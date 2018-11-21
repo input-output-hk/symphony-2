@@ -21,6 +21,7 @@ varying float vBottomVertex;
 // varying float vCenterTopVertex;
 // varying float vCenterBottomVertex;
 varying float vEnvelope;
+varying vec4 vWorldPosition;
 
 #ifndef STANDARD
 	uniform float clearCoat;
@@ -150,7 +151,7 @@ void main() {
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
 	float absNoise = abs(noiseAmount) * 15.0;
-	float tileNoiseColor = (pow(tileColor, 3.0) * 3.0) * absNoise;
+	float tileNoiseColor = (pow(tileColor, 3.0) * 2.0) * absNoise;
 
 	
 
@@ -170,8 +171,10 @@ void main() {
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 
-	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.05;
+	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.055;
 	//outgoingLight += packNormalToRGB(normal ) * 0.1;
+
+	diffuseColor.a *= smoothstep(-30.0, 0.0, vWorldPosition.y);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

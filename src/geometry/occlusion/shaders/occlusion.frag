@@ -3,6 +3,8 @@ varying vec3 vRefract[3];
 //varying float vReflectionFactor;
 varying vec3 worldNormal;
 
+varying vec3 vWorldPosition;
+
 #define PHYSICAL
 
 uniform vec3 diffuse;
@@ -81,26 +83,11 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	gl_FragColor = vec4( outgoingLight.rgb, diffuseColor.a );
+	gl_FragColor = vec4( outgoingLight.rgb, 0.0 );
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
 
-	#ifdef USE_FOG
-
-		#ifdef FOG_EXP2
-
-			float fogFactor = whiteCompliment( exp2( - fogDensity * fogDensity * fogDepth * fogDepth * LOG2 ) );
-
-		#else
-
-			float fogFactor = smoothstep( fogNear, fogFar, fogDepth );
-
-		#endif
-
-		gl_FragColor.a = mix( gl_FragColor.a, 0.0, fogFactor );
-
-	#endif
 
 	#include <premultiplied_alpha_fragment>
 	#include <dithering_fragment>

@@ -213,10 +213,12 @@ export default class Crystal extends Base {
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.02, 0))
-    tubeGeo.vertices[0].sub(new THREE.Vector3(0, 0.01, 0))
-    tubeGeo.vertices[2].sub(new THREE.Vector3(0, 0.01, 0))
+    tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
+    tubeGeo.vertices[0].add(new THREE.Vector3(0, 0.02, 0))
+    tubeGeo.vertices[1].add(new THREE.Vector3(0, 0.02, 0))
+    tubeGeo.vertices[2].add(new THREE.Vector3(0, 0.01, 0))
     tubeGeo.vertices[4].sub(new THREE.Vector3(0, 0.01, 0))
+    tubeGeo.vertices[13].sub(new THREE.Vector3(0, 0.02, 0))
 
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)

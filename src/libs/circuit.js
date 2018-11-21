@@ -76,7 +76,7 @@ export default class Circuit extends EventEmitter {
             try {
               canvasRef.put(blob).then(function (snapshot) {
                 let texture = new THREE.Texture(this.canvas)
-                
+
                 resolve(texture)
               }.bind(this))
             } catch (error) {

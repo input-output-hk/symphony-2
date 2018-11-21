@@ -11,8 +11,6 @@ attribute vec4 quaternion;
 
 varying vec3 vViewPosition;
 
-varying vec3 vWorldPosition;
-
 varying vec3 vTransformed;
 varying vec3 vOffset;
 varying vec2 vPlaneOffset;

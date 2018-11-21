@@ -294,15 +294,12 @@ export default class Audio extends EventEmitter {
   }
 
   startAudio (blockData, arrayBuffers) {
-    console.time('fillBuffer')
-
     let lArray = this.buffers[blockData.height].getChannelData(0)
     let rArray = this.buffers[blockData.height].getChannelData(1)
     for (let index = 0; index < arrayBuffers.lArray.length; index++) {
       lArray[index] = arrayBuffers.lArray[index]
       rArray[index] = arrayBuffers.rArray[index]
     }
-    console.timeEnd('fillBuffer')
 
     this.audioSources[blockData.height] = this.audioContext.createBufferSource()
     this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
