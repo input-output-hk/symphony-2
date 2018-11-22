@@ -28,6 +28,22 @@ export default class Tree extends Base {
         '0003.png'
       ])
 
+    this.merkleMap = {
+      4096: 13,
+      2048: 12,
+      1024: 11,
+      512: 10,
+      256: 9,
+      128: 8,
+      64: 7,
+      32: 6,
+      16: 5,
+      8: 4,
+      4: 3,
+      2: 2,
+      1: 2
+    }
+
     this.material = new TreeMaterial({
       color: 0xaaaaaa,
       emissive: 0x000000,
@@ -60,29 +76,13 @@ export default class Tree extends Base {
       nTX |= nTX >> 16
       nTX++
 
-      let merkleMap = {
-        4096: 13,
-        2048: 12,
-        1024: 11,
-        512: 10,
-        256: 9,
-        128: 8,
-        64: 7,
-        32: 6,
-        16: 5,
-        8: 4,
-        4: 3,
-        2: 2,
-        1: 2
-      }
-
-      if (typeof this.loadedModels[merkleMap[nTX]] !== 'undefined') {
-        resolve(this.loadedModels[merkleMap[nTX]])
-      }
+      // if (typeof this.loadedModels[merkleMap[nTX]] !== 'undefined') {
+      //   resolve(this.loadedModels[merkleMap[nTX]])
+      // }
 
       // Load a glTF resource
       await this.gltfLoader.load(
-        'assets/models/gltf/binary-tree-' + merkleMap[nTX] + '.gltf',
+        'assets/models/gltf/binary-tree-' + this.merkleMap[nTX] + '.gltf',
         function (gltf) {
           let treeMesh = gltf.scene.children[0]
 
@@ -102,10 +102,10 @@ export default class Tree extends Base {
           geometry.computeVertexNormals()
           geometry.translate(0, -380.0, 0)
 
-          this.loadedModels[merkleMap[nTX]] = geometry
+          // this.loadedModels[merkleMap[nTX]] = geometry
 
           resolve(geometry)
-        }.bind(this),
+        },
         function () {},
         function (error) {
           console.log('An error occurred')
@@ -145,7 +145,7 @@ export default class Tree extends Base {
     // attributes
     let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
     let quaternions = new THREE.InstancedBufferAttribute(quatArray, 4)
-    let display = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal).fill(1), 1)
+    let display = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal).fill(0), 1)
 
     this.geometry.addAttribute('planeOffset', planeOffsets)
     this.geometry.addAttribute('quaternion', quaternions)
@@ -220,11 +220,26 @@ export default class Tree extends Base {
     let planeOffsetsArray = new Float32Array(2)
     let quatArray = new Float32Array(4)
 
+    let nTX = Object.keys(blockData.tx).length
+
+    nTX--
+    nTX |= nTX >> 1
+    nTX |= nTX >> 2
+    nTX |= nTX >> 4
+    nTX |= nTX >> 8
+    nTX |= nTX >> 16
+    nTX++
+
     // set up base geometry
-    console.time('treeModel')
-    let geometryTemp = await this.loadTreeModel(Object.keys(blockData.tx).length)
-    let geometry = geometryTemp.clone()
-    console.timeEnd('treeModel')
+    let geometry
+
+    if (typeof this.loadedModels[this.merkleMap[nTX]] !== 'undefined') {
+      geometry = this.loadedModels[this.merkleMap[nTX]].clone()
+    } else {
+      let geometryTemp = await this.loadTreeModel(Object.keys(blockData.tx).length)
+      geometry = geometryTemp.clone()
+      this.loadedModels[this.merkleMap[nTX]] = geometry
+    }
 
     let blockPosition = blockData.pos
 

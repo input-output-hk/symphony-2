@@ -823,6 +823,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.blockReady = true
 
+    // this.addClosestBlockDetail()
+
     return true
   }
 
@@ -988,7 +990,7 @@ class App extends mixin(EventEmitter, Component) {
 
   async toggleUndersideView () {
     this.stopAutoPilotAnimation()
-    await this.updateClosestTrees()
+    // await this.updateClosestTrees()
 
     let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -300, this.closestBlock.blockData.pos.z - 100)
     let toTarget = new THREE.Vector3(this.closestBlock.blockData.pos.x - 90, 0, this.closestBlock.blockData.pos.z - 90)
@@ -1107,12 +1109,12 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      // let start = this.closestHeight - 20
-      // let end = this.closestHeight + 20
-      // if (this.state.controlType === 'fly') {
-      let start = 0
-      let end = this.blockPositions.length / 2
-      // }
+      let start = this.closestHeight - 20
+      let end = this.closestHeight + 20
+      if (this.state.controlType === 'fly') {
+        start = 0
+        end = this.blockPositions.length / 2
+      }
 
       for (let index = start; index < end; index++) {
         const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
@@ -1148,8 +1150,6 @@ class App extends mixin(EventEmitter, Component) {
           delete this.loadedHeights[ i ]
         }
       })
-
-
 
       let closestBlocksData = []
       let closestBlocksGeoData = []
@@ -1648,9 +1648,7 @@ class App extends mixin(EventEmitter, Component) {
       closestBlock: this.closestBlock
     })
 
-    console.time('treeGen')
     this.updateClosestTrees()
-    console.timeEnd('treeGen')
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
@@ -1751,32 +1749,32 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async updateClosestTrees () {
-    // let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
-    // if (this.centerTree) {
-    //   this.group.remove(this.centerTree)
-    // }
-    // this.centerTree = centerTree
-    // this.centerTree.renderOrder = -1
-    // this.group.add(this.centerTree)
+    let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
+    if (this.centerTree) {
+      this.group.remove(this.centerTree)
+    }
+    this.centerTree = centerTree
+    this.centerTree.renderOrder = -1
+    this.group.add(centerTree)
 
-    // if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-    //   let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
-    //   if (this.lTree) {
-    //     this.group.remove(this.lTree)
-    //   }
-    //   this.lTree = lTree
-    //   this.lTree.renderOrder = -1
-    //   this.group.add(this.lTree)
-    // }
-    // if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-    //   let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
-    //   if (this.rTree) {
-    //     this.group.remove(this.rTree)
-    //   }
-    //   this.rTree = rTree
-    //   this.rTree.renderOrder = -1
-    //   this.group.add(this.rTree)
-    // }
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
+      let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
+      if (this.lTree) {
+        this.group.remove(this.lTree)
+      }
+      this.lTree = lTree
+      this.lTree.renderOrder = -1
+      this.group.add(this.lTree)
+    }
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
+      let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
+      if (this.rTree) {
+        this.group.remove(this.rTree)
+      }
+      this.rTree = rTree
+      this.rTree.renderOrder = -1
+      this.group.add(this.rTree)
+    }
 
     this.trees.geometry.attributes.display.array.forEach((height, i) => {
       this.trees.geometry.attributes.display.array[i] = 1
@@ -1825,7 +1823,7 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 3]
     )
 
-    texture.minFilter = THREE.LinearMipMapLinearFilter
+    // texture.minFilter = THREE.LinearMipMapLinearFilter
 
     undersidePlane.material.map = texture
     undersidePlane.rotation.x = 0
