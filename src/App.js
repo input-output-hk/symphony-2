@@ -84,7 +84,6 @@ class App extends mixin(EventEmitter, Component) {
     this.clock = new THREE.Clock()
 
     this.loadedHeights = []
-    this.loadedCircuits = []
 
     this.mousePos = new THREE.Vector2() // keep track of mouse position
 
@@ -142,6 +141,8 @@ class App extends mixin(EventEmitter, Component) {
 
       this.planetMesh.renderOrder = 7
     } else {
+      this.occlusion.renderOrder = 10
+
       this.underside.position.y = -1.05
       this.undersideL.position.y = -1.05
       this.undersideR.position.y = -1.05
@@ -1128,8 +1129,8 @@ class App extends mixin(EventEmitter, Component) {
       for (const height in this.blockGeoDataObject) {
         if (this.blockGeoDataObject.hasOwnProperty(height)) {
           if (
-            height < this.closestHeight - 10 ||
-            height > this.closestHeight + 10
+            height < this.closestHeight - 25 ||
+            height > this.closestHeight + 25
           ) {
             delete this.blockGeoDataObject[height]
 
@@ -1140,19 +1141,15 @@ class App extends mixin(EventEmitter, Component) {
 
       this.loadedHeights.forEach((height, i) => {
         if (
-          height < this.closestHeight - 10 ||
-          height > this.closestHeight + 10
+          height < this.closestHeight - 25 ||
+          height > this.closestHeight + 25
         ) {
+          console.log('deleted height at: ' + height)
           delete this.loadedHeights[ i ]
         }
       })
 
-      if (this.loadedHeights.indexOf(this.closestHeight) !== -1) {
-        this.loading = false
-        return
-      }
 
-      this.loadedHeights.push(this.closestHeight)
 
       let closestBlocksData = []
       let closestBlocksGeoData = []
@@ -1160,7 +1157,7 @@ class App extends mixin(EventEmitter, Component) {
       let nearestBlocks = []
 
       nearestBlocks.push(this.closestHeight)
-      for (let i = 1; i < 50; i++) {
+      for (let i = 1; i < 25; i++) {
         let next = this.closestHeight + i
         let prev = this.closestHeight - i
 
@@ -1174,16 +1171,20 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       nearestBlocks.forEach((height) => {
-        let blockGeoDataTemp = {}
-        blockGeoDataTemp.blockData = {}
-        blockGeoDataTemp.blockData.height = height
-        blockGeoDataTemp.blockData.pos = {}
-        blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
-        blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+        if (this.loadedHeights.indexOf(height) === -1) {
+          this.loadedHeights.push(height)
 
-        this.planeGenerator.updateGeometry(blockGeoDataTemp)
-        this.occlusionGenerator.updateGeometry(blockGeoDataTemp)
-        this.treeGenerator.updateGeometry(blockGeoDataTemp)
+          let blockGeoDataTemp = {}
+          blockGeoDataTemp.blockData = {}
+          blockGeoDataTemp.blockData.height = height
+          blockGeoDataTemp.blockData.pos = {}
+          blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
+          blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+
+          this.planeGenerator.updateGeometry(blockGeoDataTemp)
+          this.occlusionGenerator.updateGeometry(blockGeoDataTemp)
+          this.treeGenerator.updateGeometry(blockGeoDataTemp)
+        }
       })
 
       const nearestBlocksWorker = new NearestBlocksWorker()
@@ -1647,6 +1648,10 @@ class App extends mixin(EventEmitter, Component) {
       closestBlock: this.closestBlock
     })
 
+    console.time('treeGen')
+    this.updateClosestTrees()
+    console.timeEnd('treeGen')
+
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
     for (const height in this.audio.audioSources) {
@@ -1743,10 +1748,6 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
-
-    console.time('treeGen')
-    this.updateClosestTrees()
-    console.timeEnd('treeGen')
   }
 
   async updateClosestTrees () {
@@ -1777,23 +1778,23 @@ class App extends mixin(EventEmitter, Component) {
     //   this.group.add(this.rTree)
     // }
 
-    // this.trees.geometry.attributes.display.array.forEach((height, i) => {
-    //   this.trees.geometry.attributes.display.array[i] = 1
-    // })
+    this.trees.geometry.attributes.display.array.forEach((height, i) => {
+      this.trees.geometry.attributes.display.array[i] = 1
+    })
 
-    // let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
-    // this.trees.geometry.attributes.display.array[treeHeight] = 0
+    let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
+    this.trees.geometry.attributes.display.array[treeHeight] = 0
 
-    // if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
-    //   treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
-    //   this.trees.geometry.attributes.display.array[treeHeight] = 0
-    // }
+    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
+      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
+      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    }
 
-    // if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
-    //   treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
-    //   this.trees.geometry.attributes.display.array[treeHeight] = 0
-    // }
-    // this.trees.geometry.attributes.display.needsUpdate = true
+    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
+      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
+      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    }
+    this.trees.geometry.attributes.display.needsUpdate = true
   }
 
   async updateMerkleDetail (blockGeoData, circuitIndex, texture) {

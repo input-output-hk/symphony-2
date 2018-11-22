@@ -55,11 +55,11 @@ export default class Occlusion extends Base {
 
     planeGeoTop.rotateX(Math.PI / 2)
     planeGeoTop.scale(1.18, 1, 10)
-    planeGeoTop.translate(0, -1.05, -705)
+    planeGeoTop.translate(0, -1.05, -704.5)
 
     planeGeoBottom.rotateX(Math.PI / 2)
     planeGeoBottom.scale(1.18, 1, 10)
-    planeGeoBottom.translate(0, -1.05, 705)
+    planeGeoBottom.translate(0, -1.05, 704.5)
 
     let planeMesh = new THREE.Mesh(planeGeo)
     let planeMeshTop = new THREE.Mesh(planeGeoTop)

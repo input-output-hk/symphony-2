@@ -483,6 +483,7 @@ export default class Crystal extends Base {
     this.material.uniforms.uTime.value = args.time
     this.material.uniforms.uAudioTime.value = args.time
     this.material.uniforms.uCamPos.value = args.camPos
+    this.material.uniforms.uCamPosYPositive.value = args.camPos.y > 0
     this.material.uniforms.uAutoPilot.value = args.autoPilot
   }
 }
@@ -507,6 +508,11 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.uniforms.uCamPos = {
       type: 'v3',
       value: new THREE.Vector3(0.0, 0.0, 0.0)
+    }
+
+    this.uniforms.uCamPosYPositive = {
+      type: 'f',
+      value: 1.0
     }
 
     this.uniforms.uAudioTime = {

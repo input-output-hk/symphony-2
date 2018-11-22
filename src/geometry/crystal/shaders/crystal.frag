@@ -10,6 +10,7 @@ uniform float roughness;
 uniform float metalness;
 uniform float opacity;
 uniform float uTime;
+uniform float uCamPosYPositive;
 
 varying float vIsSelected;
 varying float vIsHovered;

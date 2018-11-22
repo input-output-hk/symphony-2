@@ -100,7 +100,7 @@ export default class Tree extends Base {
           let geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
           geometry.computeVertexNormals()
-          geometry.translate(0, -383.0, 0)
+          geometry.translate(0, -380.0, 0)
 
           this.loadedModels[merkleMap[nTX]] = geometry
 

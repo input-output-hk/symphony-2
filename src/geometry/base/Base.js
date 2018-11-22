@@ -79,8 +79,8 @@ export default class Base {
       if (txValue > 2000) {
         txValue = 2000
       }
-      if (txValue < 5) {
-        txValue = 5
+      if (txValue < 2) {
+        txValue = 2
       }
 
       txValuesAttr.setX(
