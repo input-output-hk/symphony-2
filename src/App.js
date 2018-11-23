@@ -122,13 +122,23 @@ class App extends mixin(EventEmitter, Component) {
    */
   setRenderOrder () {
     if (this.camera.position.y > 0) {
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = false
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
+
       this.occlusion.renderOrder = 0
 
       this.txs.renderOrder = 8
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
-      this.disk.renderOrder = 4
+      this.disk.renderOrder = 2
       this.plane.renderOrder = 3
       // this.crystalAO.renderOrder = 6
 
@@ -142,6 +152,16 @@ class App extends mixin(EventEmitter, Component) {
 
       this.planetMesh.renderOrder = 7
     } else {
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = true
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
+
       this.occlusion.renderOrder = 10
 
       this.underside.position.y = -1.05
@@ -638,9 +658,9 @@ class App extends mixin(EventEmitter, Component) {
       color: 0xffe083
     })
 
-    // this.sunLight = new THREE.PointLight(0xffffff, 0.5, 0.0, 0.0)
-    // this.sunLight.position.set(0, 100000, 20000000)
-    // this.group.add(this.sunLight)
+    this.sunLight = new THREE.PointLight(0xffffff, 0.5, 0.0, 0.0)
+    this.sunLight.position.set(0, 100000, 20000000)
+    this.group.add(this.sunLight)
 
     this.hoveredLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
     this.hoveredLight.position.set(-999999, 5, -999999)
@@ -805,8 +825,6 @@ class App extends mixin(EventEmitter, Component) {
 
     let undersideGroup = await this.undersideGenerator.init()
 
-
-
     this.underside = undersideGroup.underside
     this.undersideL = undersideGroup.undersideL
     this.undersideR = undersideGroup.undersideR
@@ -833,6 +851,16 @@ class App extends mixin(EventEmitter, Component) {
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
     // this.plane.material.envMap = this.cubeCamera.renderTarget.texture
     this.trees.material.envMap = this.cubeCamera.renderTarget.texture
+
+    if (this.centerTree) {
+      this.centerTree.material.envMap = this.cubeCamera.renderTarget.texture
+    }
+    if (this.lTree) {
+      this.lTree.material.envMap = this.cubeCamera.renderTarget.texture
+    }
+    if (this.rTree) {
+      this.rTree.material.envMap = this.cubeCamera.renderTarget.texture
+    }
 
     this.scene.background = this.cubeMap
     // console.timeEnd('cubemap')
@@ -1746,10 +1774,12 @@ class App extends mixin(EventEmitter, Component) {
 
   async updateClosestTrees () {
     let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
+
     if (this.centerTree) {
       this.group.remove(this.centerTree)
     }
     this.centerTree = centerTree
+    this.centerTree.material = this.treeGenerator.materialC
     this.centerTree.renderOrder = -1
     this.group.add(centerTree)
 
@@ -1759,12 +1789,14 @@ class App extends mixin(EventEmitter, Component) {
         this.group.remove(this.lTree)
       }
       this.lTree = lTree
+      this.lTree.material = this.treeGenerator.materialL
       this.lTree.renderOrder = -1
       this.group.add(this.lTree)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
       let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
       if (this.rTree) {
+        this.rTree.material = this.treeGenerator.materialR
         this.group.remove(this.rTree)
       }
       this.rTree = rTree
@@ -1808,9 +1840,6 @@ class App extends mixin(EventEmitter, Component) {
         break
       case 2:
         undersidePlane = this.undersideR
-        break
-
-      default:
         break
     }
 

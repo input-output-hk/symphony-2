@@ -218,7 +218,6 @@ export default class Crystal extends Base {
     tubeGeo.vertices[1].add(new THREE.Vector3(0, 0.02, 0))
     tubeGeo.vertices[2].add(new THREE.Vector3(0, 0.01, 0))
     tubeGeo.vertices[4].sub(new THREE.Vector3(0, 0.01, 0))
-    tubeGeo.vertices[13].sub(new THREE.Vector3(0, 0.02, 0))
 
     let tubeBufferGeo = new THREE.BufferGeometry().fromGeometry(tubeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)

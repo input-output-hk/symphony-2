@@ -172,9 +172,12 @@ void main() {
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 
-	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.055;
+	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.025;
 	//outgoingLight += packNormalToRGB(normal ) * 0.1;
 
+	if (vWorldPosition.y < 0.0) {
+		diffuseColor.a *= 0.8;
+	}
 	diffuseColor.a *= smoothstep(-30.0, 0.0, vWorldPosition.y);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);

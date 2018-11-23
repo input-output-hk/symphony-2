@@ -61,6 +61,10 @@ export default class Tree extends Base {
       normalScale: new THREE.Vector2(0.03, 0.03)
     })
 
+    this.materialC = this.material.clone()
+    this.materialL = this.material.clone()
+    this.materialR = this.material.clone()
+
     this.indexHeightMap = {}
 
     this.index = 0
