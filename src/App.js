@@ -51,6 +51,7 @@ import Occlusion from './geometry/occlusion/Occlusion'
 import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
 import Tx from './geometry/tx/Tx'
+import Underside from './geometry/underside/Underside'
 
 // CSS
 import './App.css'
@@ -201,6 +202,11 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.treeGenerator = new Tree({
+      planeSize: this.planeSize,
+      config: this.config
+    })
+
+    this.undersideGenerator = new Underside({
       planeSize: this.planeSize,
       config: this.config
     })
@@ -797,39 +803,25 @@ class App extends mixin(EventEmitter, Component) {
 
     this.closestBlock = blockGeoData
 
-    let undersideGeometry = new THREE.PlaneBufferGeometry(this.planeSize + 10, this.planeSize + 10, 1)
-    let undersideMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      side: THREE.DoubleSide
-    })
-    this.underside = new THREE.Mesh(undersideGeometry, undersideMaterial)
-    this.underside.frustumCulled = false
-    this.underside.visible = false
+    let undersideGroup = await this.undersideGenerator.init()
 
-    this.underside.scale.set(1.0, -1.0, 1.0)
-    this.underside.position.y = -0.1
-    this.underside.updateMatrix()
+
+
+    this.underside = undersideGroup.underside
+    this.undersideL = undersideGroup.undersideL
+    this.undersideR = undersideGroup.undersideR
+
     this.group.add(this.underside)
-
-    let undersideMaterialL = undersideMaterial.clone()
-    this.undersideL = this.underside.clone()
-    this.undersideL.material = undersideMaterialL
     this.group.add(this.undersideL)
-
-    let undersideMaterialR = undersideMaterial.clone()
-    this.undersideR = this.underside.clone()
-    this.undersideR.material = undersideMaterialR
     this.group.add(this.undersideR)
 
     this.blockReady = true
-
-    // this.addClosestBlockDetail()
 
     return true
   }
 
   createCubeMap (pos) {
-    console.time('cubemap')
+    // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
     this.cubeCamera = new THREE.CubeCamera(1.0, 3000, 512)
@@ -843,7 +835,7 @@ class App extends mixin(EventEmitter, Component) {
     this.trees.material.envMap = this.cubeCamera.renderTarget.texture
 
     this.scene.background = this.cubeMap
-    console.timeEnd('cubemap')
+    // console.timeEnd('cubemap')
   }
 
   initControls () {
@@ -1526,6 +1518,10 @@ class App extends mixin(EventEmitter, Component) {
         time: window.performance.now()
       })
 
+      this.undersideGenerator.update({
+        time: window.performance.now()
+      })
+
       this.crystalGenerator.update({
         time: window.performance.now(),
         camPos: this.camera.position,
@@ -1780,17 +1776,22 @@ class App extends mixin(EventEmitter, Component) {
       this.trees.geometry.attributes.display.array[i] = 1
     })
 
-    let treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
-    this.trees.geometry.attributes.display.array[treeHeight] = 0
+    let treeHeightIndex = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
 
-    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
-      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    this.trees.geometry.attributes.display.array[treeHeightIndex] = 0
+
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
+      if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1] !== 'undefined') {
+        treeHeightIndex = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height - 1]
+        this.trees.geometry.attributes.display.array[treeHeightIndex] = 0
+      }
     }
 
-    if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      treeHeight = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
-      this.trees.geometry.attributes.display.array[treeHeight] = 0
+    if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
+      if (typeof this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1] !== 'undefined') {
+        treeHeightIndex = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height + 1]
+        this.trees.geometry.attributes.display.array[treeHeightIndex] = 0
+      }
     }
     this.trees.geometry.attributes.display.needsUpdate = true
   }

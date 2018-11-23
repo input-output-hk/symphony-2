@@ -38,7 +38,7 @@ export default class Plane extends Base {
       emissive: 0x000000,
       metalness: 0.9,
       roughness: 0.1,
-      opacity: 0.6,
+      opacity: 0.45,
       transparent: true,
       side: THREE.FrontSide,
       envMap: this.cubeMap

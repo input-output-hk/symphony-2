@@ -63,6 +63,8 @@ export default class Tree extends Base {
 
     this.indexHeightMap = {}
 
+    this.index = 0
+
     this.loadedModels = {}
   }
 
@@ -157,7 +159,7 @@ export default class Tree extends Base {
 
     this.indexHeightMap[blockGeoData.blockData.height] = this.index
 
-    this.index++
+    // this.index++
 
     return this.mesh
   }
