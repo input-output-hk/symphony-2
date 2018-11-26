@@ -50,8 +50,9 @@ import Plane from './geometry/plane/Plane'
 import Occlusion from './geometry/occlusion/Occlusion'
 import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
-import Tx from './geometry/tx/Tx'
+// import Tx from './geometry/tx/Tx'
 import Underside from './geometry/underside/Underside'
+import Particles from './geometry/particles/Particles'
 
 // CSS
 import './App.css'
@@ -134,7 +135,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.occlusion.renderOrder = 0
 
-      this.txs.renderOrder = 8
+      // this.txs.renderOrder = 8
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -231,7 +232,12 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
-    this.txGenerator = new Tx({
+    // this.txGenerator = new Tx({
+    //   config: this.config
+    // })
+
+    this.particlesGenerator = new Particles({
+      planeSize: this.planeSize,
       config: this.config
     })
 
@@ -781,7 +787,7 @@ class App extends mixin(EventEmitter, Component) {
     // this.crystalAO.translateY(0.1)
     // this.group.add(this.crystalAO)
 
-    this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
+    // this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
 
     this.group.add(this.txs)
 
@@ -792,6 +798,13 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.plane)
 
     this.occlusion = await this.occlusionGenerator.init(blockGeoData)
+
+    this.particles = await this.particlesGenerator.init({
+      blockGeoData: blockGeoData,
+      renderer: this.renderer
+    })
+
+    this.group.add(this.particles)
 
     this.group.add(this.occlusion)
 
@@ -812,9 +825,10 @@ class App extends mixin(EventEmitter, Component) {
     this.planeGenerator.updateOriginOffset(this.originOffset)
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
+    this.particlesGenerator.updateOriginOffset(this.originOffset)
     // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
-    this.txGenerator.updateOriginOffset(this.originOffset)
+    // this.txGenerator.updateOriginOffset(this.originOffset)
 
     this.planetMesh.position.x -= this.originOffset.x
     this.planetMesh.position.z -= this.originOffset.y
@@ -1542,11 +1556,15 @@ class App extends mixin(EventEmitter, Component) {
         maxHeight: this.maxHeight
       })
 
-      this.txGenerator.update({
+      // this.txGenerator.update({
+      //   time: window.performance.now()
+      // })
+
+      this.undersideGenerator.update({
         time: window.performance.now()
       })
 
-      this.undersideGenerator.update({
+      this.particlesGenerator.update({
         time: window.performance.now()
       })
 
@@ -1565,8 +1583,8 @@ class App extends mixin(EventEmitter, Component) {
     if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
-    // this.renderer.render(this.scene, this.camera)
-      this.composer.render()
+      this.renderer.render(this.scene, this.camera)
+      // this.composer.render()
     }
   }
 
@@ -1755,9 +1773,10 @@ class App extends mixin(EventEmitter, Component) {
     this.planeGenerator.updateOriginOffset(this.originOffset)
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
+    this.particlesGenerator.updateOriginOffset(this.originOffset)
     // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
-    this.txGenerator.updateOriginOffset(this.originOffset)
+    // this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
@@ -1921,7 +1940,7 @@ class App extends mixin(EventEmitter, Component) {
    */
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
+      antialias: true,
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })

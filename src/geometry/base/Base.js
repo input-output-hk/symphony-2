@@ -76,8 +76,8 @@ export default class Base {
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 2000) {
-        txValue = 2000
+      if (txValue > 1000) {
+        txValue = 1000
       }
       if (txValue < 2) {
         txValue = 2
