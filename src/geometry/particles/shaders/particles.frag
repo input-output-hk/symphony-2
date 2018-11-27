@@ -1,6 +1,8 @@
 uniform vec3 diffuse;
 uniform float opacity;
 
+uniform float uTime;
+
 #include <common>
 #include <color_pars_fragment>
 #include <map_particle_pars_fragment>

@@ -178,7 +178,7 @@ void main() {
 	if (vWorldPosition.y < 0.0) {
 		diffuseColor.a *= 0.8;
 	}
-	diffuseColor.a *= smoothstep(-30.0, 0.0, vWorldPosition.y);
+	diffuseColor.a *= smoothstep(-60.0, 0.0, vWorldPosition.y);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

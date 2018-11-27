@@ -23,22 +23,20 @@ void main() {
 
 	transformed.xz -= uOriginOffset;
 
-	transformed.xyz += uSpawnLocation;
-
-
+	transformed.xyz += uSpawnLocation.xyz;
 
 	#include <morphtarget_vertex>
 	#include <project_vertex>
 
-	gl_PointSize = 0.05;
+	gl_PointSize = 1.2;
 
-	#ifdef USE_SIZEATTENUATION
+	// #ifdef USE_SIZEATTENUATION
 
-		bool isPerspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 );
+	// 	bool isPerspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 );
 
-		if ( isPerspective ) gl_PointSize *= ( scale / - mvPosition.z );
+	// 	if ( isPerspective ) gl_PointSize *= ( scale / - mvPosition.z );
 
-	#endif
+	// #endif
 
 	#include <logdepthbuf_vertex>
 	#include <clipping_planes_vertex>

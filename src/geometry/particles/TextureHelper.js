@@ -35,43 +35,44 @@ export default class TextureHelper {
   }
 
   createPositionTexture ({
-    storedPositions = new Float32Array()
+    defaultPositions = new Float32Array()
   } = {}) {
-    let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 3)
+    let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 4)
     for (let i = 0; i < this.nodeCount; i++) {
       let location = new THREE.Vector3(
-        Math.random() * 1 - 0.5,
-        Math.random() * 1 - 0.5,
-        Math.random() * 1 - 0.5
+        Math.random() * 1,
+        Math.random() * 1,
+        Math.random() * 1
       )
 
-      location = location.normalize().multiplyScalar(Math.random() * 50)
+      location = location.normalize().multiplyScalar(Math.random() * 10)
 
-      textureArray[i * 3 + 0] = location.x
-      textureArray[i * 3 + 1] = location.y
-      textureArray[i * 3 + 2] = location.z
+      let lifeDuration = 250
+
+      textureArray[i * 4 + 0] = location.x
+      textureArray[i * 4 + 1] = location.y
+      textureArray[i * 4 + 2] = location.z
+      textureArray[i * 4 + 3] = Math.random() * lifeDuration
     }
 
-    if (storedPositions.length) {
-      for (let index = 0; index < storedPositions.length; index++) {
-        textureArray[index] = storedPositions[index]
+    if (defaultPositions.length) {
+      for (let index = 0; index < defaultPositions.length; index++) {
+        textureArray[index] = defaultPositions[index]
       }
     }
 
-    if (!this.positionTexture) {
-      this.positionTexture = new THREE.DataTexture(
-        textureArray,
-        this.textureWidth,
-        this.textureHeight,
-        THREE.RGBFormat,
-        THREE.FloatType
-      )
-      this.positionTexture.minFilter = THREE.NearestFilter
-      this.positionTexture.magFilter = THREE.NearestFilter
-      this.positionTexture.generateMipmaps = false
-      this.positionTexture.flipY = false
-      this.positionTexture.needsUpdate = true
-    }
+    this.positionTexture = new THREE.DataTexture(
+      textureArray,
+      this.textureWidth,
+      this.textureHeight,
+      THREE.RGBAFormat,
+      THREE.FloatType
+    )
+    this.positionTexture.minFilter = THREE.NearestFilter
+    this.positionTexture.magFilter = THREE.NearestFilter
+    this.positionTexture.generateMipmaps = false
+    this.positionTexture.flipY = false
+    this.positionTexture.needsUpdate = true
 
     return this.positionTexture
   }

@@ -25,7 +25,6 @@ export default class Particles extends Base {
     this.frame = 0
 
     this.textureHelper = new TextureHelper()
-
     this.textureHelper.setTextureSize(this.particleCount)
 
     this.material = new ParticlesMaterial({
@@ -45,6 +44,10 @@ export default class Particles extends Base {
     this.positionMaterial = new THREE.ShaderMaterial({
       uniforms: {
         positionTexture: {
+          type: 't',
+          value: null
+        },
+        defaultPositionTexture: {
           type: 't',
           value: null
         },
@@ -112,11 +115,17 @@ export default class Particles extends Base {
   async init (args) {
     this.renderer = args.renderer
 
+    let positionTexture = this.textureHelper.createPositionTexture()
+    this.defaultPositionTexture = this.textureHelper.createPositionTexture()
+
     this.passThroughTexture(
-      this.textureHelper.createPositionTexture(),
+      positionTexture,
       this.positionRenderTarget1
     )
     this.passThroughTexture(this.positionRenderTarget1.texture, this.positionRenderTarget2)
+
+    this.positionMaterial.uniforms.defaultPositionTexture.value = this.defaultPositionTexture
+    this.material.uniforms.defaultPositionTexture.value = this.defaultPositionTexture
 
     this.positionScene = new THREE.Scene()
 
@@ -205,6 +214,11 @@ class ParticlesMaterial extends THREE.PointsMaterial {
     }
 
     this.uniforms.positionTexture = {
+      type: 't',
+      value: null
+    }
+
+    this.uniforms.defaultPositionTexture = {
       type: 't',
       value: null
     }

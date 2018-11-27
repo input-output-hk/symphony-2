@@ -71,8 +71,8 @@ export default class Base {
       quaternionsAttr.array[txIndexOffset * 4 + 3] = object.quaternion.w
 
       let scale = blockGeoData.scales[i]
-      if (scale > 10) {
-        scale = 10
+      if (scale > 20) {
+        scale = 20
       }
 
       scalesAttr.setX(
