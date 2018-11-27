@@ -1,6 +1,8 @@
 uniform float size;
 uniform float scale;
 
+uniform vec3 uSpawnLocation;
+uniform vec2 uOriginOffset;
 uniform float uTime;
 uniform sampler2D positionTexture;
 
@@ -16,12 +18,19 @@ void main() {
 	#include <color_vertex>
 	#include <begin_vertex>
 
+
 	transformed.xyz = texture2D(positionTexture, position.xy).xyz;
+
+	transformed.xz -= uOriginOffset;
+
+	transformed.xyz += uSpawnLocation;
+
+
 
 	#include <morphtarget_vertex>
 	#include <project_vertex>
 
-	gl_PointSize = 0.1;
+	gl_PointSize = 0.05;
 
 	#ifdef USE_SIZEATTENUATION
 

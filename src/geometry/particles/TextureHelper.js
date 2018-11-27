@@ -37,12 +37,19 @@ export default class TextureHelper {
   createPositionTexture ({
     storedPositions = new Float32Array()
   } = {}) {
-    let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 4)
+    let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 3)
     for (let i = 0; i < this.nodeCount; i++) {
-      textureArray[i * 4 + 0] = Math.random() * 100 - 50
-      textureArray[i * 4 + 1] = Math.random() * 100 - 50
-      textureArray[i * 4 + 2] = Math.random() * 100 - 50
-      textureArray[i * 4 + 3] = i === 0 ? 2 : 0 // 0 = inactive node, 1 = active node, 2 = root node
+      let location = new THREE.Vector3(
+        Math.random() * 1 - 0.5,
+        Math.random() * 1 - 0.5,
+        Math.random() * 1 - 0.5
+      )
+
+      location = location.normalize().multiplyScalar(Math.random() * 50)
+
+      textureArray[i * 3 + 0] = location.x
+      textureArray[i * 3 + 1] = location.y
+      textureArray[i * 3 + 2] = location.z
     }
 
     if (storedPositions.length) {
@@ -56,7 +63,7 @@ export default class TextureHelper {
         textureArray,
         this.textureWidth,
         this.textureHeight,
-        THREE.RGBAFormat,
+        THREE.RGBFormat,
         THREE.FloatType
       )
       this.positionTexture.minFilter = THREE.NearestFilter

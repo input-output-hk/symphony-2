@@ -100,6 +100,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
 
+    this.txSpawnLocation = new THREE.Vector3(0.0, 0.0, 0.0)
+
     this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
     this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
 
@@ -136,6 +138,8 @@ class App extends mixin(EventEmitter, Component) {
       this.occlusion.renderOrder = 0
 
       // this.txs.renderOrder = 8
+
+      this.particles.renderOrder = -1
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -789,7 +793,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
 
-    this.group.add(this.txs)
+    // this.group.add(this.txs)
 
     this.trees = await this.treeGenerator.init(blockGeoData)
     this.group.add(this.trees)
@@ -1565,7 +1569,8 @@ class App extends mixin(EventEmitter, Component) {
       })
 
       this.particlesGenerator.update({
-        time: window.performance.now()
+        time: window.performance.now(),
+        spawnLocation: this.txSpawnLocation
       })
 
       this.crystalGenerator.update({
@@ -1689,6 +1694,8 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({
       closestBlock: this.closestBlock
     })
+
+    this.txSpawnLocation = new THREE.Vector3(this.closestBlock.blockData.pos.x, 200, this.closestBlock.blockData.pos.z)
 
     this.updateClosestTrees()
 

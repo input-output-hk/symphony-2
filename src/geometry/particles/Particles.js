@@ -20,13 +20,13 @@ export default class Particles extends Base {
 
     this.renderer = args.renderer
 
-    this.instanceTotal = 10000
+    this.particleCount = 10000
 
     this.frame = 0
 
     this.textureHelper = new TextureHelper()
 
-    this.textureHelper.setTextureSize(this.instanceTotal)
+    this.textureHelper.setTextureSize(this.particleCount)
 
     this.material = new ParticlesMaterial({
       color: 0x709eec,
@@ -39,19 +39,23 @@ export default class Particles extends Base {
       fragmentShader: fragmentShader
     })
 
-    this.textureWidth = this.textureHeight = 2048
+    this.textureHeight = this.textureHelper.textureHeight
+    this.textureWidth = this.textureHelper.textureWidth
 
     this.positionMaterial = new THREE.ShaderMaterial({
       uniforms: {
         positionTexture: {
           type: 't',
           value: null
+        },
+        uOriginOffset: {
+          type: 'v2',
+          value: new THREE.Vector2(0.0, 0.0)
+        },
+        uTime: {
+          type: 'f',
+          value: 0.0
         }
-      },
-      defines: {
-        texLocationWidth: 1.0 / this.textureWidth.toFixed(2),
-        width: 1.0 / this.textureWidth.toFixed(2),
-        height: 1.0 / this.textureWidth.toFixed(2)
       },
       vertexShader: PassThroughVert,
       fragmentShader: PositionFrag
@@ -76,6 +80,12 @@ export default class Particles extends Base {
     this.positionRenderTarget2 = this.positionRenderTarget1.clone()
 
     this.outputPositionRenderTarget = this.positionRenderTarget1
+  }
+
+  updateOriginOffset (originOffset) {
+    this.positionMaterial.uniforms.uOriginOffset.value = originOffset
+
+    this.material.uniforms.uOriginOffset.value = originOffset
   }
 
   initPassThrough () {
@@ -115,10 +125,10 @@ export default class Particles extends Base {
 
     this.geometry = new THREE.BufferGeometry()
 
-    let positionArray = new Float32Array(this.instanceTotal * 3)
+    let positionArray = new Float32Array(this.particleCount * 3)
 
     this.setTextureLocations(
-      this.instanceTotal,
+      this.particleCount,
       positionArray
     )
 
@@ -126,7 +136,7 @@ export default class Particles extends Base {
 
     this.geometry.addAttribute('position', position)
 
-    let idArray = new Float32Array(this.instanceTotal)
+    let idArray = new Float32Array(this.particleCount)
     for (let index = 0; index < idArray.length; index++) {
       idArray[index] = index
     }
@@ -160,6 +170,8 @@ export default class Particles extends Base {
   update (args) {
     this.frame++
     this.material.uniforms.uTime.value = args.time
+    this.material.uniforms.uSpawnLocation.value = args.spawnLocation
+    this.positionMaterial.uniforms.uTime.value = args.time
     this.updatePositions()
   }
 
@@ -200,6 +212,11 @@ class ParticlesMaterial extends THREE.PointsMaterial {
     this.uniforms.scale = {
       type: 'f',
       value: this.baseScale
+    }
+
+    this.uniforms.uSpawnLocation = {
+      type: 'v3',
+      value: new THREE.Vector3(0.0, 0.0, 0.0)
     }
 
     this.uniforms.uOriginOffset = {
