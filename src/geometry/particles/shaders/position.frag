@@ -4,6 +4,7 @@ varying vec2 vUv;
 
 uniform vec2 uOriginOffset;
 uniform float uTime;
+uniform float uFrame;
 
 uniform sampler2D positionTexture;
 uniform sampler2D defaultPositionTexture;
@@ -14,15 +15,17 @@ void main() {
 
   vec3 newPosition = currentPosition.xyz + curlNoise(currentPosition.xyz * 0.02) * 1.0;
 
-  currentPosition.w--;
-
   currentPosition.xyz = mix(currentPosition.xyz, newPosition, 0.5);
 
   vec2 toCenter = normalize(uOriginOffset - currentPosition.xz);
 
-  defaultPosition.xz -= toCenter * (uTime * 0.3);
+  vec2 newDefaultPosition = defaultPosition.xz - toCenter * (uTime * 0.3);
 
-  if (currentPosition.w <= 0.0) {
+  defaultPosition.xz = mix(defaultPosition.xz, newDefaultPosition, 0.5);
+
+  // decrement life value, reset to default at 0
+  currentPosition.w--;
+  if (currentPosition.w < 0.0 ) {
     currentPosition = defaultPosition;
   }
 

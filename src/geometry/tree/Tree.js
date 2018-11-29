@@ -15,7 +15,7 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 100
+    this.instanceTotal = 500
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -127,8 +127,8 @@ export default class Tree extends Base {
 
     // set up base geometry
     let nTX = Object.keys(blockGeoData.blockData.tx).length
-    if (nTX > 256) {
-      nTX = 256
+    if (nTX > 128) {
+      nTX = 128
     }
 
     let geometry = await this.loadTreeModel(nTX)

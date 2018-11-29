@@ -25,7 +25,7 @@ vec2 spiral(vec2 uv, float a, float radius) {
 	ang += ceil(turn) * twoPI;
 	float d = arclength(a, ang) + uOffset;
 	
-	return vec2(d, fract(turn)) * ((1.0 - step(d, 154387.0)) * (step(d, uMaxHeight + 152583.)));
+	return vec2(d, fract(turn)) * ((1.0 - step(d, 154387.0)) * (step(d, uMaxHeight + 152571.)));
 }
 
 float plane(vec2 uv, vec2 quadUV) {
@@ -34,7 +34,7 @@ float plane(vec2 uv, vec2 quadUV) {
     float left = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), uv.x);
     float right = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), 1.0-uv.x);
     //float pct = top * bottom * left * right;
-     float pct = top * bottom;
+    float pct = top * bottom;
     return pct;
 }
 
@@ -150,7 +150,7 @@ void main() {
 
 	float toCenter = (1.0-length(vUv-0.5));
 
-	outgoingLight.r += pow(toCenter, 30.0) * 1.0;
+	outgoingLight.r += pow(toCenter, 80.0) * 10.0;
 
 	gl_FragColor = vec4( outgoingLight, s.x );
 

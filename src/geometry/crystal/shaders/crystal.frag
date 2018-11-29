@@ -165,7 +165,7 @@ void main() {
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
 	//outgoingLight += 0.05;
-	outgoingLight.r += (1.0-vSpentRatio) * 0.4;
+	outgoingLight.r += (1.0-vSpentRatio) * 0.2;
 
 	outgoingLight += vIsHovered * (sideEdgeAmount * 1.2);
 	outgoingLight += vIsSelected * (sideEdgeAmount * 1.2);

@@ -1,3 +1,5 @@
+attribute float life;
+
 uniform float size;
 uniform float scale;
 
@@ -6,10 +8,11 @@ uniform vec2 uOriginOffset;
 uniform float uTime;
 uniform sampler2D positionTexture;
 
+varying float vLife;
+
 #include <common>
 #include <color_pars_vertex>
 #include <fog_pars_vertex>
-#include <morphtarget_pars_vertex>
 #include <logdepthbuf_pars_vertex>
 #include <clipping_planes_pars_vertex>
 
@@ -18,8 +21,12 @@ void main() {
 	#include <color_vertex>
 	#include <begin_vertex>
 
+	vec4 positionData = texture2D(positionTexture, position.xy);
+	
+	vLife = positionData.w;
 
-	transformed.xyz = texture2D(positionTexture, position.xy).xyz;
+	transformed.xyz = positionData.xyz;
+
 
 	transformed.xz -= uOriginOffset;
 

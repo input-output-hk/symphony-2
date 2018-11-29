@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 
 export default class TextureHelper {
-  constructor () {
+  constructor (args) {
+    this.config = args.config
+
     this.positionTexture = null
   }
 
@@ -40,19 +42,19 @@ export default class TextureHelper {
     let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 4)
     for (let i = 0; i < this.nodeCount; i++) {
       let location = new THREE.Vector3(
-        Math.random() * 1,
-        Math.random() * 1,
-        Math.random() * 1
+        Math.random() * 200 - 100,
+        Math.random() * 200 - 100,
+        Math.random() * 200 - 100
       )
 
-      location = location.normalize().multiplyScalar(Math.random() * 10)
+      location = location.normalize().multiplyScalar(Math.random() * this.config.scene.particleEmitterRadius)
 
-      let lifeDuration = 250
+      let lifeDuration = Math.ceil(Math.random() * this.config.scene.particleLifeMax)
 
       textureArray[i * 4 + 0] = location.x
       textureArray[i * 4 + 1] = location.y
       textureArray[i * 4 + 2] = location.z
-      textureArray[i * 4 + 3] = Math.random() * lifeDuration
+      textureArray[i * 4 + 3] = lifeDuration
     }
 
     if (defaultPositions.length) {
@@ -71,9 +73,10 @@ export default class TextureHelper {
     this.positionTexture.minFilter = THREE.NearestFilter
     this.positionTexture.magFilter = THREE.NearestFilter
     this.positionTexture.generateMipmaps = false
-    this.positionTexture.flipY = false
     this.positionTexture.needsUpdate = true
 
-    return this.positionTexture
+    return {
+      positionTexture: this.positionTexture
+    }
   }
 }

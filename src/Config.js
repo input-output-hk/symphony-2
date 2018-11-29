@@ -14,7 +14,9 @@ const Config = {
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
-    fogDensity: 0.00015
+    fogDensity: 0.00015,
+    particleLifeMax: 400, // max number of frames a particle can live for
+    particleEmitterRadius: 5 // size of sphere which emits particles
   },
   debug: {
     debugPicker: false,
@@ -37,7 +39,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 50,
+    fov: 70,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType

@@ -24,18 +24,16 @@ export default class Particles extends Base {
 
     this.frame = 0
 
-    this.textureHelper = new TextureHelper()
+    this.textureHelper = new TextureHelper(args)
     this.textureHelper.setTextureSize(this.particleCount)
 
     this.material = new ParticlesMaterial({
       color: 0x709eec,
       transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending,
+      opacity: 1.0,
+      blending: THREE.AdditiveBlending
       // depthWrite: false,
       // depthTest: false,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader
     })
 
     this.textureHeight = this.textureHelper.textureHeight
@@ -56,6 +54,10 @@ export default class Particles extends Base {
           value: new THREE.Vector2(0.0, 0.0)
         },
         uTime: {
+          type: 'f',
+          value: 0.0
+        },
+        uFrame: {
           type: 'f',
           value: 0.0
         }
@@ -115,11 +117,11 @@ export default class Particles extends Base {
   async init (args) {
     this.renderer = args.renderer
 
-    let positionTexture = this.textureHelper.createPositionTexture()
-    this.defaultPositionTexture = this.textureHelper.createPositionTexture()
+    let positionData = this.textureHelper.createPositionTexture()
+    this.defaultPositionTexture = positionData.positionTexture
 
     this.passThroughTexture(
-      positionTexture,
+      positionData.positionTexture,
       this.positionRenderTarget1
     )
     this.passThroughTexture(this.positionRenderTarget1.texture, this.positionRenderTarget2)
@@ -153,9 +155,9 @@ export default class Particles extends Base {
     let id = new THREE.BufferAttribute(idArray, 1)
     this.geometry.addAttribute('id', id)
 
-    // this.resize()
-
     this.mesh = new THREE.Points(this.geometry, this.material)
+
+    this.material.uniforms.uParticleLifeMax.value = this.config.scene.particleLifeMax
 
     this.mesh.frustumCulled = false
 
@@ -179,8 +181,11 @@ export default class Particles extends Base {
   update (args) {
     this.frame++
     this.material.uniforms.uTime.value = args.time
+    this.material.uniforms.uFrame.value = this.frame
     this.material.uniforms.uSpawnLocation.value = args.spawnLocation
+
     this.positionMaterial.uniforms.uTime.value = args.time
+    this.positionMaterial.uniforms.uFrame.value = this.frame
     this.updatePositions()
   }
 
@@ -209,6 +214,16 @@ class ParticlesMaterial extends THREE.PointsMaterial {
     this.uniforms = THREE.ShaderLib.points.uniforms
 
     this.uniforms.uTime = {
+      type: 'f',
+      value: 0.0
+    }
+
+    this.uniforms.uFrame = {
+      type: 'f',
+      value: 0.0
+    }
+
+    this.uniforms.uParticleLifeMax = {
       type: 'f',
       value: 0.0
     }

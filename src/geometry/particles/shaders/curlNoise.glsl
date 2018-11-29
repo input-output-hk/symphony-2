@@ -35,7 +35,13 @@ vec3 curlNoise( vec3 p ){
 
   const float divisor = 1.0 / ( 2.0 * e );
   vec3 result = normalize( vec3( x , y , z ) * divisor );
+  // return vec3(
+  //   floor(result.x + 0.5),
+  //   floor(result.y + 0.5),
+  //   floor(result.z + 0.5)
+  // );
   return result;
+  
 }
 
 #pragma glslify: export(curlNoise)

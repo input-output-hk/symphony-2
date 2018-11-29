@@ -78,10 +78,10 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	diffuseColor.a *= (1.0 - step(
-		(uTime*0.002),
-        vDistanceFromCenter / 255.
-	));
+	// diffuseColor.a *= (1.0 - step(
+	// 	(uTime*0.002),
+    //     vDistanceFromCenter / 255.
+	// ));
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

@@ -67,7 +67,7 @@ void main() {
 
 
 		//vDistanceFromCenter = distance(transformed.xyz, dest) + (random(transformed.xy) * 100.0 );
-		vDistanceFromCenter = distance(transformed.xyz + vec3(0.0, 100.0, 0.0), dest * 10.0 );
+		//vDistanceFromCenter = distance(transformed.xyz + vec3(0.0, 100.0, 0.0), dest * 10.0 );
 
 		vTransformed = transformed;
 
