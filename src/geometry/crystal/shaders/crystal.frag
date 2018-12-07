@@ -165,7 +165,16 @@ void main() {
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
 	//outgoingLight += 0.05;
-	outgoingLight.r += (1.0-vSpentRatio) * 0.2;
+	//outgoingLight.r += (1.0-vSpentRatio) * 0.2;
+
+	vec3 colorMix = mix( 
+		mix(vec3(211./255., 3./255., 236./255.), outgoingLight, 0.9), 
+		mix(vec3(0./255., 134./255., 239./255.), outgoingLight, 0.9), 
+		vSpentRatio
+	);
+
+	outgoingLight = colorMix;
+
 
 	outgoingLight += vIsHovered * (sideEdgeAmount * 1.2);
 	outgoingLight += vIsSelected * (sideEdgeAmount * 1.2);

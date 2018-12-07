@@ -145,14 +145,13 @@ void main() {
 	s.x *= smoothstep(0.0, 500.0, abs(uCamPos.y));
 
 	outgoingLight += (1.0-(s.y*0.0000013)) * 0.3;
-	//outgoingLight -= sin(1.0-((s.y + uTime) *0.002 )) * 0.025;
-	outgoingLight -= sin(1.0-((s.y ) *0.002 )) * 0.025;
+	outgoingLight -= sin(1.0-((s.y + uTime*0.1) *0.001 )) * 0.025;
 
 	float toCenter = (1.0-length(vUv-0.5));
 
-	outgoingLight.r += pow(toCenter, 80.0) * 10.0;
+	//outgoingLight.r += pow(toCenter, 80.0) * 10.0;
 
-	gl_FragColor = vec4( outgoingLight, s.x );
+	gl_FragColor = vec4( outgoingLight, s.x * 0.8 );
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>

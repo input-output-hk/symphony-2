@@ -3,7 +3,10 @@ attribute float life;
 uniform float size;
 uniform float scale;
 
-uniform vec3 uSpawnLocation;
+uniform vec3 uSpawnStart;
+uniform vec3 uSpawnDestination;
+uniform float uDeltaTime;
+
 uniform vec2 uOriginOffset;
 uniform float uTime;
 uniform sampler2D positionTexture;
@@ -27,15 +30,14 @@ void main() {
 
 	transformed.xyz = positionData.xyz;
 
-
 	transformed.xz -= uOriginOffset;
 
-	transformed.xyz += uSpawnLocation.xyz;
+	//transformed.xyz += uSpawnStart.xyz;
 
 	#include <morphtarget_vertex>
 	#include <project_vertex>
 
-	gl_PointSize = 1.2;
+	gl_PointSize = 1.8;
 
 	// #ifdef USE_SIZEATTENUATION
 

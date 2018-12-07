@@ -10,12 +10,12 @@ const Config = {
     width: 300,
     height: 300,
     antialias: window.devicePixelRatio === 1,
-    canvasID: 'symphony-stage', // ID of wegbl canvas element
+    canvasID: 'symphony-stage', // ID of webgl canvas element
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
     fogDensity: 0.00015,
-    particleLifeMax: 400, // max number of frames a particle can live for
+    particleLifeMax: 600, // max number of frames a particle can live for
     particleEmitterRadius: 5 // size of sphere which emits particles
   },
   debug: {
@@ -39,7 +39,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 70,
+    fov: 80,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType

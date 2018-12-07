@@ -69,6 +69,8 @@ class App extends mixin(EventEmitter, Component) {
     this.coils = 100
     this.radius = 1000000
 
+    this.frame = 0
+
     this.loading = false
     this.blockGeoDataObject = {}
     this.hashes = []
@@ -101,6 +103,9 @@ class App extends mixin(EventEmitter, Component) {
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
 
     this.txSpawnLocation = new THREE.Vector3(0.0, 0.0, 0.0)
+
+    this.txSpawnStart = new THREE.Vector3(0, 0, 0)
+    this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
 
     this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
     this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -139,7 +144,7 @@ class App extends mixin(EventEmitter, Component) {
 
       // this.txs.renderOrder = 8
 
-      this.particles.renderOrder = 8
+      this.particles.renderOrder = 3
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -155,7 +160,7 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideL.renderOrder = 2
       this.undersideR.renderOrder = 2
 
-      this.planetMesh.renderOrder = 7
+      this.planetMesh.renderOrder = -1
     } else {
       if (this.centerTree) {
         this.centerTree.material.depthWrite = true
@@ -269,8 +274,61 @@ class App extends mixin(EventEmitter, Component) {
     await this.initPositions()
     this.initEnvironment()
     this.initGeometry()
+
     this.addEvents()
     this.animate()
+  }
+
+  async initUnconfirmedTX () {
+    let txData = await window.fetch('https://blockchain.info/unconfirmed-transactions?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    let txDataJSON = await txData.json()
+
+    await this.asyncForEach(txDataJSON.txs, async (tx) => {
+      await this.asyncForEach(tx.inputs, (input) => {
+        return new Promise(async (resolve, reject) => {
+          let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          let inputDataJSON = await inputData.json()
+
+          let blockHeight = inputDataJSON.block_height
+
+          if (
+            typeof this.blockPositions[blockHeight * 2 + 0] === 'undefined' ||
+              typeof this.blockPositions[blockHeight * 2 + 1] === 'undefined'
+          ) {
+            resolve()
+          } else {
+            this.txSpawnStart.x = this.blockPositions[blockHeight * 2 + 0]
+            this.txSpawnStart.y = 0.0
+            this.txSpawnStart.z = this.blockPositions[blockHeight * 2 + 1]
+
+            this.txSpawnDestination.x = this.blockPositions[blockHeight * 2 + 0]
+            this.txSpawnDestination.y = 500.0
+            this.txSpawnDestination.z = this.blockPositions[blockHeight * 2 + 1]
+
+            let toCenter = this.txSpawnStart.clone()
+            toCenter.normalize()
+
+            let that = this
+            new TWEEN.Tween(that.txSpawnStart)
+              .to(
+                toCenter.multiplyScalar(460000),
+                3000
+              )
+              .onUpdate(function () {
+                that.txSpawnStart.x = this.x
+                that.txSpawnStart.y = this.y
+                that.txSpawnStart.z = this.z
+              })
+              .onComplete(() => {
+                resolve()
+              })
+              .easing(TWEEN.Easing.Quadratic.In)
+              .start()
+          }
+        })
+      })
+      return true
+    })
   }
 
   initGUI () {
@@ -673,7 +731,7 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.sunLight = new THREE.PointLight(0xffffff, 0.5, 0.0, 0.0)
-    this.sunLight.position.set(0, 100000, 20000000)
+    this.sunLight.position.set(0, 10000000, 20000000)
     this.group.add(this.sunLight)
 
     this.hoveredLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
@@ -812,8 +870,6 @@ class App extends mixin(EventEmitter, Component) {
       renderer: this.renderer
     })
 
-    this.group.add(this.particles)
-
     this.group.add(this.occlusion)
 
     let planeX = this.plane.geometry.attributes.planeOffset.array[0]
@@ -821,6 +877,9 @@ class App extends mixin(EventEmitter, Component) {
 
     this.camera.position.x = planeX
     this.camera.position.z = planeZ
+
+    this.group.add(this.particles)
+    // this.txSpawnStart = new THREE.Vector3(planeX, 1000000000, planeZ)
 
     this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
 
@@ -841,6 +900,8 @@ class App extends mixin(EventEmitter, Component) {
     this.planetMesh.position.x -= this.originOffset.x
     this.planetMesh.position.z -= this.originOffset.y
 
+    // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
+
     this.closestBlockReadyForUpdate = true
 
     this.closestBlock = blockGeoData
@@ -857,14 +918,22 @@ class App extends mixin(EventEmitter, Component) {
 
     this.blockReady = true
 
+    this.unconfirmedLoop()
+
     return true
+  }
+
+  async unconfirmedLoop () {
+    await this.initUnconfirmedTX()
+
+    this.unconfirmedLoop()
   }
 
   createCubeMap (pos) {
     // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.cubeCamera = new THREE.CubeCamera(1.0, 3000, 512)
+    this.cubeCamera = new THREE.CubeCamera(1.0, 1500, 512)
     this.cubeCamera.position.copy(pos)
 
     this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1169,8 +1238,8 @@ class App extends mixin(EventEmitter, Component) {
       let start = this.closestHeight - 20
       let end = this.closestHeight + 20
       if (this.state.controlType === 'fly' || this.state.controlType === 'map') {
-        start = this.closestHeight - 30000
-        end = this.closestHeight + 30000
+        start = this.closestHeight - 100000
+        end = this.closestHeight + 100000
       }
 
       if (start < 0) {
@@ -1558,6 +1627,8 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   renderFrame () {
+    this.frame++
+
     let delta = this.clock.getDelta()
 
     TWEEN.update()
@@ -1596,7 +1667,9 @@ class App extends mixin(EventEmitter, Component) {
 
       this.particlesGenerator.update({
         time: window.performance.now(),
-        spawnLocation: this.txSpawnLocation
+        deltaTime: delta,
+        spawnStart: this.txSpawnStart,
+        spawnDestination: this.txSpawnDestination
       })
 
       this.crystalGenerator.update({
@@ -1614,8 +1687,8 @@ class App extends mixin(EventEmitter, Component) {
     if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
-      this.renderer.render(this.scene, this.camera)
-      // this.composer.render()
+      // this.renderer.render(this.scene, this.camera)
+      this.composer.render()
     }
   }
 
@@ -1684,14 +1757,6 @@ class App extends mixin(EventEmitter, Component) {
     if (eventData.op === 'utx') {
       console.log(eventData.x)
     }
-
-    // if (typeof eventData.hash !== 'undefined') {
-    //   console.log(eventData)
-
-    //   if (eventData.double_spend) {
-    //     window.alert('DOUBLE SPEND DETECTED')
-    //   }
-    // }
   }
 
   setUpWs () {
@@ -1721,7 +1786,10 @@ class App extends mixin(EventEmitter, Component) {
       closestBlock: this.closestBlock
     })
 
-    this.txSpawnLocation = new THREE.Vector3(this.closestBlock.blockData.pos.x, 200, this.closestBlock.blockData.pos.z)
+    this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
+
+    let posX = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
+    let posZ = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
 
     this.updateClosestTrees()
 

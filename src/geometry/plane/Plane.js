@@ -36,14 +36,15 @@ export default class Plane extends Base {
       flatShading: true,
       color: 0xffffff,
       emissive: 0x000000,
-      metalness: 0.9,
-      roughness: 0.1,
-      opacity: 0.45,
+      metalness: 1.0,
+      roughness: 0.0,
+      opacity: 0.5,
       transparent: true,
       side: THREE.FrontSide,
-      envMap: this.cubeMap
-      // normalMap: this.normalMap,
-      // normalScale: new THREE.Vector2(0.009, 0.009)
+      envMap: this.cubeMap,
+      envMapIntensity: 0.35,
+      normalMap: this.normalMap,
+      normalScale: new THREE.Vector2(0.01, 0.01)
       // fog: false
     })
   }
