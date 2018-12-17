@@ -40,18 +40,18 @@ canvas#sketchboard {
 
 .symphony-ui h2 {
   font-weight: bold;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   color: #709eec;
   width: 100%;
-  border-bottom: 1px solid rgba(255,255,255,0.3);
+  border-bottom: 1px solid #709cf0;
   padding: 0 0 10px;
 }
 
 
 .symphony-ui h3 {
   font-weight: normal;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   color: #fff;
   display: inline-block;
@@ -65,7 +65,7 @@ canvas#sketchboard {
 }
 
 .symphony-ui li {
-  line-height: 22px;
+  line-height: 20px;
 }
 
 .health-bar-container {
@@ -88,9 +88,11 @@ canvas#sketchboard {
   pointer-events: auto;
   position: absolute;
   z-index: 9;
+  border-top: 1px solid #153453;
+  border-left: 1px solid #153453;
+  border-right: 1px solid #153453;
   background: rgba(18,23,38,0.9);
-  padding: 20px 25px 10px;
-  box-shadow: 0 0 3px rgba(255,255,255,0.4), 0 5px 10px rgba(18,23,38,0.6);
+  padding: 15px 20px 10px;
   -webkit-transition: opacity .5s;
   -moz-transition: opacity .5s;
   -o-transition: opacity .5s;
@@ -105,21 +107,54 @@ canvas#sketchboard {
   font-weight: bold;
 }
 
-.auto-pilot-controls {
-  pointer-events: auto;
+.controls-container {
+  left: 50%;
+  margin-left: -75px;
+  top: 20px;
+  width: 150px;
   position: absolute;
   z-index: 9;
+}
+
+.auto-pilot-controls {
+  display: inline-block;
+  width: 83px;
+  pointer-events: auto;
   background: rgba(18,23,38,0.9);
-  padding: 20px 25px 10px;
-  box-shadow: 0 0 3px rgba(255,255,255,0.4), 0 5px 10px rgba(18,23,38,0.6);
+  padding: 9px;
   -webkit-transition: opacity .5s;
   -moz-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
-  left: 80%;
-  width: 200px;
-  height: 171px;
-  bottom: 0;
+  height: 40px;
+  border: 1px solid #153453;
+  border-radius: 50px;
+  margin: 0 20px 0 0;
+}
+
+.auto-pilot-controls span {
+  display: inline-block;
+  width: 10px;
+  height: 20px;
+}
+
+.auto-pilot-controls span:hover {
+  cursor: pointer;
+}
+
+.auto-pilot-controls span.backward {
+  background: url(./assets/images/contract.svg) no-repeat;
+}
+
+.auto-pilot-controls span.forward {
+  background: url(./assets/images/expand.svg) no-repeat;
+}
+
+.auto-pilot-controls span.stop {
+  width: 19px;
+  height: 20px;
+  border: 1px solid #1fc1c3;
+  margin: 0 12px;
 }
 
 .cockpit-border {
@@ -155,12 +190,10 @@ canvas#sketchboard {
 }
 
 .flip-view-container {
-  position: absolute;
   background: #1b2238;
-  padding: 20px;
-  left: 50%;
-  top: 20px;
+  padding: 11px;
   border-radius: 50px;
+  display: inline-block;
 }
 
 .flip-view {
@@ -179,18 +212,62 @@ canvas#sketchboard {
 
 .tx-details {
   position: absolute;
-  right: 0;
+  right: 30px;
   top: 200px;
-  width: 250px;
+  width: 257px;
+  text-align: center;
+}
 
+.tx-details .border-left {
+  margin-right: -4px;
+  border: none!important;
+  box-shadow: none;
+  display: block;
+  float: left;
+  height: 402px;
+  width: 20px;
+  background: url(./assets/images/tx-line-left.png) no-repeat;
+}
+
+.tx-details .border-right {
+  border: none!important;
+  box-shadow: none;
+  display: block;
+  float: right;
+  height: 402px;
+  width: 20px;
+  background: url(./assets/images/tx-line-right.png) no-repeat;
+}
+
+.tx-details img {
+  padding: 20px;
+}
+
+.tx-details ul {
+  text-align: left;
+}
+
+.tx-details ul li:last-child {
+  padding-top: 10px;
 }
 
 .tx-details h2 {
-  border: none
+  border: none;
+  border-top: 1px solid #709cf0;
+  text-align: left;
+  padding-top: 30px;
+  margin-top: 5px;
+  padding: 20px 0 0 0;
 }
 
 .tx-details strong {
   font-weight: bold
+}
+
+.tx-details-inner {
+  display: block;
+  float: left;
+  width: 220px;
 }
 
 .crosshair {
@@ -404,4 +481,31 @@ canvas#sketchboard {
 .autopilot-container {
   position: absolute;
   z-index: 10;
+}
+
+.blockchain-selector {
+  font-weight: normal;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #fff;
+  position: absolute;
+  bottom: 100px;
+  left: 10%;
+  background: rgba(18,23,38,0.9);
+  padding: 4px;
+  border-radius: 50px;
+  z-index: 9;
+  border: 1px solid #153453;
+  -webkit-transition: opacity .5s;
+  -moz-transition: opacity .5s;
+  -o-transition: opacity .5s;
+  transition: opacity .5s;
+}
+
+.blockchain-selector span {
+  padding: 0 8px;
+}
+
+.blockchain-selector .down-arrow {
+  padding: 0 8px;
 }

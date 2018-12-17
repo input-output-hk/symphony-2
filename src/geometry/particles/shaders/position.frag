@@ -22,7 +22,7 @@ void main() {
   vec3 toCenter = normalize(vec3(0.0, 0.0, 0.0) - previousPosition.xyz);
   //currentPosition.xyz += toCenter * 2.0;
 
-  currentPosition.xyz = currentPosition.xyz + curlNoise(currentPosition.xyz * 0.02) * 1.8;
+  currentPosition.xyz = currentPosition.xyz + curlNoise(currentPosition.xyz * 0.02) * 0.8;
 
   // decrement life value, reset to default at 0
   currentPosition.w -= (1.0 - uDeltaTime);

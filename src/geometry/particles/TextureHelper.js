@@ -4,7 +4,7 @@ export default class TextureHelper {
   constructor (args) {
     this.config = args.config
 
-    this.positionTexture = null
+    // this.positionTexture = null
   }
 
   setNodeCount (nodeCount) {
@@ -63,20 +63,20 @@ export default class TextureHelper {
       }
     }
 
-    this.positionTexture = new THREE.DataTexture(
+    let positionTexture = new THREE.DataTexture(
       textureArray,
       this.textureWidth,
       this.textureHeight,
       THREE.RGBAFormat,
       THREE.FloatType
     )
-    this.positionTexture.minFilter = THREE.NearestFilter
-    this.positionTexture.magFilter = THREE.NearestFilter
-    this.positionTexture.generateMipmaps = false
-    this.positionTexture.needsUpdate = true
+    positionTexture.minFilter = THREE.NearestFilter
+    positionTexture.magFilter = THREE.NearestFilter
+    positionTexture.generateMipmaps = false
+    positionTexture.needsUpdate = true
 
     return {
-      positionTexture: this.positionTexture
+      positionTexture: positionTexture
     }
   }
 }

@@ -57,6 +57,10 @@ import Particles from './geometry/particles/Particles'
 // CSS
 import './App.css'
 
+import bitcoinLogo from './assets/images/bitcoin-logo.png'
+import downArrow from './assets/images/down-arrow.svg'
+import crystalImage from './assets/images/crystal.png'
+
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
@@ -144,7 +148,7 @@ class App extends mixin(EventEmitter, Component) {
 
       // this.txs.renderOrder = 8
 
-      this.particles.renderOrder = 3
+      this.particles.renderOrder = -1
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -434,9 +438,14 @@ class App extends mixin(EventEmitter, Component) {
     let outTotal = 0
     let inTotal = 0
 
+    let outputCount = txDataJSON.out.length
+    let outputsSpent = 0
     txDataJSON.out.forEach((output) => {
       outTotal += output.value
+      outputsSpent += output.spent ? 1 : 0
     })
+
+    txDataJSON.spentRatio = outputsSpent / outputCount
 
     txDataJSON.inputs.forEach((input, i) => {
       if (typeof input.prev_out !== 'undefined') {
@@ -1238,8 +1247,8 @@ class App extends mixin(EventEmitter, Component) {
       let start = this.closestHeight - 20
       let end = this.closestHeight + 20
       if (this.state.controlType === 'fly' || this.state.controlType === 'map') {
-        start = this.closestHeight - 100000
-        end = this.closestHeight + 100000
+        start = 0,
+        end = this.blockPositions.length / 2
       }
 
       if (start < 0) {
@@ -2041,7 +2050,7 @@ class App extends mixin(EventEmitter, Component) {
    */
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: false,
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
@@ -2325,8 +2334,24 @@ class App extends mixin(EventEmitter, Component) {
           <div className='cockpit-border' />
           {this.UICockpit()}
           {this.UICockpitButton()}
-          {this.UIUndersideButton()}
+
+          <div className='controls-container'>
+            <div className='auto-pilot-controls'>
+              <span title='Auto Pilot backwards in time' className='backward' onClick={() => this.toggleAutoPilotDirection('backward')} />
+              <span title='Stop Auto Pilot' className='stop' onClick={() => this.stopAutoPilot()} />
+              <span title='Auto Pilot forwards in time' className='forward' onClick={() => this.toggleAutoPilotDirection('forward')} />
+            </div>
+            {this.UIUndersideButton()}
+          </div>
+
           {this.UITXDetails()}
+
+          <div className='blockchain-selector'>
+            <img src={bitcoinLogo} />
+            <span>Bitcoin Blockchain</span>
+            <img className='down-arrow' src={downArrow} />
+          </div>
+
           <div className='block-details'>
             <h2>Block {this.state.closestBlock.blockData.hash}</h2>
             <div><h3>Health</h3>
@@ -2353,14 +2378,7 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3>Output Total</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
             </ul>
           </div>
-          <div className='auto-pilot-controls'>
-            <h2>Auto-Pilot</h2>
-            <ul>
-              <li onClick={() => this.toggleAutoPilotDirection('forward')}><h3>Forward</h3></li>
-              <li onClick={() => this.stopAutoPilot()}><h3>Stop</h3></li>
-              <li onClick={() => this.toggleAutoPilotDirection('backward')}><h3>Backward</h3></li>
-            </ul>
-          </div>
+
         </div>
       )
     }
@@ -2398,22 +2416,24 @@ class App extends mixin(EventEmitter, Component) {
     if (this.state.txSelected) {
       return (
         <div className='tx-details'>
-          <h2>Transaction</h2>
-          <ul>
-            <li><h3>Date</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
-            <li title={this.state.txSelected.hash}><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
-            <li><h3>Version</h3> <strong>{this.state.txSelected.ver}</strong></li>
-            <li><h3>Size (bytes)</h3> <strong>{this.state.txSelected.size}</strong></li>
-            <li><h3>Relayed By</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
-            <li><h3>Inputs</h3> <strong>{this.state.txSelected.vin_sz}</strong></li>
-            <li><h3>Outputs</h3> <strong>{this.state.txSelected.vout_sz}</strong></li>
-            <li><h3>Input Total</h3> <strong>{this.state.txSelected.inTotal} BTC</strong></li>
-            <li><h3>Output Total</h3> <strong>{this.state.txSelected.outTotal} BTC</strong></li>
-            <li><h3>Fee</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
-          </ul>
-          <ul>
-            <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
-          </ul>
+          <span className='border-left' />
+          <div className='tx-details-inner'>
+            <img src={crystalImage} />
+            <h2>Transaction</h2>
+            <ul>
+              <li><h3>Date</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
+              <li title={this.state.txSelected.hash}><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
+              <li><h3>Version</h3> <strong>{this.state.txSelected.ver}</strong></li>
+              <li><h3>Size (bytes)</h3> <strong>{this.state.txSelected.size}</strong></li>
+              <li><h3>Relayed By</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
+              <li><h3>Outputs Spent</h3> <strong>{(this.state.txSelected.spentRatio * 100).toFixed(0)}%</strong></li>
+              <li><h3>Input Total</h3> <strong>{this.state.txSelected.inTotal} BTC</strong></li>
+              <li><h3>Output Total</h3> <strong>{this.state.txSelected.outTotal} BTC</strong></li>
+              <li><h3>Fee</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
+              <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
+            </ul>
+          </div>
+          <span className='border-right' />
         </div>
       )
     }
