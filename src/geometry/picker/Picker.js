@@ -89,17 +89,22 @@ export default class Picker extends Base {
       quaternions.array[i * 4 + 2] = object.quaternion.z
       quaternions.array[i * 4 + 3] = object.quaternion.w
 
+      let scale = blockGeoData.scales[i]
+      if (scale > 20) {
+        scale = 20
+      }
+
       scales.setX(
         i,
-        blockGeoData.scales[i]
+        scale
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 800) {
-        txValue = 800
+      if (txValue > 1000) {
+        txValue = 1000
       }
-      if (txValue < 5) {
-        txValue = 5
+      if (txValue < 2) {
+        txValue = 2
       }
 
       this.txMap[i] = tx.hash

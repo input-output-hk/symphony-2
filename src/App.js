@@ -60,6 +60,11 @@ import './App.css'
 import bitcoinLogo from './assets/images/bitcoin-logo.png'
 import downArrow from './assets/images/down-arrow.svg'
 import crystalImage from './assets/images/crystal.png'
+import iohkLogo from './assets/images/iohk-logo.png'
+import txValueKey from './assets/images/tx-value-key.png'
+import txSpent from './assets/images/tx-spent.svg'
+import txUnspent from './assets/images/tx-unspent.svg'
+import txSingle from './assets/images/tx-single.png'
 
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
@@ -2281,6 +2286,16 @@ class App extends mixin(EventEmitter, Component) {
         <button className='expand' onClick={this.toggleSidebar.bind(this)} />
         <h1>Symphony</h1>
         <h2>Interactive Blockchain Map</h2>
+        <div className='section key'>
+          <h3>Transaction Value</h3>
+          <div className='sidebar-show'><img src={txSingle} /></div>
+          <div className='sidebar-hide'><img src={txValueKey} /></div>
+          <h3>Spending</h3>
+          <div className='sidebar-hide'>
+              <span className='spending-key'><img src={txSpent} /> <span>Spent</span></span>
+              <span className='spending-key'><img src={txUnspent} /> <span>Unspent</span></span>
+          </div>
+        </div>
         <div className='section explore'>
           <h3>Explore</h3>
           <ul>
@@ -2291,6 +2306,12 @@ class App extends mixin(EventEmitter, Component) {
               <span onClick={this.goToRandomBlock.bind(this)}>Random Block</span>
             </li>
           </ul>
+        </div>
+        <div className='sidebar-footer'>
+        <div className='sidebar-footer-inner'>
+          <span className='iohk-supported'>IOHK Supported Project</span>
+          <img className='iohk-logo' src={iohkLogo} />
+        </div>
         </div>
       </div>
     )

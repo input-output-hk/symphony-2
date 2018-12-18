@@ -342,7 +342,9 @@ canvas#sketchboard {
 }
 
 .sidebar .section {
-  padding: 10px 0
+  padding: 10px 0;
+  margin: 0 0 15px;
+  border-bottom: 1px solid #2d4061
 }
 
 .sidebar ul span {
@@ -531,3 +533,95 @@ canvas#sketchboard {
   padding: 0 8px;
 }
 
+.iohk-logo {
+  position: absolute;
+  bottom: 0;
+  right: 16px;
+}
+
+.iohk-supported {
+  opacity: 1.0;
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  width: 146px;
+  -webkit-transition: opacity 0.5s;
+  -o-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+  -webkit-transition-timing-function: ease-in-out;
+  -o-transition-timing-function: ease-in-out;
+  transition-timing-function: ease-in-out;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  width: 100%;
+  height: 41px;
+}
+
+.sidebar-footer-inner {
+  border-top: 1px solid #2d4061;
+  margin: 0 15px;
+}
+
+.sidebar.closed .iohk-supported {
+  opacity: 0.0;
+}
+
+.sidebar.open .iohk-supported {
+  opacity: 0.5;
+}
+
+.key h3 {
+  padding-bottom: 10px;
+  width: 277px;
+}
+
+.key .sidebar-hide {
+  width: 277px;
+  padding-bottom: 25px;
+  -webkit-transition: opacity 0.5s;
+  -o-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+  -webkit-transition-timing-function: ease-in-out;
+  -o-transition-timing-function: ease-in-out;
+  transition-timing-function: ease-in-out;
+}
+
+.sidebar.closed .key .sidebar-hide {
+  opacity: 0.0;
+}
+
+.sidebar.open .key .sidebar-hide {
+  opacity: 1.0;
+}
+
+.sidebar .key .sidebar-show {
+  -webkit-transition: opacity 0.5s;
+  -o-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+  -webkit-transition-timing-function: ease-in-out;
+  -o-transition-timing-function: ease-in-out;
+  transition-timing-function: ease-in-out;
+  position: absolute;
+}
+
+.sidebar.closed .key .sidebar-show {
+  opacity: 1.0;
+}
+
+.sidebar.open .key .sidebar-show {
+  opacity: 0.0;
+}
+
+.spending-key {
+  margin: 0 20px 0 0;
+}
+
+.spending-key span {
+  display: inline-block;
+  margin: 0 0 0 5px;
+}
