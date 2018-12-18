@@ -154,10 +154,7 @@ void main() {
 	float absNoise = abs(noiseAmount) * 15.0;
 	float tileNoiseColor = (pow(tileColor, 3.0) * 2.0) * absNoise;
 
-	
-
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
-
 
 	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
 	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
@@ -168,8 +165,8 @@ void main() {
 	//outgoingLight.r += (1.0-vSpentRatio) * 0.2;
 
 	vec3 colorMix = mix( 
-		mix(vec3(211./255., 3./255., 236./255.), outgoingLight, 0.9), 
-		mix(vec3(0./255., 134./255., 239./255.), outgoingLight, 0.9), 
+		mix(vec3(211./255., 3./255., 236./255.), outgoingLight, 0.83), 
+		mix(vec3(0./255., 134./255., 239./255.), outgoingLight, 0.93), 
 		vSpentRatio
 	);
 

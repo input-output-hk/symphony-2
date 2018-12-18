@@ -438,14 +438,18 @@ class App extends mixin(EventEmitter, Component) {
     let outTotal = 0
     let inTotal = 0
 
-    let outputCount = txDataJSON.out.length
     let outputsSpent = 0
     txDataJSON.out.forEach((output) => {
       outTotal += output.value
       outputsSpent += output.spent ? 1 : 0
     })
 
-    txDataJSON.spentRatio = outputsSpent / outputCount
+    txDataJSON.spentRatio = 1
+    if (outputsSpent !== 0) {
+      txDataJSON.spentRatio = outputsSpent / txDataJSON.out.length
+    } else {
+      txDataJSON.spentRatio = 0.0
+    }
 
     txDataJSON.inputs.forEach((input, i) => {
       if (typeof input.prev_out !== 'undefined') {
@@ -470,13 +474,13 @@ class App extends mixin(EventEmitter, Component) {
       const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
       let selectedPosX = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0] - this.originOffset.x
-      let selectedPosY = 100 + (this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 1])
+      let selectedPosY = 50 + (this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 1])
       let selectedPosZ = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2] - this.originOffset.y
 
       this.selectedLight.position.x = selectedPosX
       this.selectedLight.position.z = selectedPosZ
 
-      let to = new THREE.Vector3(selectedPosX + this.originOffset.x, selectedPosY, selectedPosZ + this.originOffset.y)
+      let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
       let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
 
       this.prepareCamAnim(
@@ -492,7 +496,7 @@ class App extends mixin(EventEmitter, Component) {
         })
         .onComplete(() => {
           that.toggleMapControls(false)
-          this.controls.target = new THREE.Vector3(to.x, 0, to.z)
+          this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
           this.camera.position.x = to.x
           this.camera.position.z = to.z
 
@@ -514,6 +518,10 @@ class App extends mixin(EventEmitter, Component) {
 
   async onMouseUp () {
     if (this.animatingCamera) {
+      return
+    }
+
+    if (!this.mousePos) {
       return
     }
 
@@ -2029,7 +2037,7 @@ class App extends mixin(EventEmitter, Component) {
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
       1.0,
-      1000000000
+      100000000
     )
     window.camera = this.camera
     this.camera.position.x = this.config.camera.initPos.x
@@ -2353,6 +2361,8 @@ class App extends mixin(EventEmitter, Component) {
           </div>
 
           <div className='block-details'>
+            <span className='line' />
+            <span className='dot' />
             <h2>Block {this.state.closestBlock.blockData.hash}</h2>
             <div><h3>Health</h3>
               <div className='health-bar-container' title={healthInv}>
@@ -2387,11 +2397,11 @@ class App extends mixin(EventEmitter, Component) {
   UICockpitButton () {
     if (this.state.controlType === 'fly') {
       return (
-        <button onClick={this.toggleTopView.bind(this)} className='toggle-cockpit-controls enter' />
+        <button title='Toggle Cockpit Controls' onClick={this.toggleTopView.bind(this)} className='toggle-cockpit-controls enter' />
       )
     } else {
       return (
-        <button onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls leave' />
+        <button title='Toggle Cockpit Controls' onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls leave' />
       )
     }
   }
@@ -2400,13 +2410,13 @@ class App extends mixin(EventEmitter, Component) {
     if (this.state.controlType !== 'underside') {
       return (
         <div className='flip-view-container'>
-          <button onClick={this.toggleUndersideView.bind(this)} className='flip-view' />
+          <button title='Show Merkle Tree' onClick={this.toggleUndersideView.bind(this)} className='flip-view' />
         </div>
       )
     } else {
       return (
         <div className='flip-view-container'>
-          <button onClick={this.toggleTopView.bind(this)} className='flip-view' />
+          <button title='Show Block Top' onClick={this.toggleTopView.bind(this)} className='flip-view' />
         </div>
       )
     }

@@ -44,7 +44,7 @@ canvas#sketchboard {
   text-transform: uppercase;
   color: #709eec;
   width: 100%;
-  border-bottom: 1px solid #709cf0;
+  border-bottom: 1px solid #2d4061;
   padding: 0 0 10px;
 }
 
@@ -107,9 +107,30 @@ canvas#sketchboard {
   font-weight: bold;
 }
 
+.block-details .line {
+  background: #153453;
+  width: 180px;
+  height: 1px;
+  position: absolute;
+  display: block;
+  left: -180px;
+  top: 19px;
+}
+
+.block-details .dot {
+  background: #709cf0;
+  border-radius: 10px;
+  display: block;
+  width: 5px;
+  height: 5px;
+  position: absolute;
+  left: -3px;
+  top: 17px;
+}
+
 .controls-container {
   left: 50%;
-  margin-left: -75px;
+  margin-left: -51px;
   top: 20px;
   width: 150px;
   position: absolute;
@@ -118,7 +139,7 @@ canvas#sketchboard {
 
 .auto-pilot-controls {
   display: inline-block;
-  width: 83px;
+  width: 77px;
   pointer-events: auto;
   background: rgba(18,23,38,0.9);
   padding: 9px;
@@ -126,7 +147,7 @@ canvas#sketchboard {
   -moz-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
-  height: 40px;
+  height: 38px;
   border: 1px solid #153453;
   border-radius: 50px;
   margin: 0 20px 0 0;
@@ -134,8 +155,8 @@ canvas#sketchboard {
 
 .auto-pilot-controls span {
   display: inline-block;
-  width: 10px;
-  height: 20px;
+  width: 8px;
+  height: 17px;
 }
 
 .auto-pilot-controls span:hover {
@@ -151,8 +172,8 @@ canvas#sketchboard {
 }
 
 .auto-pilot-controls span.stop {
-  width: 19px;
-  height: 20px;
+  width: 15px;
+  height: 16px;
   border: 1px solid #1fc1c3;
   margin: 0 12px;
 }
@@ -214,7 +235,7 @@ canvas#sketchboard {
   position: absolute;
   right: 30px;
   top: 200px;
-  width: 257px;
+  width: 261px;
   text-align: center;
 }
 
@@ -235,7 +256,7 @@ canvas#sketchboard {
   display: block;
   float: right;
   height: 402px;
-  width: 20px;
+  width: 22px;
   background: url(./assets/images/tx-line-right.png) no-repeat;
 }
 
@@ -489,7 +510,7 @@ canvas#sketchboard {
   text-transform: uppercase;
   color: #fff;
   position: absolute;
-  bottom: 100px;
+  bottom: 117px;
   left: 10%;
   background: rgba(18,23,38,0.9);
   padding: 4px;
@@ -509,3 +530,4 @@ canvas#sketchboard {
 .blockchain-selector .down-arrow {
   padding: 0 8px;
 }
+
