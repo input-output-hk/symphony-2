@@ -78,6 +78,8 @@ void main() {
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
 	vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
+
+	//diffuseVar += 1.0-vSpentRatio;
 	
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
@@ -91,15 +93,23 @@ void main() {
 
 	#include <normal_fragment_maps>
 
-	diffuseColor.rgb *= packNormalToRGB( normal + 0.6 );
+	//diffuseColor.rgb *= packNormalToRGB( normal + 0.6 );
 
-	vec3 dispersion = diffuseColor.rgb * packNormalToRGB( normalSmooth + 0.8 );
+	//vec3 dispersion = diffuseColor.rgb * packNormalToRGB( normalSmooth + 0.8 );
 
-	diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
+	//diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
+
+
+	//diffuseColor.rgb = mix(vec3(32./255., 86./255., 159./255.), diffuseColor.rgb, 0.8);
+
+	diffuseColor.rgb = mix( vec3(23./255., 73./255., 141./255.), diffuseColor.rgb, 0.5 );
+	//diffuseColor.rgb = mix( vec3(23./255., 73./255., 141./255.), diffuseColor.rgb, 1.0-vSpentRatio );
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.6);
+	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.3);
+	totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
+
 
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>
@@ -156,21 +166,21 @@ void main() {
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
-	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
-	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
+	// outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
+	// outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
 	//outgoingLight += 0.05;
-	//outgoingLight.r += (1.0-vSpentRatio) * 0.2;
+	//outgoingLight.rgb += (1.0-vSpentRatio) * 0.3;
 
-	vec3 colorMix = mix( 
-		mix(vec3(211./255., 3./255., 236./255.), outgoingLight, 0.83), 
-		mix(vec3(0./255., 134./255., 239./255.), outgoingLight, 0.93), 
-		vSpentRatio
-	);
+	// vec3 colorMix = mix( 
+	// 	mix(vec3(32./255., 86./255., 159./255.), outgoingLight, 0.93), 
+	// 	mix(vec3(32./255., 86./255., 159./255.), outgoingLight, 0.93),
+	// 	vSpentRatio
+	// );
 
-	outgoingLight = colorMix;
+	
 
 
 	outgoingLight += vIsHovered * (sideEdgeAmount * 1.2);
@@ -178,13 +188,13 @@ void main() {
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
 	outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 
-	outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.025;
+	//outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.025;
 	//outgoingLight += packNormalToRGB(normal ) * 0.1;
 
 	if (vWorldPosition.y < 0.0) {
 		diffuseColor.a *= 0.8;
 	}
-	diffuseColor.a *= smoothstep(-60.0, 0.0, vWorldPosition.y);
+	diffuseColor.a *= smoothstep(-100.0, 0.0, vWorldPosition.y);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

@@ -129,8 +129,10 @@ class App extends mixin(EventEmitter, Component) {
       sidebarOpen: false,
       txSearchOpen: false,
       blockSearchOpen: false,
+      dateSearchOpen: false,
       searchTXHash: '',
-      searchBlockHash: ''
+      searchBlockHash: '',
+      altitude: 0
     }
   }
 
@@ -153,7 +155,7 @@ class App extends mixin(EventEmitter, Component) {
 
       // this.txs.renderOrder = 8
 
-      this.particles.renderOrder = -1
+      this.particles.renderOrder = 2
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -321,7 +323,7 @@ class App extends mixin(EventEmitter, Component) {
             new TWEEN.Tween(that.txSpawnStart)
               .to(
                 toCenter.multiplyScalar(460000),
-                3000
+                6000
               )
               .onUpdate(function () {
                 that.txSpawnStart.x = this.x
@@ -1477,6 +1479,13 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
+  toggleDateSearch () {
+    this.setState({
+      txSearchOpen: false,
+      dateSearchOpen: !this.state.dateSearchOpen
+    })
+  }
+
   hideMerkleDetail () {
     this.underside.visible = false
     this.underside.position.x = 0
@@ -1704,13 +1713,17 @@ class App extends mixin(EventEmitter, Component) {
       this.treeGenerator.update(window.performance.now() - this.blockAnimStartTime)
     }
 
+    this.setState({
+      altitude: this.camera.position.y.toFixed(3)
+    })
+
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
     if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
-      // this.renderer.render(this.scene, this.camera)
-      this.composer.render()
+      this.renderer.render(this.scene, this.camera)
+      // this.composer.render()
     }
   }
 
@@ -1731,7 +1744,7 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
-      if (e.target.className !== 'cockpit-border') {
+      if (e.target.className !== 'hud' && e.target.className !== 'cockpit-border') {
         return
       }
       if (e.button !== 0) {
@@ -2063,7 +2076,7 @@ class App extends mixin(EventEmitter, Component) {
    */
   initRenderer () {
     this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
+      antialias: true,
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
@@ -2291,9 +2304,10 @@ class App extends mixin(EventEmitter, Component) {
           <div className='sidebar-show'><img src={txSingle} /></div>
           <div className='sidebar-hide'><img src={txValueKey} /></div>
           <h3>Spending</h3>
+          <div className='sidebar-show'><img src={txSpent} /></div>
           <div className='sidebar-hide'>
-              <span className='spending-key'><img src={txSpent} /> <span>Spent</span></span>
-              <span className='spending-key'><img src={txUnspent} /> <span>Unspent</span></span>
+            <span className='spending-key'><img src={txSpent} /> <span>Spent</span></span>
+            <span className='spending-key'><img src={txUnspent} /> <span>Unspent</span></span>
           </div>
         </div>
         <div className='section explore'>
@@ -2305,13 +2319,17 @@ class App extends mixin(EventEmitter, Component) {
               <span onClick={this.toggleTxSearch.bind(this)}>Locate Transaction</span>
               <span onClick={this.goToRandomBlock.bind(this)}>Random Block</span>
             </li>
+            <li>
+              <button className='calendar' onClick={this.toggleSidebar.bind(this)} />
+              <span onClick={this.toggleDateSearch.bind(this)}>Jump to Date</span>
+            </li>
           </ul>
         </div>
         <div className='sidebar-footer'>
-        <div className='sidebar-footer-inner'>
-          <span className='iohk-supported'>IOHK Supported Project</span>
-          <img className='iohk-logo' src={iohkLogo} />
-        </div>
+          <div className='sidebar-footer-inner'>
+            <span className='iohk-supported'>IOHK Supported Project</span>
+            <img className='iohk-logo' src={iohkLogo} />
+          </div>
         </div>
       </div>
     )
@@ -2346,8 +2364,8 @@ class App extends mixin(EventEmitter, Component) {
   UICockpit () {
     if (this.state.controlType === 'fly') {
       return (
-        <div>
-          <div className='crosshair' />
+        <div className='hud'>
+          <div className='altitude'>{ this.state.altitude }</div>
         </div>
       )
     }
@@ -2375,17 +2393,11 @@ class App extends mixin(EventEmitter, Component) {
 
           {this.UITXDetails()}
 
-          <div className='blockchain-selector'>
-            <img src={bitcoinLogo} />
-            <span>Bitcoin Blockchain</span>
-            <img className='down-arrow' src={downArrow} />
-          </div>
-
           <div className='block-details'>
-            <span className='line' />
-            <span className='dot' />
-            <h2>Block {this.state.closestBlock.blockData.hash}</h2>
-            <div><h3>Health</h3>
+            {/* <span className='line' />
+            <span className='dot' /> */}
+            <h2>//Block {this.state.closestBlock.blockData.hash}</h2>
+            <div><h3>Health:</h3>
               <div className='health-bar-container' title={healthInv}>
                 <div
                   className='health-bar'
@@ -2397,16 +2409,16 @@ class App extends mixin(EventEmitter, Component) {
               </div>
             </div>
             <ul>
-              <li><h3>Date</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
-              <li><h3>Bits</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
-              <li><h3>Size</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
-              <li><h3>Transaction Fees</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
+              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
+              <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
+              <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
+              <li><h3>Transaction Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
             </ul>
             <ul>
-              <li><h3>Height</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
-              <li><h3>Merkle Root</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
-              <li><h3>No. of Transactions</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
-              <li><h3>Output Total</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
+              <li><h3>Height:</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
+              <li><h3>Merkle Root:</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
+              <li><h3>No. of Transactions:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
+              <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
             </ul>
           </div>
 
@@ -2445,22 +2457,36 @@ class App extends mixin(EventEmitter, Component) {
 
   UITXDetails () {
     if (this.state.txSelected) {
+      // linearly interpolate between colours for health bar
+      let unhealthy = {
+
+      }
+      let healthy = {
+        r: 45,
+        r: 64,
+        r: 97
+      }
+
+      // let r = color1.red + percent * (color2.red - color1.red)
+      // let g = color1.green + percent * (color2.green - color1.green)
+      // let b = color1.blue + percent * (color2.blue - color1.blue)
+
       return (
         <div className='tx-details'>
           <span className='border-left' />
           <div className='tx-details-inner'>
-            <img src={crystalImage} />
-            <h2>Transaction</h2>
+            <img width='100' alt='Transaction' src={crystalImage} />
+            <h2>//Transaction</h2>
             <ul>
-              <li><h3>Date</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
-              <li title={this.state.txSelected.hash}><h3>Hash</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
-              <li><h3>Version</h3> <strong>{this.state.txSelected.ver}</strong></li>
-              <li><h3>Size (bytes)</h3> <strong>{this.state.txSelected.size}</strong></li>
-              <li><h3>Relayed By</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
-              <li><h3>Outputs Spent</h3> <strong>{(this.state.txSelected.spentRatio * 100).toFixed(0)}%</strong></li>
-              <li><h3>Input Total</h3> <strong>{this.state.txSelected.inTotal} BTC</strong></li>
-              <li><h3>Output Total</h3> <strong>{this.state.txSelected.outTotal} BTC</strong></li>
-              <li><h3>Fee</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
+              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
+              <li title={this.state.txSelected.hash}><h3>Hash:</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
+              <li><h3>Version:</h3> <strong>{this.state.txSelected.ver}</strong></li>
+              <li><h3>Size (bytes):</h3> <strong>{this.state.txSelected.size}</strong></li>
+              <li><h3>Relayed By:</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
+              <li><h3>Outputs Spent:</h3> <strong>{(this.state.txSelected.spentRatio * 100).toFixed(0)}%</strong></li>
+              <li><h3>Input Total:</h3> <strong>{(this.state.txSelected.inTotal).toFixed(2)} BTC</strong></li>
+              <li><h3>Output Total:</h3> <strong>{(this.state.txSelected.outTotal).toFixed(2)} BTC</strong></li>
+              <li><h3>Fee:</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
               <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
             </ul>
           </div>

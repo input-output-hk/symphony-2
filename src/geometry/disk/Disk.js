@@ -21,7 +21,7 @@ export default class Disk extends Base {
     // this.normalMap.repeat.set(4, 4)
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa2/')
+      .setPath('assets/images/textures/cubemaps/playa/')
       .load([
         '0004.png',
         '0002.png',

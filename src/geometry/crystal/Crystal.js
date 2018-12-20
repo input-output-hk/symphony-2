@@ -33,7 +33,7 @@ export default class Crystal extends Base {
     this.txIndexOffsets = {}
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa2/')
+      .setPath('assets/images/textures/cubemaps/playa-full/')
       .load([
         '0004.png',
         '0002.png',
@@ -48,8 +48,8 @@ export default class Crystal extends Base {
       opacity: 1.0,
       color: 0x000000,
       emissive: 0x000000,
-      metalness: 0.9,
-      roughness: 0.1,
+      metalness: 1.0,
+      roughness: 0.15,
       transparent: true,
       side: THREE.FrontSide,
       envMap: this.cubeMap,

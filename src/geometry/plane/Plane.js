@@ -22,7 +22,7 @@ export default class Plane extends Base {
     this.blockHeightIndex = {}
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa2/')
+      .setPath('assets/images/textures/cubemaps/playa/')
       .load([
         '0004.png',
         '0002.png',
@@ -35,16 +35,16 @@ export default class Plane extends Base {
     this.material = new PlaneMaterial({
       flatShading: true,
       color: 0xffffff,
-      emissive: 0x000000,
+      emissive: 0x121327,
       metalness: 1.0,
       roughness: 0.0,
       opacity: 0.5,
       transparent: true,
       side: THREE.FrontSide,
-      envMap: this.cubeMap,
-      envMapIntensity: 0.35,
+      // envMap: this.cubeMap,
+      // envMapIntensity: 0.35,
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.01, 0.01)
+      normalScale: new THREE.Vector2(0.001, 0.001)
       // fog: false
     })
   }

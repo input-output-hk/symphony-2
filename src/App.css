@@ -32,20 +32,22 @@ canvas#sketchboard {
   top: 0;
   left: 0;
   color: #fff;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Consolas', sans-serif;
+  text-transform: uppercase;
   font-weight: 300;
   width: 100%;
   height: 100%;
 }
 
 .symphony-ui h2 {
-  font-weight: bold;
+  font-weight: normal;
   font-size: 12px;
   text-transform: uppercase;
   color: #709eec;
   width: 100%;
   border-bottom: 1px solid #2d4061;
-  padding: 0 0 10px;
+  padding: 0 0 7px;
+  margin: 0 0 7px;
 }
 
 
@@ -71,17 +73,18 @@ canvas#sketchboard {
 .health-bar-container {
   width: 100px;
   position: relative;
-  border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.2);
-  height: 9px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  height: 6px;
   display: inline-block;
-  margin: 0 0 0 20px;
+  margin: 0;
+  top: -1px;
 }
 
 .health-bar {
   position: absolute;
   background: #009800;
-  height: 7px;
+  height: 4px;
 }
 
 .block-details {
@@ -91,20 +94,19 @@ canvas#sketchboard {
   border-top: 1px solid #153453;
   border-left: 1px solid #153453;
   border-right: 1px solid #153453;
-  background: rgba(18,23,38,0.9);
-  padding: 15px 20px 10px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 12px 10px;
   -webkit-transition: opacity .5s;
-  -moz-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
   left: 50%;
-  width: 670px;
+  width: 595px;
   margin-left: -335px;
   bottom: 0;
 }
 
 .block-details strong {
-  font-weight: bold;
+  font-weight: normal;
 }
 
 .block-details .line {
@@ -235,7 +237,7 @@ canvas#sketchboard {
   position: absolute;
   right: 30px;
   top: 200px;
-  width: 261px;
+  width: 222px;
   text-align: center;
 }
 
@@ -282,13 +284,13 @@ canvas#sketchboard {
 }
 
 .tx-details strong {
-  font-weight: bold
+  font-weight: normal;
 }
 
 .tx-details-inner {
   display: block;
   float: left;
-  width: 220px;
+  width: 180px;
 }
 
 .crosshair {
@@ -323,7 +325,7 @@ canvas#sketchboard {
 }
 
 .sidebar.open {
-  width: 320px;
+  width: 270px;
 }
 
 .search {
@@ -338,6 +340,21 @@ canvas#sketchboard {
 }
 
 .search:hover {
+  cursor: pointer;
+}
+
+.calendar {
+  background: url(./assets/images/calendar.svg) no-repeat;
+  width: 20px;
+  height: 20px;
+  border: none;
+  margin: 0 10px 0 0;
+  float: left;
+  position: relative;
+  z-index: 1;
+}
+
+.calendar:hover {
   cursor: pointer;
 }
 
@@ -624,4 +641,22 @@ canvas#sketchboard {
 .spending-key span {
   display: inline-block;
   margin: 0 0 0 5px;
+}
+
+.hud {
+  pointer-events: auto;
+  background: url(./assets/images/hud.png) no-repeat;
+  position: fixed;
+  background-size: cover;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  opacity: 0.6;
+}
+
+.altitude {
+  position: absolute;
+  top: 200px;
+  right: 255px;
 }
