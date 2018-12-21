@@ -50,6 +50,7 @@ import Plane from './geometry/plane/Plane'
 import Occlusion from './geometry/occlusion/Occlusion'
 import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
+import Bg from './geometry/bg/Bg'
 // import Tx from './geometry/tx/Tx'
 import Underside from './geometry/underside/Underside'
 import Particles from './geometry/particles/Particles'
@@ -266,6 +267,11 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.diskGenerator = new Disk({
+      planeSize: this.planeSize,
+      config: this.config
+    })
+
+    this.bgGenerator = new Bg({
       planeSize: this.planeSize,
       config: this.config
     })
@@ -645,7 +651,6 @@ class App extends mixin(EventEmitter, Component) {
     // res, strength, radius, threshold
     // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 2.5, 0.4)
 
-
     this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.2, 0.3, 0.4) // 1.0, 9, 0.5, 512);
 
     this.composer.addPass(this.bloomPass)
@@ -724,19 +729,21 @@ class App extends mixin(EventEmitter, Component) {
 
   initLights () {
     this.planetMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa2/')
+      .setPath('assets/images/textures/cubemaps/space/')
       .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
+        '_RT.png', // right
+        '_LF.png', // left
+        '_UP.png', // top
+        '_DN.png', // bottom
+        '_FT.png', // front
+        '_BK.png' // back
       ])
+
+    this.planetMap.mapping = THREE.CubeRefractionMapping
 
     this.saturnmap = new THREE.TextureLoader()
       .load(
-        'assets/images/textures/saturnmap-cold.jpg'
+        'assets/images/textures/saturnmap-hi-purple.jpg'
       )
 
     this.planetGeo = new THREE.SphereBufferGeometry(460000, 100, 100)
@@ -745,8 +752,8 @@ class App extends mixin(EventEmitter, Component) {
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 0.3,
-      roughness: 0.8,
-      envMap: this.planetMap,
+      roughness: 1.0,
+      envMap: this.cubeMap,
       map: this.saturnmap
     })
 
@@ -758,7 +765,7 @@ class App extends mixin(EventEmitter, Component) {
       color: 0xffe083
     })
 
-    this.sunLight = new THREE.PointLight(0xffffff, 0.5, 0.0, 0.0)
+    this.sunLight = new THREE.PointLight(0xffffff, 0.6, 0.0, 0.0)
     this.sunLight.position.set(0, 10000000, 20000000)
     this.group.add(this.sunLight)
 
@@ -816,8 +823,10 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.planetMesh)
 
     this.disk = await this.diskGenerator.init()
-
     this.group.add(this.disk)
+
+    this.bg = await this.bgGenerator.init()
+    this.group.add(this.bg)
   }
 
   async initPositions () {
@@ -923,6 +932,7 @@ class App extends mixin(EventEmitter, Component) {
     this.particlesGenerator.updateOriginOffset(this.originOffset)
     // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
+    this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     this.planetMesh.position.x -= this.originOffset.x
@@ -1673,7 +1683,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (this.planetMesh) {
-      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.000000005)
+      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000005)
     }
 
     if (this.picker) {
@@ -1690,6 +1700,11 @@ class App extends mixin(EventEmitter, Component) {
         time: window.performance.now(),
         camPos: this.camera.position,
         maxHeight: this.maxHeight
+      })
+
+      this.bgGenerator.update({
+        time: window.performance.now(),
+        camPos: this.camera.position
       })
 
       // this.txGenerator.update({
@@ -1726,7 +1741,7 @@ class App extends mixin(EventEmitter, Component) {
     if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
-       this.renderer.render(this.scene, this.camera)
+      this.renderer.render(this.scene, this.camera)
       // this.composer.render()
     }
   }
@@ -1916,6 +1931,7 @@ class App extends mixin(EventEmitter, Component) {
     this.particlesGenerator.updateOriginOffset(this.originOffset)
     // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
+    this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {
@@ -2037,7 +2053,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/saturn/')
+      .setPath('assets/images/textures/cubemaps/space/')
       .load([
         '_RT.png', // right
         '_LF.png', // left
