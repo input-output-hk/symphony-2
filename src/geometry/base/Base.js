@@ -24,6 +24,7 @@ export default class Base {
 
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
+    this.alphaMap = new THREE.TextureLoader().load('assets/images/textures/alphaMap.jpg')
   }
 
   updateOriginOffset (originOffset) {

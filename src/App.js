@@ -33,9 +33,9 @@ import {
   // SSAARenderPass
 } from './libs/post/EffectComposer'
 
-// import CopyShader from './libs/post/CopyShader'
-// import HueSaturation from './libs/post/HueSaturation'
-// import BrightnessContrast from './libs/post/BrightnessContrast'
+import CopyShader from './libs/post/CopyShader'
+import HueSaturation from './libs/post/HueSaturation'
+import BrightnessContrast from './libs/post/BrightnessContrast'
 import VignetteShader from './libs/post/Vignette'
 import FilmShader from './libs/post/Film'
 
@@ -155,7 +155,7 @@ class App extends mixin(EventEmitter, Component) {
 
       // this.txs.renderOrder = 8
 
-      this.particles.renderOrder = 2
+      this.particles.renderOrder = 1
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -636,14 +636,18 @@ class App extends mixin(EventEmitter, Component) {
     // this.ssaaRenderPass.unbiased = true
     // this.composer.addPass(this.ssaaRenderPass)
 
-    // this.HueSaturationPass = new ShaderPass(HueSaturation)
-    // this.composer.addPass(this.HueSaturationPass)
+    this.HueSaturationPass = new ShaderPass(HueSaturation)
+    this.composer.addPass(this.HueSaturationPass)
 
-    // this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
-    // this.composer.addPass(this.BrightnessContrastPass)
+    this.BrightnessContrastPass = new ShaderPass(BrightnessContrast)
+    this.composer.addPass(this.BrightnessContrastPass)
 
     // res, strength, radius, threshold
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 2.5, 0.4)
+    // this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 2.5, 0.4)
+
+
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.2, 0.3, 0.4) // 1.0, 9, 0.5, 512);
+
     this.composer.addPass(this.bloomPass)
 
     this.VignettePass = new ShaderPass(VignetteShader)
@@ -658,7 +662,7 @@ class App extends mixin(EventEmitter, Component) {
     // this.copyPass.renderToScreen = true
     // this.composer.addPass(this.copyPass)
 
-    this.SMAAPass = new SMAAPass(window.innerWidth, window.innerHeight)
+    this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
     this.SMAAPass.renderToScreen = true
     this.composer.addPass(this.SMAAPass)
   }
@@ -1722,7 +1726,7 @@ class App extends mixin(EventEmitter, Component) {
     if (this.config.debug.debugPicker && this.pickingScene) {
       this.renderer.render(this.pickingScene, this.camera)
     } else {
-      this.renderer.render(this.scene, this.camera)
+       this.renderer.render(this.scene, this.camera)
       // this.composer.render()
     }
   }

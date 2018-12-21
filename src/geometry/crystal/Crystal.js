@@ -45,16 +45,20 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 1.0,
-      color: 0x000000,
+      opacity: 1,
+      color: 0x7fa9fc,
       emissive: 0x000000,
-      metalness: 1.0,
+      metalness: 0.9,
       roughness: 0.15,
       transparent: true,
-      side: THREE.FrontSide,
+      side: THREE.DoubleSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.01, 0.01)
+      normalScale: new THREE.Vector2(0.01, 0.01),
+      alphaMap: this.alphaMap,
+      bumpMap: this.bumpMap,
+      roughnessMap: this.roughnessMap,
+      bumpScale: 0.01
     })
   }
 
