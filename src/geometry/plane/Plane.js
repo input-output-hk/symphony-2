@@ -41,8 +41,10 @@ export default class Plane extends Base {
       opacity: 0.5,
       transparent: true,
       side: THREE.FrontSide,
+      roughnessMap: this.roughnessMap,
       envMap: this.cubeMap,
-      envMapIntensity: 0.35,
+      envMapIntensity: 0.7,
+      alphaMap: this.alphaMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.001, 0.001)
       // fog: false

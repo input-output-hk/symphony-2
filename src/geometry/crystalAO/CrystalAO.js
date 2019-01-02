@@ -26,7 +26,7 @@ export default class CrystalAO extends Base {
     })
 
     this.txIndexOffsets = {}
-    this.instanceTotal = 10 * 3000
+    this.instanceTotal = 4000
     this.txCount = 0
   }
 

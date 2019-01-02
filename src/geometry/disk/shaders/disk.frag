@@ -29,8 +29,8 @@ vec2 spiral(vec2 uv, float a, float radius) {
 }
 
 float plane(vec2 uv, vec2 quadUV) {
-    float top = smoothstep(0.475 * (1.0-maxDerivative), 0.476 + maxDerivative * 0.3, 1.0-uv.y);
-    float bottom = smoothstep(0.475 * (1.0-maxDerivative), 0.476 + maxDerivative *0.3, uv.y);
+    float top = smoothstep(0.47 * (1.0-maxDerivative), 0.476 + maxDerivative * 0.3, 1.0-uv.y);
+    float bottom = smoothstep(0.47 * (1.0-maxDerivative), 0.476 + maxDerivative *0.3, uv.y);
     float left = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), uv.x);
     float right = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), 1.0-uv.x);
     //float pct = top * bottom * left * right;
@@ -142,7 +142,7 @@ void main() {
 
 	s.x *= min(1.0, distToFragmentSq * 0.000000001);
 
-	s.x *= smoothstep(0.0, 500.0, abs(uCamPos.y));
+	s.x *= max(smoothstep(0.0, 500.0, abs(uCamPos.y)), 0.1);
 
 	outgoingLight += (1.0-(s.y*0.0000013)) * 0.3;
 	outgoingLight -= sin(1.0-((s.y + uTime*0.1) *0.001 )) * 0.025;
@@ -151,7 +151,7 @@ void main() {
 
 	//outgoingLight.r += pow(toCenter, 80.0) * 10.0;
 
-	gl_FragColor = vec4( outgoingLight, s.x * 0.8 );
+	gl_FragColor = vec4( outgoingLight, s.x * 0.6 );
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>

@@ -24,7 +24,12 @@ export default class Base {
 
     this.bumpMap = new THREE.TextureLoader().load('assets/images/textures/bumpMap.jpg')
     this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/roughnessMap.jpg')
+    // this.roughnessMap = new THREE.TextureLoader().load('assets/images/textures/marble-floor.jpg')
+    this.roughnessMap.wrapS = THREE.RepeatWrapping
+    this.roughnessMap.wrapT = THREE.RepeatWrapping
+
     this.alphaMap = new THREE.TextureLoader().load('assets/images/textures/alphaMap.jpg')
+    this.alphaMap.wrapS = this.alphaMap.wrapT = THREE.MirroredRepeatWrapping
   }
 
   updateOriginOffset (originOffset) {

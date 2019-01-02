@@ -20,7 +20,7 @@ export default class Particles extends Base {
 
     this.renderer = args.renderer
 
-    this.particleCount = 100000
+    this.particleCount = 10000
 
     this.frame = 0
 

@@ -33,7 +33,7 @@ import {
   // SSAARenderPass
 } from './libs/post/EffectComposer'
 
-import CopyShader from './libs/post/CopyShader'
+// import CopyShader from './libs/post/CopyShader'
 import HueSaturation from './libs/post/HueSaturation'
 import BrightnessContrast from './libs/post/BrightnessContrast'
 import VignetteShader from './libs/post/Vignette'
@@ -45,12 +45,13 @@ import Config from './Config'
 // Geometry
 import Crystal from './geometry/crystal/Crystal'
 import Picker from './geometry/picker/Picker'
-// import CrystalAO from './geometry/crystalAO/CrystalAO'
+import CrystalAO from './geometry/crystalAO/CrystalAO'
 import Plane from './geometry/plane/Plane'
 import Occlusion from './geometry/occlusion/Occlusion'
 import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
 import Bg from './geometry/bg/Bg'
+import Glow from './geometry/glow/Glow'
 // import Tx from './geometry/tx/Tx'
 import Underside from './geometry/underside/Underside'
 import Particles from './geometry/particles/Particles'
@@ -58,8 +59,8 @@ import Particles from './geometry/particles/Particles'
 // CSS
 import './App.css'
 
-import bitcoinLogo from './assets/images/bitcoin-logo.png'
-import downArrow from './assets/images/down-arrow.svg'
+// import bitcoinLogo from './assets/images/bitcoin-logo.png'
+// import downArrow from './assets/images/down-arrow.svg'
 import crystalImage from './assets/images/crystal.png'
 import iohkLogo from './assets/images/iohk-logo.png'
 import txValueKey from './assets/images/tx-value-key.png'
@@ -133,7 +134,9 @@ class App extends mixin(EventEmitter, Component) {
       dateSearchOpen: false,
       searchTXHash: '',
       searchBlockHash: '',
-      altitude: 0
+      posX: 0,
+      posY: 0,
+      posZ: 0
     }
   }
 
@@ -161,8 +164,9 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
       this.disk.renderOrder = 2
+      // this.glow.renderOrder = 7
       this.plane.renderOrder = 3
-      // this.crystalAO.renderOrder = 6
+      this.crystalAO.renderOrder = 6
 
       this.underside.position.y = -0.1
       this.undersideL.position.y = -0.1
@@ -173,6 +177,7 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideR.renderOrder = 2
 
       this.planetMesh.renderOrder = -1
+      // this.sprite.renderOrder = -2
     } else {
       if (this.centerTree) {
         this.centerTree.material.depthWrite = true
@@ -191,18 +196,20 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideR.position.y = -1.05
 
       this.crystal.renderOrder = 1
-      // this.crystalAO.renderOrder = 2
+      this.crystalAO.renderOrder = 2
       this.plane.renderOrder = 3
       this.underside.renderOrder = 4
       this.undersideL.renderOrder = 4
       this.undersideR.renderOrder = 4
       this.trees.renderOrder = 5
       this.disk.renderOrder = 6
+      // this.sprite.renderOrder = -2
       this.planetMesh.renderOrder = 7
     }
 
     if (this.camera.position.y > 30000) {
       this.disk.renderOrder = -1
+      // this.sprite.renderOrder = 0
     }
   }
 
@@ -231,11 +238,11 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
-    // this.crystalAOGenerator = new CrystalAO({
-    //   firebaseDB: this.firebaseDB,
-    //   planeSize: this.planeSize,
-    //   config: this.config
-    // })
+    this.crystalAOGenerator = new CrystalAO({
+      firebaseDB: this.firebaseDB,
+      planeSize: this.planeSize,
+      config: this.config
+    })
 
     this.planeGenerator = new Plane({
       planeSize: this.planeSize,
@@ -267,6 +274,11 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.diskGenerator = new Disk({
+      planeSize: this.planeSize,
+      config: this.config
+    })
+
+    this.glowGenerator = new Glow({
       planeSize: this.planeSize,
       config: this.config
     })
@@ -315,7 +327,7 @@ class App extends mixin(EventEmitter, Component) {
             resolve()
           } else {
             this.txSpawnStart.x = this.blockPositions[blockHeight * 2 + 0]
-            this.txSpawnStart.y = 0.0
+            this.txSpawnStart.y = 300.0
             this.txSpawnStart.z = this.blockPositions[blockHeight * 2 + 1]
 
             this.txSpawnDestination.x = this.blockPositions[blockHeight * 2 + 0]
@@ -329,7 +341,7 @@ class App extends mixin(EventEmitter, Component) {
             new TWEEN.Tween(that.txSpawnStart)
               .to(
                 toCenter.multiplyScalar(460000),
-                6000
+                2500
               )
               .onUpdate(function () {
                 that.txSpawnStart.x = this.x
@@ -743,7 +755,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.saturnmap = new THREE.TextureLoader()
       .load(
-        'assets/images/textures/saturnmap-hi-purple.jpg'
+        'assets/images/textures/saturnmap-hi-purple-2.jpg'
       )
 
     this.planetGeo = new THREE.SphereBufferGeometry(460000, 100, 100)
@@ -791,6 +803,7 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       let blockData = await this.getBlockData(hash)
+      console.log(blockData)
 
       const getGeometryWorker = new GetGeometryWorker()
       getGeometryWorker.onmessage = ({ data }) => {
@@ -824,6 +837,9 @@ class App extends mixin(EventEmitter, Component) {
 
     this.disk = await this.diskGenerator.init()
     this.group.add(this.disk)
+
+    this.glow = await this.glowGenerator.init()
+    this.scene.add(this.glow)
 
     this.bg = await this.bgGenerator.init()
     this.group.add(this.bg)
@@ -886,9 +902,9 @@ class App extends mixin(EventEmitter, Component) {
 
     this.group.add(this.crystal)
 
-    // this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
-    // this.crystalAO.translateY(0.1)
-    // this.group.add(this.crystalAO)
+    this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
+    this.crystalAO.translateY(0.1)
+    this.group.add(this.crystalAO)
 
     // this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
 
@@ -930,8 +946,10 @@ class App extends mixin(EventEmitter, Component) {
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
     this.particlesGenerator.updateOriginOffset(this.originOffset)
-    // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
+
+    // this.glowGenerator.updateOriginOffset(this.originOffset)
     this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
@@ -971,7 +989,7 @@ class App extends mixin(EventEmitter, Component) {
     // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.cubeCamera = new THREE.CubeCamera(1.0, 1500, 512)
+    this.cubeCamera = new THREE.CubeCamera(1.0, 15000, 1024)
     this.cubeCamera.position.copy(pos)
 
     this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1275,10 +1293,10 @@ class App extends mixin(EventEmitter, Component) {
 
       let start = this.closestHeight - 20
       let end = this.closestHeight + 20
-      if (this.state.controlType === 'fly' || this.state.controlType === 'map') {
-        start = 0,
-        end = this.blockPositions.length / 2
-      }
+      // if (this.state.controlType === 'fly' || this.state.controlType === 'map') {
+      //   start = 0,
+      //   end = this.blockPositions.length / 2
+      // }
 
       if (start < 0) {
         start = 0
@@ -1387,7 +1405,7 @@ class App extends mixin(EventEmitter, Component) {
               this.blockGeoDataObject[blockGeoData.height] = blockGeoData
 
               this.crystalGenerator.updateGeometry(blockGeoData)
-              // this.crystalAOGenerator.updateGeometry(blockGeoData)
+              this.crystalAOGenerator.updateGeometry(blockGeoData)
             }
           }
         })
@@ -1450,7 +1468,7 @@ class App extends mixin(EventEmitter, Component) {
                   if (blockGeoData) {
                     if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
                       this.crystalGenerator.updateGeometry(blockGeoData)
-                      // this.crystalAOGenerator.updateGeometry(blockGeoData)
+                      this.crystalAOGenerator.updateGeometry(blockGeoData)
                     }
                   }
 
@@ -1683,7 +1701,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (this.planetMesh) {
-      this.planetMesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), window.performance.now() * 0.00000005)
+      this.planetMesh.rotation.y += 0.001
     }
 
     if (this.picker) {
@@ -1700,6 +1718,11 @@ class App extends mixin(EventEmitter, Component) {
         time: window.performance.now(),
         camPos: this.camera.position,
         maxHeight: this.maxHeight
+      })
+
+      this.glowGenerator.update({
+        time: window.performance.now(),
+        camPos: this.camera.position
       })
 
       this.bgGenerator.update({
@@ -1728,12 +1751,14 @@ class App extends mixin(EventEmitter, Component) {
         autoPilot: this.autoPilot
       })
 
-      // this.crystalAOGenerator.update(window.performance.now())
+      this.crystalAOGenerator.update(window.performance.now())
       this.treeGenerator.update(window.performance.now() - this.blockAnimStartTime)
     }
 
     this.setState({
-      altitude: this.camera.position.y.toFixed(3)
+      posX: this.camera.position.x.toFixed(3),
+      posY: this.camera.position.y.toFixed(3),
+      posZ: this.camera.position.z.toFixed(3)
     })
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
@@ -1757,7 +1782,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.audio.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
-      // this.crystalAOGenerator.updateBlockStartTimes(blockData)
+      this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
@@ -1881,7 +1906,7 @@ class App extends mixin(EventEmitter, Component) {
     if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audio.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
-      // this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
+      this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
     let undersideTexture1 = null
@@ -1898,7 +1923,7 @@ class App extends mixin(EventEmitter, Component) {
       if (typeof this.audio.buffers[prevBlock.blockData.height] === 'undefined') {
         this.audio.generate(prevBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(prevBlock.blockData)
-        // this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
+        this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
       }
       let block2 = prevBlock
       const nTX2 = Object.keys(block2.blockData.tx).length
@@ -1909,7 +1934,7 @@ class App extends mixin(EventEmitter, Component) {
       if (typeof this.audio.buffers[nextBlock.blockData.height] === 'undefined') {
         this.audio.generate(nextBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(nextBlock.blockData)
-        // this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
+        this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
       }
       let block3 = nextBlock
       const nTX3 = Object.keys(block3.blockData.tx).length
@@ -1921,6 +1946,11 @@ class App extends mixin(EventEmitter, Component) {
     this.planetMesh.position.x -= this.originOffset.x
     this.planetMesh.position.z -= this.originOffset.y
 
+    // this.sprite.position.x = 0
+    // this.sprite.position.z = 0
+    // this.sprite.position.x -= this.originOffset.x
+    // this.sprite.position.z -= this.originOffset.y
+
     this.group.position.x = this.originOffset.x
     this.group.position.z = this.originOffset.y
 
@@ -1929,8 +1959,9 @@ class App extends mixin(EventEmitter, Component) {
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
     this.particlesGenerator.updateOriginOffset(this.originOffset)
-    // this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
+
     this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
@@ -2321,10 +2352,10 @@ class App extends mixin(EventEmitter, Component) {
         <h2>Interactive Blockchain Map</h2>
         <div className='section key'>
           <h3>Transaction Value</h3>
-          <div className='sidebar-show'><img src={txSingle} /></div>
-          <div className='sidebar-hide'><img src={txValueKey} /></div>
+          <div className='sidebar-show'><img src={txSingle} alt='tx single' /></div>
+          <div className='sidebar-hide'><img src={txValueKey} alt='tx key' /></div>
           <h3>Spending</h3>
-          <div className='sidebar-show'><img src={txSpent} /></div>
+          <div className='sidebar-show'><img src={txSpent} alt='tx spending' /></div>
           <div className='sidebar-hide'>
             <span className='spending-key'><img src={txSpent} /> <span>Spent</span></span>
             <span className='spending-key'><img src={txUnspent} /> <span>Unspent</span></span>
@@ -2385,7 +2416,11 @@ class App extends mixin(EventEmitter, Component) {
     if (this.state.controlType === 'fly') {
       return (
         <div className='hud'>
-          <div className='altitude'>{ this.state.altitude }</div>
+          <div className='coords'>
+            <div className='posX'>X: { this.state.posX }</div>
+            <div className='posY'>Y: { this.state.posY }</div>
+            <div className='posZ'>Z: { this.state.posZ }</div>
+          </div>
         </div>
       )
     }
@@ -2396,8 +2431,14 @@ class App extends mixin(EventEmitter, Component) {
       const health = this.state.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.state.closestBlock.blockData.healthRatio
       const healthInv = (1.0 - health)
 
+      let CSSClass = 'block-details-container'
+
+      if (this.state.controlType === 'fly') {
+        CSSClass += ' cockpit'
+      }
+
       return (
-        <div>
+        <div className={CSSClass}>
           <div className='cockpit-border' />
           {this.UICockpit()}
           {this.UICockpitButton()}
@@ -2414,9 +2455,8 @@ class App extends mixin(EventEmitter, Component) {
           {this.UITXDetails()}
 
           <div className='block-details'>
-            {/* <span className='line' />
-            <span className='dot' /> */}
-            <h2>//Block {this.state.closestBlock.blockData.hash}</h2>
+
+            <h2>//Block-{this.state.closestBlock.blockData.height}</h2>
             <div><h3>Health:</h3>
               <div className='health-bar-container' title={healthInv}>
                 <div
@@ -2429,16 +2469,18 @@ class App extends mixin(EventEmitter, Component) {
               </div>
             </div>
             <ul>
+              <li><h3>No. of Tx:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
+              <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
+              <li><h3>Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
               <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
               <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
               <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
-              <li><h3>Transaction Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
-            </ul>
-            <ul>
               <li><h3>Height:</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
               <li><h3>Merkle Root:</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
-              <li><h3>No. of Transactions:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
-              <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
+              <li><h3>Main Chain:</h3> <strong>{ this.state.closestBlock.blockData.main_chain ? 'true' : 'false' }</strong></li>
+              <li><h3>Nonce:</h3> <strong>{ this.state.closestBlock.blockData.nonce }</strong></li>
+              <li><h3>Version:</h3> <strong>{ this.state.closestBlock.blockData.ver }</strong></li>
+              <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
           </div>
 
@@ -2483,8 +2525,8 @@ class App extends mixin(EventEmitter, Component) {
       }
       let healthy = {
         r: 45,
-        r: 64,
-        r: 97
+        g: 64,
+        b: 97
       }
 
       // let r = color1.red + percent * (color2.red - color1.red)
@@ -2493,9 +2535,7 @@ class App extends mixin(EventEmitter, Component) {
 
       return (
         <div className='tx-details'>
-          <span className='border-left' />
           <div className='tx-details-inner'>
-            <img width='100' alt='Transaction' src={crystalImage} />
             <h2>//Transaction</h2>
             <ul>
               <li><h3>Date:</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
@@ -2510,7 +2550,6 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
             </ul>
           </div>
-          <span className='border-right' />
         </div>
       )
     }

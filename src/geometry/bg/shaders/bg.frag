@@ -27,7 +27,7 @@ uniform float opacity;
 
 void main() {
 
-	#include <clipping_planes_fragment>
+	//#include <clipping_planes_fragment>
 
 	vec4 diffuseColor = vec4( diffuse, opacity );
 
@@ -36,25 +36,25 @@ void main() {
 	#include <color_fragment>
 	#include <alphamap_fragment>
 	#include <alphatest_fragment>
-	#include <specularmap_fragment>
+	 #include <specularmap_fragment>
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
 	// accumulation (baked indirect lighting only)
-	#ifdef USE_LIGHTMAP
+	// #ifdef USE_LIGHTMAP
 
-		reflectedLight.indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
+	// 	reflectedLight.indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
 
-	#else
+	// #else
 
-		reflectedLight.indirectDiffuse += vec3( 1.0 );
+	 	reflectedLight.indirectDiffuse += vec3( 1.0 );
 
-	#endif
+	// #endif
 
 	// modulation
-	#include <aomap_fragment>
+	//#include <aomap_fragment>
 
-	reflectedLight.indirectDiffuse *= diffuseColor.rgb;
+	//reflectedLight.indirectDiffuse *= diffuseColor.rgb;
 
 	vec3 outgoingLight = reflectedLight.indirectDiffuse;
 
@@ -64,9 +64,9 @@ void main() {
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 
-	#include <premultiplied_alpha_fragment>
+	// #include <premultiplied_alpha_fragment>
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
-	#include <fog_fragment>
+	// #include <fog_fragment>
 
 }

@@ -57,7 +57,7 @@ canvas#sketchboard {
   text-transform: uppercase;
   color: #fff;
   display: inline-block;
-  margin: 0 8px 0 0;
+  margin: 0;
 }
 
 .symphony-ui ul {
@@ -90,19 +90,15 @@ canvas#sketchboard {
 .block-details {
   pointer-events: auto;
   position: absolute;
+  right: 81px;
+  top: 300px;
+  width: 222px;
   z-index: 9;
-  border-top: 1px solid #153453;
-  border-left: 1px solid #153453;
-  border-right: 1px solid #153453;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.25);
   padding: 10px 12px 10px;
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
-  left: 50%;
-  width: 595px;
-  margin-left: -335px;
-  bottom: 0;
 }
 
 .block-details strong {
@@ -137,6 +133,10 @@ canvas#sketchboard {
   width: 150px;
   position: absolute;
   z-index: 9;
+}
+
+.cockpit .controls-container {
+  display: none;
 }
 
 .auto-pilot-controls {
@@ -192,7 +192,6 @@ canvas#sketchboard {
 
 .block-details ul {
   display: inline-block;
-  width: 50%;
 }
 
 .toggle-cockpit-controls {
@@ -235,9 +234,9 @@ canvas#sketchboard {
 
 .tx-details {
   position: absolute;
-  right: 30px;
-  top: 200px;
-  width: 222px;
+  left: 50%;
+  border: 0;
+  width: 600px;
   text-align: center;
 }
 
@@ -313,7 +312,6 @@ canvas#sketchboard {
   top: 0;
   left: 0;
   border-right: 1px solid #153453;
-  box-shadow: 5px 0px 10px #030a17;
   z-index: 10;
   padding: 17px;
   transition: width 0.5s;
@@ -655,8 +653,9 @@ canvas#sketchboard {
   opacity: 0.6;
 }
 
-.altitude {
+.coords {
   position: absolute;
   top: 200px;
-  right: 255px;
+  right: 199px;
+  width: 103px;
 }
