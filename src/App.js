@@ -207,6 +207,8 @@ class App extends mixin(EventEmitter, Component) {
       this.planetMesh.renderOrder = 7
     }
 
+    this.bg.renderOrder = -1
+
     if (this.camera.position.y > 30000) {
       this.disk.renderOrder = -1
       // this.sprite.renderOrder = 0
@@ -341,7 +343,7 @@ class App extends mixin(EventEmitter, Component) {
             new TWEEN.Tween(that.txSpawnStart)
               .to(
                 toCenter.multiplyScalar(460000),
-                2500
+                500
               )
               .onUpdate(function () {
                 that.txSpawnStart.x = this.x
@@ -423,8 +425,8 @@ class App extends mixin(EventEmitter, Component) {
           mousePos: this.mousePos
         })
 
-        this.hoveredLight.position.x = -999999
-        this.hoveredLight.position.z = -999999
+        // this.hoveredLight.position.x = -999999
+        // this.hoveredLight.position.z = -999999
 
         this.txIsHovered = false
         document.body.style.cursor = 'default'
@@ -435,11 +437,11 @@ class App extends mixin(EventEmitter, Component) {
       if (this.lastHoveredID !== -1) {
         const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
-        let selectedPosX = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 0] - this.originOffset.x
-        let selectedPosZ = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 2] - this.originOffset.y
+        // let selectedPosX = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 0] - this.originOffset.x
+        // let selectedPosZ = this.crystal.geometry.attributes.offset.array[(this.lastHoveredID + txIndexOffset) * 3 + 2] - this.originOffset.y
 
-        this.hoveredLight.position.x = selectedPosX
-        this.hoveredLight.position.z = selectedPosZ
+        // this.hoveredLight.position.x = selectedPosX
+        // this.hoveredLight.position.z = selectedPosZ
 
         hoveredArray[this.lastHoveredID + txIndexOffset] = 1.0
       }
@@ -777,13 +779,13 @@ class App extends mixin(EventEmitter, Component) {
       color: 0xffe083
     })
 
-    this.sunLight = new THREE.PointLight(0xffffff, 0.6, 0.0, 0.0)
+    this.sunLight = new THREE.DirectionalLight(0xffffff, 1.1)
     this.sunLight.position.set(0, 10000000, 20000000)
-    this.group.add(this.sunLight)
+    this.scene.add(this.sunLight)
 
-    this.hoveredLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
-    this.hoveredLight.position.set(-999999, 5, -999999)
-    this.group.add(this.hoveredLight)
+    // this.hoveredLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
+    // this.hoveredLight.position.set(-999999, 5, -999999)
+    // this.group.add(this.hoveredLight)
 
     this.selectedLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
     this.selectedLight.position.set(-999999, 20, -999999)
@@ -842,7 +844,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.add(this.glow)
 
     this.bg = await this.bgGenerator.init()
-    this.group.add(this.bg)
+    this.scene.add(this.bg)
   }
 
   async initPositions () {
@@ -950,7 +952,7 @@ class App extends mixin(EventEmitter, Component) {
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
     // this.glowGenerator.updateOriginOffset(this.originOffset)
-    this.bgGenerator.updateOriginOffset(this.originOffset)
+    // this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
@@ -1413,7 +1415,7 @@ class App extends mixin(EventEmitter, Component) {
           }
         }
 
-        for (let i = 1; i < 10; i++) {
+        for (let i = 1; i < 5; i++) {
           let next = this.closestHeight + i
           let prev = this.closestHeight - i
 
@@ -1949,7 +1951,7 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
-    this.bgGenerator.updateOriginOffset(this.originOffset)
+    // this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {

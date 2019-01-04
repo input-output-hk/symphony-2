@@ -45,7 +45,7 @@ export default class Tree extends Base {
     }
 
     this.material = new TreeMaterial({
-      color: 0xaaaaaa,
+      color: 0xffffff,
       emissive: 0x000000,
       metalness: 0.8,
       roughness: 0.2,

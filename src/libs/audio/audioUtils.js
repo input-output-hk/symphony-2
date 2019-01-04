@@ -162,8 +162,8 @@ export default class Audio extends EventEmitter {
         let spentRatio = spent[i + chunkIndex]
 
         // envelope
-        let attack = custom_smoothstep(time, time + 2.0, currentTime)
-        let release = (1.0 - custom_smoothstep(time + 2.0, time + 4.0, currentTime))
+        let attack = custom_smoothstep(time, time + 3.0, currentTime)
+        let release = (1.0 - custom_smoothstep(time + 3.0, time + 5.0, currentTime))
 
         let spent1 = 1.0
         let spent2 = custom_step(2.0, spentRatio)

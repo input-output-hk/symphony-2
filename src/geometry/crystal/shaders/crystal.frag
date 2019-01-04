@@ -52,7 +52,102 @@ varying float vSpentRatio;
 #include <bsdfs>
 #include <cube_uv_reflection_fragment>
 #include <envmap_pars_fragment>
-#include <envmap_physical_pars_fragment>
+// #include <envmap_physical_pars_fragment>
+
+#if defined( USE_ENVMAP ) && defined( PHYSICAL )
+
+	
+
+
+	vec3 getLightProbeIndirectIrradiance( /*const in SpecularLightProbe specularLightProbe,*/ const in GeometricContext geometry, const in int maxMIPLevel ) {
+
+		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio+0.4);
+
+		vec3 worldNormal = inverseTransformDirection( geometry.normal, viewMatrix );
+
+	
+
+			vec3 queryVec = vec3( flipEnvMap * worldNormal.x, worldNormal.yz );
+
+			// TODO: replace with properly filtered cubemaps and access the irradiance LOD level, be it the last LOD level
+			// of a specular cubemap, or just the default level of a specially created irradiance cubemap.
+
+			#ifdef TEXTURE_LOD_EXT
+
+				vec4 envMapColor = textureCubeLodEXT( envMap, queryVec, float( maxMIPLevel ) );
+
+			#else
+
+				// force the bias high to get the last LOD level as it is the most blurred.
+				vec4 envMapColor = textureCube( envMap, queryVec, float( maxMIPLevel ) );
+
+			#endif
+
+			envMapColor.rgb = envMapTexelToLinear( envMapColor ).rgb;
+
+
+	
+
+		return PI * envMapColor.rgb * envMapIntensityVar;
+
+	}
+
+	// taken from here: http://casual-effects.blogspot.ca/2011/08/plausible-environment-lighting-in-two.html
+	float getSpecularMIPLevel( const in float blinnShininessExponent, const in int maxMIPLevel ) {
+
+		//float envMapWidth = pow( 2.0, maxMIPLevelScalar );
+		//float desiredMIPLevel = log2( envMapWidth * sqrt( 3.0 ) ) - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );
+
+		float maxMIPLevelScalar = float( maxMIPLevel );
+		float desiredMIPLevel = maxMIPLevelScalar + 0.79248 - 0.5 * log2( pow2( blinnShininessExponent ) + 1.0 );
+
+		// clamp to allowable LOD ranges.
+		return clamp( desiredMIPLevel, 0.0, maxMIPLevelScalar );
+
+	}
+
+	vec3 getLightProbeIndirectRadiance( /*const in SpecularLightProbe specularLightProbe,*/ const in GeometricContext geometry, const in float blinnShininessExponent, const in int maxMIPLevel ) {
+
+		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio+0.4);
+
+		#ifdef ENVMAP_MODE_REFLECTION
+
+			vec3 reflectVec = reflect( -geometry.viewDir, geometry.normal );
+
+		#else
+
+			vec3 reflectVec = refract( -geometry.viewDir, geometry.normal, refractionRatio );
+
+		#endif
+
+		reflectVec = inverseTransformDirection( reflectVec, viewMatrix );
+
+		float specularMIPLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );
+
+		
+
+		vec3 queryReflectVec = vec3( flipEnvMap * reflectVec.x, reflectVec.yz );
+
+		#ifdef TEXTURE_LOD_EXT
+
+			vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, specularMIPLevel );
+
+		#else
+
+			vec4 envMapColor = textureCube( envMap, queryReflectVec, specularMIPLevel );
+
+		#endif
+
+		envMapColor.rgb = envMapTexelToLinear( envMapColor ).rgb;
+
+
+		return envMapColor.rgb * envMapIntensityVar;
+
+	}
+
+#endif
+
+
 #include <fog_pars_fragment>
 #include <lights_pars_begin>
 #include <lights_physical_pars_fragment>
@@ -77,9 +172,10 @@ void main() {
 
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
-	vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
+	//vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
+	vec3 diffuseVar = vec3( 0.0 );
 
-	//diffuseVar += 1.0-vSpentRatio;
+	diffuseVar += 1.0-vSpentRatio;
 	
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
@@ -107,8 +203,9 @@ void main() {
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.3);
-	totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
+//	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.3);
+	vec3 totalEmissiveRadiance = vec3(0.0);
+	//totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
 
 
 	#include <logdepthbuf_fragment>
@@ -162,12 +259,12 @@ void main() {
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
 	float absNoise = abs(noiseAmount) * 30.0;
-	float tileNoiseColor = (pow(tileColor, 3.0) * 2.0) * absNoise;
+	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise);
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
-	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex));
-	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex)) * 0.3;
+	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) * (1.0-vSpentRatio+0.2));
+	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) * (1.0-vSpentRatio+0.2)) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 

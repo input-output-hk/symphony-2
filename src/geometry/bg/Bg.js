@@ -29,12 +29,12 @@ export default class Bg extends Base {
     this.cubeMapGround = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa/')
       .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
+        '0004.jpg',
+        '0002.jpg',
+        '0006.jpg',
+        '0005.jpg',
+        '0001.jpg',
+        '0003.jpg'
       ])
 
     this.material = new BgMaterial({

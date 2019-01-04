@@ -15,7 +15,7 @@ const Config = {
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
     fogDensity: 0.00015,
-    particleLifeMax: 200, // max number of frames a particle can live for
+    particleLifeMax: 500, // max number of frames a particle can live for
     particleEmitterRadius: 3 // size of sphere which emits particles
   },
   debug: {
@@ -25,7 +25,7 @@ const Config = {
   audio: {
     sampleRate: 22050,
     soundDuration: 40, // (seconds)
-    noteDuration: 9 // (seconds)
+    noteDuration: 10 // (seconds)
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'
@@ -39,7 +39,7 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fov: 70,
+    fov: 60,
     initPos: {x: 0.0, y: 500.0, z: 0.0}
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
