@@ -52,7 +52,17 @@ export default class Base {
 
     let blockTxCount = blockGeoData.blockData.tx.length
     for (let i = 0; i < blockTxCount; i++) {
-      const tx = blockGeoData.blockData.tx[i]
+      blockGeoData.blockData.tx[i].sequence = i
+    }
+
+    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
+
+    sortedTX.sort(function (a, b) {
+      return b.value - a.value
+    })
+
+    for (let i = 0; i < blockTxCount; i++) {
+      const tx = sortedTX[i]
 
       const txIndexOffset = this.txCount + i
 
@@ -104,7 +114,7 @@ export default class Base {
         txValue
       )
 
-      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
+      let txTime = map(tx.sequence, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
 
       txTimesAttr.setX(
         txIndexOffset,

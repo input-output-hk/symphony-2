@@ -48,7 +48,7 @@ export default class Bg extends Base {
   }
 
   async init () {
-    this.geometry = new THREE.SphereBufferGeometry(20000000, 25, 25)
+    this.geometry = new THREE.SphereBufferGeometry(2000000, 25, 25)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
     this.mesh.frustumCulled = false

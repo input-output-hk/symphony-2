@@ -5,7 +5,8 @@
 }
 
 a {
-  color: #709eec
+  /* color: #709eec */
+  color: #ffffff
 }
 
 canvas#symphony-stage {
@@ -181,13 +182,11 @@ canvas#sketchboard {
 }
 
 .cockpit-border {
+  background: url(./assets/images/vignette2.png) no-repeat;
   position: absolute;
-  width: 120%;
-  height: 156%;
-  margin-left: -10%;
-  margin-top: -15%;
-  /* border: 40em solid rgba(18,23,38,0.3);
-  border-radius: 569px; */
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.13;
 }
 
 .block-details ul {
@@ -233,53 +232,76 @@ canvas#sketchboard {
 }
 
 .tx-details {
+  background: rgba(0, 0, 0, 0.25);
   position: absolute;
   left: 50%;
   border: 0;
+  padding: 10px;
   width: 600px;
+  margin-left: -300px;
   text-align: center;
+  bottom: 50px;
 }
 
-.tx-details .border-left {
-  margin-right: -4px;
-  border: none!important;
-  box-shadow: none;
-  display: block;
-  float: left;
-  height: 402px;
-  width: 20px;
-  background: url(./assets/images/tx-line-left.png) no-repeat;
-}
-
-.tx-details .border-right {
-  border: none!important;
-  box-shadow: none;
-  display: block;
-  float: right;
-  height: 402px;
-  width: 22px;
-  background: url(./assets/images/tx-line-right.png) no-repeat;
-}
-
-.tx-details img {
-  padding: 20px;
-}
 
 .tx-details ul {
   text-align: left;
+  width: 50%;
+  bottom: -30px;
+  display: inline-block;
 }
 
-.tx-details ul li:last-child {
-  padding-top: 10px;
+.in-total {
+}
+
+.out-total {
+}
+
+.tx-details .input-output {
+  margin-top: 10px;
+  width: 100%!important;
+  background: url(./assets/images/arrow.png) no-repeat center center;
+}
+
+.input-output li.inputs {
+  width: 55%;
+}
+
+.input-output li.outputs {
+  width: 45%;
+}
+
+.input-output h3 {
+  display: block;
+}
+
+.input-output li {
+  vertical-align: top;
+  width: 50%;
+  display: inline-block;
+}
+
+.input-output li li {
+  width: 100%;
+  display: inline-block;
+}
+
+.input-output ul {
+  width: 100%
+}
+
+.tx-detail-item {
+  display: inline-block;
+  margin-right: 20px;
 }
 
 .tx-details h2 {
   border: none;
-  border-top: 1px solid #709cf0;
-  text-align: left;
-  padding-top: 30px;
-  margin-top: 5px;
-  padding: 20px 0 0 0;
+  color: #fff;
+  text-align: center;
+  margin-top: 0;
+  padding: 0;
+  font-size: 13px;
 }
 
 .tx-details strong {
@@ -288,8 +310,6 @@ canvas#sketchboard {
 
 .tx-details-inner {
   display: block;
-  float: left;
-  width: 180px;
 }
 
 .crosshair {
@@ -659,3 +679,4 @@ canvas#sketchboard {
   right: 199px;
   width: 103px;
 }
+

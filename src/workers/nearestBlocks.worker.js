@@ -19,22 +19,20 @@ self.addEventListener('message', async function (e) {
       let closestBlocksGeoData = []
 
       let blockData = docRef
-        .where('height', '>', data.closestHeight - 5)
-        .where('height', '<', data.closestHeight + 5)
+        .where('height', '>', data.closestHeight - 10)
+        .where('height', '<', data.closestHeight + 10)
         .orderBy('height', 'asc')
 
       let querySnapshot = await blockData.get()
 
       querySnapshot.forEach(snapshot => {
         let data = snapshot.data()
-        // if (typeof this.blockGeoDataObject[data.height] === 'undefined') {
         closestBlocksData.push(data)
-        // }
       })
 
       let blockGeoData = docRefGeo
-        .where('height', '>', data.closestHeight - 5)
-        .where('height', '<', data.closestHeight + 5)
+        .where('height', '>', data.closestHeight - 10)
+        .where('height', '<', data.closestHeight + 10)
         .orderBy('height', 'asc')
 
       let geoSnapshot = await blockGeoData.get()
@@ -42,7 +40,6 @@ self.addEventListener('message', async function (e) {
       geoSnapshot.forEach(snapshot => {
         let data = snapshot.data()
 
-        // if (typeof this.blockGeoDataObject[data.height] === 'undefined') {
         let offsetJSON = JSON.parse(data.offsets)
         let offsetsArray = Object.values(offsetJSON)
 
@@ -55,7 +52,6 @@ self.addEventListener('message', async function (e) {
         blockData.scales = scalesArray
 
         closestBlocksGeoData.push(data)
-        // }
       })
 
       let returnData = {

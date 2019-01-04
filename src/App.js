@@ -833,7 +833,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initEnvironment () {
-    this.group.add(this.planetMesh)
+    this.scene.add(this.planetMesh)
 
     this.disk = await this.diskGenerator.init()
     this.group.add(this.disk)
@@ -953,9 +953,6 @@ class App extends mixin(EventEmitter, Component) {
     this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
-    this.planetMesh.position.x -= this.originOffset.x
-    this.planetMesh.position.z -= this.originOffset.y
-
     // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
 
     this.closestBlockReadyForUpdate = true
@@ -989,7 +986,7 @@ class App extends mixin(EventEmitter, Component) {
     // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.cubeCamera = new THREE.CubeCamera(1.0, 15000, 1024)
+    this.cubeCamera = new THREE.CubeCamera(1.0, 1500, 512)
     this.cubeCamera.position.copy(pos)
 
     this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
@@ -1291,8 +1288,8 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      let start = this.closestHeight - 20
-      let end = this.closestHeight + 20
+      let start = this.closestHeight - 10
+      let end = this.closestHeight + 10
       // if (this.state.controlType === 'fly' || this.state.controlType === 'map') {
       //   start = 0,
       //   end = this.blockPositions.length / 2
@@ -1416,7 +1413,7 @@ class App extends mixin(EventEmitter, Component) {
           }
         }
 
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < 10; i++) {
           let next = this.closestHeight + i
           let prev = this.closestHeight - i
 
@@ -1877,8 +1874,8 @@ class App extends mixin(EventEmitter, Component) {
     for (const height in this.audio.audioSources) {
       if (this.audio.audioSources.hasOwnProperty(height)) {
         if (
-          height < this.closestBlock.blockData.height - 5 ||
-          height > this.closestBlock.blockData.height + 5
+          height < this.closestBlock.blockData.height - 10 ||
+          height > this.closestBlock.blockData.height + 10
         ) {
           this.audio.audioSources[height].stop()
           delete this.audio.audioSources[height]
@@ -1940,16 +1937,6 @@ class App extends mixin(EventEmitter, Component) {
       const nTX3 = Object.keys(block3.blockData.tx).length
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
     }
-
-    this.planetMesh.position.x = 0
-    this.planetMesh.position.z = 0
-    this.planetMesh.position.x -= this.originOffset.x
-    this.planetMesh.position.z -= this.originOffset.y
-
-    // this.sprite.position.x = 0
-    // this.sprite.position.z = 0
-    // this.sprite.position.x -= this.originOffset.x
-    // this.sprite.position.z -= this.originOffset.y
 
     this.group.position.x = this.originOffset.x
     this.group.position.z = this.originOffset.y
@@ -2106,7 +2093,7 @@ class App extends mixin(EventEmitter, Component) {
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
       1.0,
-      100000000
+      5000000
     )
     window.camera = this.camera
     this.camera.position.x = this.config.camera.initPos.x
@@ -2472,12 +2459,11 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3>No. of Tx:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
               <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
               <li><h3>Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
-              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MMMM Do YYYY, h:mm:ss a') }</strong></li>
+              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
               <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
               <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
               <li><h3>Height:</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
               <li><h3>Merkle Root:</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
-              <li><h3>Main Chain:</h3> <strong>{ this.state.closestBlock.blockData.main_chain ? 'true' : 'false' }</strong></li>
               <li><h3>Nonce:</h3> <strong>{ this.state.closestBlock.blockData.nonce }</strong></li>
               <li><h3>Version:</h3> <strong>{ this.state.closestBlock.blockData.ver }</strong></li>
               <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
@@ -2536,19 +2522,35 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className='tx-details'>
           <div className='tx-details-inner'>
-            <h2>//Transaction</h2>
-            <ul>
-              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
-              <li title={this.state.txSelected.hash}><h3>Hash:</h3> <strong>{this.state.txSelected.hash.substring(0, 16)}...</strong></li>
-              <li><h3>Version:</h3> <strong>{this.state.txSelected.ver}</strong></li>
-              <li><h3>Size (bytes):</h3> <strong>{this.state.txSelected.size}</strong></li>
-              <li><h3>Relayed By:</h3> <strong>{this.state.txSelected.relayed_by}</strong></li>
-              <li><h3>Outputs Spent:</h3> <strong>{(this.state.txSelected.spentRatio * 100).toFixed(0)}%</strong></li>
-              <li><h3>Input Total:</h3> <strong>{(this.state.txSelected.inTotal).toFixed(2)} BTC</strong></li>
-              <li><h3>Output Total:</h3> <strong>{(this.state.txSelected.outTotal).toFixed(2)} BTC</strong></li>
-              <li><h3>Fee:</h3> <strong>{this.state.txSelected.fee} BTC</strong></li>
-              <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>View Details</a></strong></h3></li>
+            <h2><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>TX-{this.state.txSelected.hash}</a></h2>
+
+            <span className='tx-detail-item'><strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></span>
+            <span className='tx-detail-item'><strong>{this.state.txSelected.size} bytes</strong></span>
+            <span className='tx-detail-item'><h3>Relayed By:</h3> <strong>{this.state.txSelected.relayed_by}</strong></span>
+            <span className='tx-detail-item'><h3>Fee:</h3> <strong>{this.state.txSelected.fee} BTC</strong></span>
+
+            <ul className='input-output'>
+              <li className='inputs'><h3>Inputs:</h3>
+                <ul>
+                  {this.state.txSelected.inputs.slice(0, 5).map(function (el, index) {
+                    return <li key={index}>
+                      { typeof el.prev_out !== 'undefined' ? el.prev_out.value / 100000000 : 0 } BTC</li>
+                  })}
+                  {this.state.txSelected.inputs.length > 5 ? '...' : ''}
+                </ul>
+              </li>
+
+              <li className='outputs'><h3>Outputs:</h3>
+                <ul>
+                  {this.state.txSelected.out.slice(0, 5).map(function (el, index) {
+                    return <li key={index}>{el.value / 100000000} BTC ({el.spent ? 'Spent' : 'Unspent'})</li>
+                  })}
+                  {this.state.txSelected.out.length > 5 ? '...' : ''}
+                  <li className='out-total'><strong>Total:</strong> {(this.state.txSelected.outTotal).toFixed(2)} BTC</li>
+                </ul>
+              </li>
             </ul>
+
           </div>
         </div>
       )

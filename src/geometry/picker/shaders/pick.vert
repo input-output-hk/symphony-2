@@ -19,7 +19,7 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	transformed.xz *= (scale);
+	transformed.xz *= scale;
 	transformed.y *= (offset.y);
 	transformed.y += offset.y * 0.5;
     transformed.xz += offset.xz;

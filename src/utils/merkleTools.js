@@ -62,8 +62,8 @@ export default class MerkleTools {
       0: 6.9
     }
 
-    const merkleLineWidth = merkleLineWidthMap[nTX]
-    const merkleNodeRadius = merkleNodeRadiusMap[nTX]
+    const merkleLineWidth = merkleLineWidthMap[nTX] * 0.5
+    const merkleNodeRadius = merkleNodeRadiusMap[nTX] * 0.5
 
     let positions = require('../data/merkle-' + merkleMap[nTX])
 
@@ -81,7 +81,7 @@ export default class MerkleTools {
     let merklePositions = merkleData.positions
 
     let canvasOffset = canvasSize * 0.5
-    let scaleFactor = 4.015
+    let scaleFactor = 2.0075
 
     let offsetStack = Array.from(closestBlock.offsets)
 

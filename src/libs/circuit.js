@@ -65,7 +65,7 @@ export default class Circuit extends EventEmitter {
           this.canvas.setAttribute('id', 'sketchboard')
           document.getElementsByTagName('body')[0].appendChild(this.canvas)
 
-          let canvasSize = 2048
+          let canvasSize = 1024
           this.canvas.width = canvasSize
           this.canvas.height = canvasSize
 

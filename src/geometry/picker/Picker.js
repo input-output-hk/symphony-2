@@ -58,8 +58,13 @@ export default class Picker extends Base {
 
     let pickColor = new THREE.Color(0x999999)
 
+    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
+    sortedTX.sort(function (a, b) {
+      return b.value - a.value
+    })
+
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-      const tx = blockGeoData.blockData.tx[i]
+      const tx = sortedTX[i]
 
       pickColor.setHex(i + 1)
       pickingColors.array[i * 3 + 0] = pickColor.r
@@ -90,8 +95,8 @@ export default class Picker extends Base {
       quaternions.array[i * 4 + 3] = object.quaternion.w
 
       let scale = blockGeoData.scales[i]
-      if (scale > 20) {
-        scale = 20
+      if (scale > 10) {
+        scale = 10
       }
 
       scales.setX(
@@ -103,8 +108,8 @@ export default class Picker extends Base {
       if (txValue > 1000) {
         txValue = 1000
       }
-      if (txValue < 2) {
-        txValue = 2
+      if (txValue < 0.5) {
+        txValue = 0.5
       }
 
       this.txMap[i] = tx.hash
@@ -143,8 +148,13 @@ export default class Picker extends Base {
     this.geometry.attributes.quaternion.array = new Float32Array(this.instanceTotal * 4)
     this.geometry.attributes.pickerColor.array = new Float32Array(this.instanceTotal * 3)
 
+    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
+    sortedTX.sort(function (a, b) {
+      return b.value - a.value
+    })
+
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-      const tx = blockGeoData.blockData.tx[i]
+      const tx = sortedTX[i]
 
       pickColor.setHex(i + 1)
       this.geometry.attributes.pickerColor.array[i * 3 + 0] = pickColor.r
@@ -174,17 +184,22 @@ export default class Picker extends Base {
       this.geometry.attributes.quaternion.array[i * 4 + 2] = object.quaternion.z
       this.geometry.attributes.quaternion.array[i * 4 + 3] = object.quaternion.w
 
+      let scale = blockGeoData.scales[i]
+      if (scale > 20) {
+        scale = 20
+      }
+
       this.geometry.attributes.scale.setX(
         i,
-        blockGeoData.scales[i]
+        scale
       )
 
       let txValue = (tx.value * 0.00000001)
-      if (txValue > 800) {
-        txValue = 800
+      if (txValue > 1000) {
+        txValue = 1000
       }
-      if (txValue < 5) {
-        txValue = 5
+      if (txValue < 0.5) {
+        txValue = 0.5
       }
 
       this.txMap[i] = tx.hash

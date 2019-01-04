@@ -36,7 +36,7 @@ export default class Audio extends EventEmitter {
     // // set unique mode for this block hash
     // let modeIndex = total % Object.keys(modes).length
     //    let mode = modes[Object.keys(modes)[modeIndex]]
-    let mode = modes['aeolian']
+    let mode = modes['dorian']
 
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
@@ -133,8 +133,8 @@ export default class Audio extends EventEmitter {
     // normalize
     for (let index = 0; index < sineArray.length; index++) {
       lArray[index] = map(sineArray[index], min, max, -vol, vol)
-      if (typeof sineArray[index + 100] !== 'undefined') {
-        rArray[index] = map(sineArray[index + 100], min, max, -vol, vol) // right channel slightly out of phase with left for stereo effect
+      if (typeof sineArray[index + 200] !== 'undefined') {
+        rArray[index] = map(sineArray[index + 200], min, max, -vol, vol) // right channel slightly out of phase with left for stereo effect
       }
     }
 
@@ -162,8 +162,8 @@ export default class Audio extends EventEmitter {
         let spentRatio = spent[i + chunkIndex]
 
         // envelope
-        let attack = custom_smoothstep(time, time + 3.0, currentTime)
-        let release = (1.0 - custom_smoothstep(time + 3.0, time + 6.0, currentTime))
+        let attack = custom_smoothstep(time, time + 2.0, currentTime)
+        let release = (1.0 - custom_smoothstep(time + 2.0, time + 4.0, currentTime))
 
         let spent1 = 1.0
         let spent2 = custom_step(2.0, spentRatio)

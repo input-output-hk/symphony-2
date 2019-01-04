@@ -22,7 +22,7 @@ self.addEventListener('message', async function (e) {
       const nTX = data.nTX
       const closestBlock = data.closestBlock
 
-      let canvasSize = 2048
+      let canvasSize = 1024
       let canvas = new OffscreenCanvas(canvasSize, canvasSize)
 
       merkleTools.drawMerkleCanvas(canvas, closestBlock, nTX, canvasSize)

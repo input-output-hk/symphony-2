@@ -15,7 +15,7 @@ export default class CrystalAO extends Base {
     this.map = new THREE.TextureLoader().load('assets/images/textures/ao-hexagon.png')
 
     this.material = new CrystalAOMaterial({
-      // flatShading: true,
+      flatShading: true,
       // color: 0xffffff,
       transparent: true,
       side: THREE.DoubleSide,
