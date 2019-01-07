@@ -168,7 +168,7 @@ void main() {
 	//maxDerivative *= maxDerivative;
 
 	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-	float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), 4.0) * 1.0);
+	float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), mix(4.0, 10.0, vIsHovered + vIsSelected)  ) * 1.0);
 
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
@@ -203,8 +203,8 @@ void main() {
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-//	vec3 totalEmissiveRadiance = vec3(clamp(((vEnvelope )), 0.0, 2.5) * 0.3);
-	vec3 totalEmissiveRadiance = vec3(0.0);
+	vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.3;
+//	vec3 totalEmissiveRadiance = vec3(0.0);
 	//totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
 
 
@@ -280,8 +280,8 @@ void main() {
 	
 
 
-	outgoingLight += vIsHovered * (sideEdgeAmount * 0.9);
-	outgoingLight += vIsSelected * (sideEdgeAmount * 0.9);
+	outgoingLight += vIsHovered * (sideEdgeAmount * 1.0);
+	outgoingLight += vIsSelected * (sideEdgeAmount * 1.0);
 	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
 	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 

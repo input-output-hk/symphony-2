@@ -144,6 +144,8 @@ class App extends mixin(EventEmitter, Component) {
    * Switch renderOrder of elements based on camera position
    */
   setRenderOrder () {
+    this.particles.renderOrder = -1
+
     if (this.camera.position.y > 0) {
       if (this.centerTree) {
         this.centerTree.material.depthWrite = false
@@ -158,8 +160,6 @@ class App extends mixin(EventEmitter, Component) {
       this.occlusion.renderOrder = 0
 
       // this.txs.renderOrder = 8
-
-      this.particles.renderOrder = 1
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -314,13 +314,20 @@ class App extends mixin(EventEmitter, Component) {
     let txData = await window.fetch('https://blockchain.info/unconfirmed-transactions?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
     let txDataJSON = await txData.json()
 
+    this.txSpawnStart.x = 0.0
+    this.txSpawnStart.y = 0.0
+    this.txSpawnStart.z = 0.0
+
+    return
+
     await this.asyncForEach(txDataJSON.txs, async (tx) => {
       await this.asyncForEach(tx.inputs, (input) => {
         return new Promise(async (resolve, reject) => {
           let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
           let inputDataJSON = await inputData.json()
 
-          let blockHeight = inputDataJSON.block_height
+          //          let blockHeight = inputDataJSON.block_height
+          let blockHeight = this.closestBlock.blockData.height - 1
 
           if (
             typeof this.blockPositions[blockHeight * 2 + 0] === 'undefined' ||
@@ -328,33 +335,36 @@ class App extends mixin(EventEmitter, Component) {
           ) {
             resolve()
           } else {
+            console.log(this.txSpawnStart.x)
             this.txSpawnStart.x = this.blockPositions[blockHeight * 2 + 0]
-            this.txSpawnStart.y = 300.0
+            this.txSpawnStart.y = 50.0
             this.txSpawnStart.z = this.blockPositions[blockHeight * 2 + 1]
 
-            this.txSpawnDestination.x = this.blockPositions[blockHeight * 2 + 0]
-            this.txSpawnDestination.y = 500.0
-            this.txSpawnDestination.z = this.blockPositions[blockHeight * 2 + 1]
+            resolve()
 
-            let toCenter = this.txSpawnStart.clone()
-            toCenter.normalize()
+            // this.txSpawnDestination.x = this.blockPositions[blockHeight * 2 + 0]
+            // this.txSpawnDestination.y = 500.0
+            // this.txSpawnDestination.z = this.blockPositions[blockHeight * 2 + 1]
 
-            let that = this
-            new TWEEN.Tween(that.txSpawnStart)
-              .to(
-                toCenter.multiplyScalar(460000),
-                500
-              )
-              .onUpdate(function () {
-                that.txSpawnStart.x = this.x
-                that.txSpawnStart.y = this.y
-                that.txSpawnStart.z = this.z
-              })
-              .onComplete(() => {
-                resolve()
-              })
-              .easing(TWEEN.Easing.Quadratic.In)
-              .start()
+            // let toCenter = this.txSpawnStart.clone()
+            // toCenter.normalize()
+
+            // let that = this
+            // new TWEEN.Tween(that.txSpawnStart)
+            //   .to(
+            //     toCenter.multiplyScalar(460000),
+            //     500
+            //   )
+            //   .onUpdate(function () {
+            //     that.txSpawnStart.x = this.x
+            //     that.txSpawnStart.y = this.y
+            //     that.txSpawnStart.z = this.z
+            //   })
+            //   .onComplete(() => {
+            //     resolve()
+            //   })
+            //   .easing(TWEEN.Easing.Quadratic.In)
+            //   .start()
           }
         })
       })
@@ -768,7 +778,9 @@ class App extends mixin(EventEmitter, Component) {
       metalness: 0.3,
       roughness: 1.0,
       envMap: this.cubeMap,
-      map: this.saturnmap
+      map: this.saturnmap,
+      transparent: true,
+      opacity: 0.5
     })
 
     this.planetMesh = new THREE.Mesh(this.planetGeo, this.planetMat)
@@ -835,7 +847,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initEnvironment () {
-    this.scene.add(this.planetMesh)
+    // this.scene.add(this.planetMesh)
 
     this.disk = await this.diskGenerator.init()
     this.group.add(this.disk)
@@ -952,7 +964,7 @@ class App extends mixin(EventEmitter, Component) {
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
     // this.glowGenerator.updateOriginOffset(this.originOffset)
-    // this.bgGenerator.updateOriginOffset(this.originOffset)
+    this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
@@ -1208,7 +1220,7 @@ class App extends mixin(EventEmitter, Component) {
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
           if (typeof this.audio.gainNodes[height] !== 'undefined') {
-            let vol = map((blockDist * 0.001), 0, 200, 0.5, 0.0)
+            let vol = map((blockDist * 0.001), 0, 100, 0.5, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -1647,15 +1659,15 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    let toBlockVec = new THREE.Vector3(posX, 50, posZ).sub(new THREE.Vector3(
+    let toBlockVec = new THREE.Vector3(posX, 25, posZ).sub(new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      50,
+      25,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     )).normalize().multiplyScalar(500)
 
     let to = new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      50,
+      25,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     ).add(toBlockVec)
     let toTarget = new THREE.Vector3(posX, 50, posZ)
@@ -1951,7 +1963,7 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
-    // this.bgGenerator.updateOriginOffset(this.originOffset)
+    this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {
@@ -2461,7 +2473,7 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3>No. of Tx:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
               <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
               <li><h3>Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
-              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('MM.DD.YY HH:mm:ss') }</strong></li>
+              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
               <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
               <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
               <li><h3>Height:</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>

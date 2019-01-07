@@ -47,7 +47,7 @@ export default class TextureHelper {
         Math.random() * 200 - 100
       )
 
-      location = location.normalize().multiplyScalar(Math.random() * this.config.scene.particleEmitterRadius)
+      location = location.normalize().multiplyScalar(this.config.scene.particleEmitterRadius)
 
       let lifeDuration = Math.ceil(Math.random() * this.config.scene.particleLifeMax)
 

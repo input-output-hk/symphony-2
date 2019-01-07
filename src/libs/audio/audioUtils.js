@@ -27,16 +27,16 @@ export default class Audio extends EventEmitter {
 
   generateBlockAudio (blockData, modes, notes) {
     // compute number from hash
-    // let total = 0
-    // for (let i = 0; i < blockData.hash.length; i++) {
-    //   // convert from base 16
-    //   total += parseInt(blockData.hash[i], 16)
-    // }
+    let total = 0
+    for (let i = 0; i < blockData.hash.length; i++) {
+      // convert from base 16
+      total += parseInt(blockData.hash[i], 16)
+    }
 
     // // set unique mode for this block hash
-    // let modeIndex = total % Object.keys(modes).length
-    //    let mode = modes[Object.keys(modes)[modeIndex]]
-    let mode = modes['dorian']
+    let modeIndex = total % Object.keys(modes).length
+    let mode = modes[Object.keys(modes)[modeIndex]]
+    // let mode = modes['dorian']
 
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
@@ -81,7 +81,7 @@ export default class Audio extends EventEmitter {
     let txTimes = []
     const txCount = blockData.tx.length > 1500 ? 1500 : blockData.tx.length
 
-    for (let i = 0; i < blockData.tx.length; i++) {
+    for (let i = 0; i < txCount; i++) {
       const tx = blockData.tx[i]
 
       let txTime = map(i, 0, txCount, 0, this.soundDuration - 9)
@@ -154,7 +154,7 @@ export default class Audio extends EventEmitter {
       if (Math.abs(currentTime - time) < 6) {
         let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
 
-        let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI
+        let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * (health * 10.0))) * twoPI
 
         let currentAngle = currentTime * ANGULAR_FREQUENCY
         let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
@@ -162,25 +162,25 @@ export default class Audio extends EventEmitter {
         let spentRatio = spent[i + chunkIndex]
 
         // envelope
-        let attack = custom_smoothstep(time, time + 3.0, currentTime)
-        let release = (1.0 - custom_smoothstep(time + 3.0, time + 5.0, currentTime))
+        let attack = custom_smoothstep(time, (time + 0.1) + (custom_random(i) * 2.0), currentTime)
+        let release = (1.0 - custom_smoothstep(time + 2.0, (time + 2.1) + (custom_random(i) * 3.0), currentTime))
 
         let spent1 = 1.0
-        let spent2 = custom_step(2.0, spentRatio)
-        let spent3 = custom_step(3.0, spentRatio)
-        let spent4 = custom_step(4.0, spentRatio)
-        let spent5 = custom_step(5.0, spentRatio)
-        let spent6 = custom_step(6.0, spentRatio)
-        let spent7 = custom_step(7.0, spentRatio)
-        let spent8 = custom_step(8.0, spentRatio)
-        // let spent9 = custom_step(9.0, spentRatio)
-        // let spent10 = custom_step(10.0, spentRatio)
-        // let spent11 = custom_step(11.0, spentRatio)
-        // let spent12 = custom_step(12.0, spentRatio)
-        // let spent13 = custom_step(13.0, spentRatio)
-        // let spent14 = custom_step(14.0, spentRatio)
-        // let spent15 = custom_step(15.0, spentRatio)
-        // let spent16 = custom_step(16.0, spentRatio)
+        let spent2 = custom_step(2.0, spentRatio) * 0.7
+        let spent3 = custom_step(3.0, spentRatio) * 0.7
+        let spent4 = custom_step(4.0, spentRatio) * 0.6
+        let spent5 = custom_step(5.0, spentRatio) * 0.6
+        let spent6 = custom_step(6.0, spentRatio) * 0.5
+        let spent7 = custom_step(7.0, spentRatio) * 0.5
+        let spent8 = custom_step(8.0, spentRatio) * 0.5
+        // let spent9 = custom_step(9.0, spentRatio) * 0.5
+        // let spent10 = custom_step(10.0, spentRatio) * 0.5
+        // let spent11 = custom_step(11.0, spentRatio) * 0.5
+        // let spent12 = custom_step(12.0, spentRatio) * 0.5
+        // let spent13 = custom_step(13.0, spentRatio) * 0.5
+        // let spent14 = custom_step(14.0, spentRatio) * 0.5
+        // let spent15 = custom_step(15.0, spentRatio) * 0.5
+        // let spent16 = custom_step(16.0, spentRatio) * 0.5
 
         let wave = Math.sin(currentAngle * (1.0 + (custom_random(ANGULAR_FREQUENCY * 1.0) * health))) * spent1 +
         Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
@@ -213,7 +213,7 @@ export default class Audio extends EventEmitter {
 
     let ANGULAR_FREQUENCY = frequency * twoPI
 
-    let ANGULAR_FREQUENCY_MOD = (frequency + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * health * 2 - health)) * twoPI
+    let ANGULAR_FREQUENCY_MOD = (frequency + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * (health * 10.0))) * twoPI
 
     let currentAngle = currentTime * ANGULAR_FREQUENCY
     let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD

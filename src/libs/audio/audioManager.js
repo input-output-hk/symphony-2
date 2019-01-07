@@ -37,6 +37,12 @@ export default class Audio extends EventEmitter {
     this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
     this.biquadFilter.Q.setValueAtTime(0.1, this.audioContext.currentTime)
 
+    this.biquadFilter2 = this.audioContext.createBiquadFilter()
+    this.biquadFilter2.type = 'notch'
+    this.biquadFilter2.frequency.setValueAtTime(188, this.audioContext.currentTime)
+    this.biquadFilter2.gain.setValueAtTime(-10.0, this.audioContext.currentTime)
+    this.biquadFilter2.Q.setValueAtTime(3.0, this.audioContext.currentTime)
+
     this.highShelf = this.audioContext.createBiquadFilter()
     this.highShelf.type = 'highshelf'
     this.highShelf.gain.setValueAtTime(-10.0, this.audioContext.currentTime)
@@ -54,16 +60,47 @@ export default class Audio extends EventEmitter {
     }
 
     this.convolver = this.audioContext.createConvolver()
-    this.delay = this.audioContext.createDelay(5.0)
 
-    getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
+    let SlapbackDelayNode = function (audioContext) {
+      this.input = audioContext.createGain()
+      let output = audioContext.createGain()
+      let delay = audioContext.createDelay()
+      let feedback = audioContext.createGain()
+      let wetLevel = audioContext.createGain()
+
+      // set some decent values
+      delay.delayTime.value = 2.0 // 150 ms delay
+      feedback.gain.value = 0.6
+      wetLevel.gain.value = 0.8
+
+      // set up the routing
+      this.input.connect(delay)
+      this.input.connect(output)
+      delay.connect(feedback)
+      delay.connect(wetLevel)
+      feedback.connect(delay)
+      wetLevel.connect(output)
+
+      this.connect = function (target) {
+        output.connect(target)
+      }
+    }
+
+    let delay = new SlapbackDelayNode(this.audioContext)
+
+    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
+    getImpulseBuffer(this.audioContext, './assets/sounds/IR/SquareVictoriaDome.wav').then((buffer) => {
       this.convolver.buffer = buffer
       this.blockAudioBus.connect(this.masterBus)
       this.masterBus.connect(this.highShelf)
       this.highShelf.connect(this.biquadFilter)
-      this.biquadFilter.connect(this.compressor)
-      this.compressor.connect(this.delay)
-      this.delay.connect(this.convolver)
+      this.biquadFilter.connect(this.biquadFilter2)
+      this.biquadFilter2.connect(delay.input)
+      // this.biquadFilter2.connect(this.compressor)
+      // this.compressor.connect(delay.input)
+
+      delay.connect(this.convolver)
+
       this.convolver.connect(this.audioContext.destination)
     })
 
@@ -158,28 +195,43 @@ export default class Audio extends EventEmitter {
       4186.01: 'C8',
       4434.92: 'C#8',
       4698.63: 'D8',
-      4978.03: 'D#8',
-      5274.04: 'E8',
-      5587.65: 'F8',
-      5919.91: 'F#8',
-      6271.93: 'G8',
-      6644.88: 'G#8',
-      7040.00: 'A8',
-      7458.62: 'A#8',
-      7902.13: 'B8'
+      4978.03: 'D#8'
+      // 5274.04: 'E8',
+      // 5587.65: 'F8',
+      // 5919.91: 'F#8',
+      // 6271.93: 'G8',
+      // 6644.88: 'G#8',
+      // 7040.00: 'A8',
+      // 7458.62: 'A#8',
+      // 7902.13: 'B8'
     }
 
     this.modes = {
-      // 'ionian': [
-      //   'C',
-      //   'E',
-      //   'G'
-      // ],
-      // 'dorian': [
-      //   'F',
-      //   'A',
-      //   'C'
-      // ],
+      'A#': [
+        'A#',
+        'D',
+        'F'
+      ],
+      'F': [
+        'F',
+        'A',
+        'C'
+      ],
+      'F#M': [
+        'G',
+        'A#',
+        'D'
+      ],
+      'C#M': [
+        'D',
+        'F',
+        'A'
+      ],
+      'D#': [
+        'D#',
+        'G',
+        'A#'
+      ]
       // 'phrygian': [
       //   'E',
       //   'G',
@@ -205,76 +257,76 @@ export default class Audio extends EventEmitter {
       //   'D',
       //   'F'
       // ]
-      'ionian': [
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'A',
-        'B',
-        'C'
-      ],
-      'dorian': [
-        'C',
-        'D',
-        'D#',
-        'F',
-        'G',
-        'A',
-        'A#',
-        'C'
-      ],
-      'phrygian': [
-        'C',
-        'C#',
-        'D#',
-        'F',
-        'G',
-        'G#',
-        'A#',
-        'C'
-      ],
-      'lydian': [
-        'C',
-        'D',
-        'E',
-        'F#',
-        'G',
-        'A',
-        'B',
-        'C'
-      ],
-      'mixolydian': [
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'A',
-        'A#',
-        'C'
-      ],
-      'aeolian': [
-        'C',
-        'D',
-        'D#',
-        'F',
-        'G',
-        'G#',
-        'A#',
-        'C'
-      ],
-      'locrian': [
-        'C',
-        'C#',
-        'D#',
-        'F',
-        'F#',
-        'G#',
-        'A#',
-        'C'
-      ]
+      // 'ionian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'B',
+      //   'C'
+      // ],
+      // 'dorian': [
+      //   'C',
+      //   'D',
+      //   'D#',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'phrygian': [
+      //   'C',
+      //   'C#',
+      //   'D#',
+      //   'F',
+      //   'G',
+      //   'G#',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'lydian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F#',
+      //   'G',
+      //   'A',
+      //   'B',
+      //   'C'
+      // ],
+      // 'mixolydian': [
+      //   'C',
+      //   'D',
+      //   'E',
+      //   'F',
+      //   'G',
+      //   'A',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'aeolian': [
+      //   'C',
+      //   'D',
+      //   'D#',
+      //   'F',
+      //   'G',
+      //   'G#',
+      //   'A#',
+      //   'C'
+      // ],
+      // 'locrian': [
+      //   'C',
+      //   'C#',
+      //   'D#',
+      //   'F',
+      //   'F#',
+      //   'G#',
+      //   'A#',
+      //   'C'
+      // ]
     }
     this.buffers = []
     this.noteBuffers = []

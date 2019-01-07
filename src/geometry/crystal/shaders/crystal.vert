@@ -96,7 +96,7 @@ void main() {
 	transformed.xz *= (scale * attackLoad);
 	// transformed.xz *= scale;
 
-	transformed.y *= ((offset.y+ (5.0 * vEnvelope)) * attackLoad);
+	transformed.y *= ((offset.y+ (3.0 * vEnvelope)) * attackLoad);
 
 		transformed.y *= 2.0;
 	if (uCamPosYPositive == 1.0) {

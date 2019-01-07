@@ -20,7 +20,7 @@ export default class Particles extends Base {
 
     this.renderer = args.renderer
 
-    this.particleCount = 10000
+    this.particleCount = 100000
 
     this.frame = 0
 
@@ -32,9 +32,9 @@ export default class Particles extends Base {
       transparent: true,
       opacity: 1.0,
       fog: false,
-      blending: THREE.AdditiveBlending
-      // depthWrite: false,
-      // depthTest: false,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false
     })
 
     this.textureHeight = this.textureHelper.textureHeight
