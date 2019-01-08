@@ -993,7 +993,7 @@ class App extends mixin(EventEmitter, Component) {
   async unconfirmedLoop () {
     await this.initUnconfirmedTX()
 
-    this.unconfirmedLoop()
+    // this.unconfirmedLoop()
   }
 
   createCubeMap (pos) {
@@ -1140,7 +1140,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camFromQuaternion = new THREE.Quaternion().copy(this.camera.quaternion)
     this.camToQuaternion = new THREE.Quaternion().setFromEuler(this.camToRotation)
     this.camMoveQuaternion = new THREE.Quaternion()
-    this.camera.quaternion.set(this.camMoveQuaternion)
+    // this.camera.quaternion.set(this.camMoveQuaternion)
   }
 
   toggleTopView () {

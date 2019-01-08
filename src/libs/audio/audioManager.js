@@ -69,8 +69,8 @@ export default class Audio extends EventEmitter {
       let wetLevel = audioContext.createGain()
 
       // set some decent values
-      delay.delayTime.value = 2.0 // 150 ms delay
-      feedback.gain.value = 0.6
+      delay.delayTime.value = 2.0
+      feedback.gain.value = 0.45
       wetLevel.gain.value = 0.8
 
       // set up the routing

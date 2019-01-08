@@ -165,14 +165,14 @@ export default class Audio extends EventEmitter {
         let attack = custom_smoothstep(time, (time + 0.1) + (custom_random(i) * 2.0), currentTime)
         let release = (1.0 - custom_smoothstep(time + 2.0, (time + 2.1) + (custom_random(i) * 3.0), currentTime))
 
-        let spent1 = 1.0
-        let spent2 = custom_step(2.0, spentRatio) * 0.7
-        let spent3 = custom_step(3.0, spentRatio) * 0.7
-        let spent4 = custom_step(4.0, spentRatio) * 0.6
-        let spent5 = custom_step(5.0, spentRatio) * 0.6
-        let spent6 = custom_step(6.0, spentRatio) * 0.5
-        let spent7 = custom_step(7.0, spentRatio) * 0.5
-        let spent8 = custom_step(8.0, spentRatio) * 0.5
+        let spent1 = 1.3
+        let spent2 = 0.3 + custom_step(2.0, spentRatio) * 1.0
+        let spent3 = 0.3 + custom_step(3.0, spentRatio) * 1.0
+        let spent4 = 0.3 + custom_step(4.0, spentRatio) * 1.0
+        let spent5 = 0.3 + custom_step(5.0, spentRatio) * 1.0
+        let spent6 = 0.3 + custom_step(6.0, spentRatio) * 1.0
+        let spent7 = 0.3 + custom_step(7.0, spentRatio) * 1.0
+        let spent8 = 0.3 + custom_step(8.0, spentRatio) * 1.0
         // let spent9 = custom_step(9.0, spentRatio) * 0.5
         // let spent10 = custom_step(10.0, spentRatio) * 0.5
         // let spent11 = custom_step(11.0, spentRatio) * 0.5
