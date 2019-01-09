@@ -33,9 +33,9 @@ export default class Audio extends EventEmitter {
 
     this.biquadFilter = this.audioContext.createBiquadFilter()
     this.biquadFilter.type = 'notch'
-    this.biquadFilter.frequency.setValueAtTime(700, this.audioContext.currentTime)
-    this.biquadFilter.gain.setValueAtTime(-0.9, this.audioContext.currentTime)
-    this.biquadFilter.Q.setValueAtTime(0.1, this.audioContext.currentTime)
+    this.biquadFilter.frequency.setValueAtTime(800, this.audioContext.currentTime)
+    this.biquadFilter.gain.setValueAtTime(-8.0, this.audioContext.currentTime)
+    this.biquadFilter.Q.setValueAtTime(0.7, this.audioContext.currentTime)
 
     this.biquadFilter2 = this.audioContext.createBiquadFilter()
     this.biquadFilter2.type = 'notch'
@@ -45,8 +45,8 @@ export default class Audio extends EventEmitter {
 
     this.highShelf = this.audioContext.createBiquadFilter()
     this.highShelf.type = 'highshelf'
-    this.highShelf.gain.setValueAtTime(-10.0, this.audioContext.currentTime)
-    this.highShelf.frequency.setValueAtTime(1000, this.audioContext.currentTime)
+    this.highShelf.gain.setValueAtTime(-7.0, this.audioContext.currentTime)
+    this.highShelf.frequency.setValueAtTime(1200, this.audioContext.currentTime)
 
     // this.lowShelf = this.audioContext.createBiquadFilter()
     // this.lowShelf.type = 'lowshelf'
@@ -61,6 +61,9 @@ export default class Audio extends EventEmitter {
 
     this.convolver = this.audioContext.createConvolver()
 
+    this.analyser = this.audioContext.createAnalyser()
+    this.analyser.fftSize = 1024
+
     let SlapbackDelayNode = function (audioContext) {
       this.input = audioContext.createGain()
       let output = audioContext.createGain()
@@ -70,8 +73,8 @@ export default class Audio extends EventEmitter {
 
       // set some decent values
       delay.delayTime.value = 2.0
-      feedback.gain.value = 0.45
-      wetLevel.gain.value = 0.8
+      feedback.gain.value = 0.4
+      wetLevel.gain.value = 0.4
 
       // set up the routing
       this.input.connect(delay)
@@ -88,30 +91,44 @@ export default class Audio extends EventEmitter {
 
     let delay = new SlapbackDelayNode(this.audioContext)
 
+    this.analyserGain = this.audioContext.createGain()
+    this.analyserGain.gain.setTargetAtTime(4.0, this.audioContext.currentTime, 0.0)
+
     // getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
-    getImpulseBuffer(this.audioContext, './assets/sounds/IR/SquareVictoriaDome.wav').then((buffer) => {
+    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/GraffitiHallway.wav').then((buffer) => {
+    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/CedarCreekWinery.wav').then((buffer) => {
+    getImpulseBuffer(this.audioContext, './assets/sounds/IR/LittlefieldLobby.wav').then((buffer) => {
       this.convolver.buffer = buffer
       this.blockAudioBus.connect(this.masterBus)
-      this.masterBus.connect(this.highShelf)
-      this.highShelf.connect(this.biquadFilter)
-      this.biquadFilter.connect(this.biquadFilter2)
-      this.biquadFilter2.connect(delay.input)
+      this.masterBus.connect(delay.input)
+
+      // this.masterBus.connect(this.highShelf)
+      // this.highShelf.connect(this.biquadFilter)
+      // this.biquadFilter.connect(this.biquadFilter2)
+      // this.biquadFilter2.connect(delay.input)
       // this.biquadFilter2.connect(this.compressor)
-      // this.compressor.connect(delay.input)
 
       delay.connect(this.convolver)
 
-      this.convolver.connect(this.audioContext.destination)
+      this.convolver.connect(this.compressor)
+      this.compressor.connect(this.biquadFilter)
+
+      this.biquadFilter.connect(this.highShelf)
+
+      this.masterBus.connect(this.analyserGain)
+      this.analyserGain.connect(this.analyser)
+
+      this.highShelf.connect(this.audioContext.destination)
     })
 
     this.notes = {
-      // 27.5000: 'A0',
-      // 29.1352: 'A#0',
-      // 30.8677: 'B0',
-      // 32.7032: 'C1',
-      // 34.6478: 'C#1',
-      // 36.7081: 'D1',
-      // 38.8909: 'D#1',
+      27.5000: 'A0',
+      29.1352: 'A#0',
+      30.8677: 'B0',
+      32.7032: 'C1',
+      34.6478: 'C#1',
+      36.7081: 'D1',
+      38.8909: 'D#1',
       41.2034: 'E1',
       43.6535: 'F1',
       46.2493: 'F#1',
@@ -195,15 +212,15 @@ export default class Audio extends EventEmitter {
       4186.01: 'C8',
       4434.92: 'C#8',
       4698.63: 'D8',
-      4978.03: 'D#8'
-      // 5274.04: 'E8',
-      // 5587.65: 'F8',
-      // 5919.91: 'F#8',
-      // 6271.93: 'G8',
-      // 6644.88: 'G#8',
-      // 7040.00: 'A8',
-      // 7458.62: 'A#8',
-      // 7902.13: 'B8'
+      4978.03: 'D#8',
+      5274.04: 'E8',
+      5587.65: 'F8',
+      5919.91: 'F#8',
+      6271.93: 'G8',
+      6644.88: 'G#8',
+      7040.00: 'A8',
+      7458.62: 'A#8',
+      7902.13: 'B8'
     }
 
     this.modes = {

@@ -219,6 +219,42 @@ class App extends mixin(EventEmitter, Component) {
     this.initStage()
   }
 
+  drawScope (analyser, ctx) {
+    var width = ctx.canvas.width
+
+    var height = ctx.canvas.height
+    var timeData = new Uint8Array(analyser.frequencyBinCount)
+    var scaling = height / 256
+    var risingEdge = 0
+    var edgeThreshold = 5
+
+    analyser.getByteTimeDomainData(timeData)
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
+    ctx.fillRect(0, 0, width, height)
+
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgb(255, 255, 255)'
+    ctx.beginPath()
+
+    // No buffer overrun protection
+    while (timeData[risingEdge++] - 128 > 0 && risingEdge <= width);
+    if (risingEdge >= width) {
+      risingEdge = 0
+    }
+
+    while (timeData[risingEdge++] - 128 < edgeThreshold && risingEdge <= width);
+    if (risingEdge >= width) {
+      risingEdge = 0
+    }
+
+    for (var x = risingEdge; x < timeData.length && x - risingEdge < width; x++) {
+      ctx.lineTo(x - risingEdge, height - timeData[x] * scaling)
+    }
+
+    ctx.stroke()
+  }
+
   async initStage () {
     await this.initFirebase()
 
@@ -228,6 +264,8 @@ class App extends mixin(EventEmitter, Component) {
       soundDuration: this.config.audio.soundDuration,
       noteDuration: this.config.audio.noteDuration
     })
+
+    this.ctx = this.refs.scope.getContext('2d')
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
@@ -1659,18 +1697,18 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    let toBlockVec = new THREE.Vector3(posX, 25, posZ).sub(new THREE.Vector3(
+    let toBlockVec = new THREE.Vector3(posX, 20, posZ).sub(new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      25,
+      20,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     )).normalize().multiplyScalar(500)
 
     let to = new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      25,
+      20,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     ).add(toBlockVec)
-    let toTarget = new THREE.Vector3(posX, 50, posZ)
+    let toTarget = new THREE.Vector3(posX, 40, posZ)
 
     this.prepareCamAnim(to, toTarget)
 
@@ -1717,6 +1755,10 @@ class App extends mixin(EventEmitter, Component) {
 
     if (this.picker) {
       this.updatePicker()
+    }
+
+    if (this.audio.analyser) {
+      this.drawScope(this.audio.analyser, this.ctx)
     }
 
     this.getClosestBlock()
@@ -2455,8 +2497,13 @@ class App extends mixin(EventEmitter, Component) {
 
           {this.UITXDetails()}
 
-          <div className='block-details'>
+          <div className='block-hash'>
+            <h2>//BLOCK-{ this.state.closestBlock.blockData.height }</h2>
+            <h3>{ this.state.closestBlock.blockData.hash }</h3>
+          </div>
 
+          <div className='block-details'>
+            <div className='block-details-border' />
             <h2>//Block-{this.state.closestBlock.blockData.height}</h2>
             <div><h3>Health:</h3>
               <div className='health-bar-container' title={healthInv}>
@@ -2471,8 +2518,8 @@ class App extends mixin(EventEmitter, Component) {
             </div>
             <ul>
               <li><h3>No. of Tx:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
-              <li><h3>Output Total:</h3> <strong>{ this.state.closestBlock.blockData.outputTotal / 100000000 } BTC</strong></li>
-              <li><h3>Fees:</h3> <strong>{ this.state.closestBlock.blockData.fee / 100000000 }</strong></li>
+              <li><h3>Output Total:</h3> <strong>{ (this.state.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
+              <li><h3>Fees:</h3> <strong>{ (this.state.closestBlock.blockData.fee / 100000000).toFixed(2) }</strong></li>
               <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
               <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
               <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
@@ -2480,7 +2527,7 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3>Merkle Root:</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
               <li><h3>Nonce:</h3> <strong>{ this.state.closestBlock.blockData.nonce }</strong></li>
               <li><h3>Version:</h3> <strong>{ this.state.closestBlock.blockData.ver }</strong></li>
-              <li><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
+              <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
           </div>
 
@@ -2587,6 +2634,7 @@ class App extends mixin(EventEmitter, Component) {
       <div className='symphony'>
         <canvas id={this.config.scene.canvasID} />
         {this.UI()}
+        <canvas id='scope' ref='scope' width='220' height='80' />
       </div>
     )
   }

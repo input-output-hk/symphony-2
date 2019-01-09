@@ -5,8 +5,8 @@
 }
 
 a {
-  /* color: #709eec */
-  color: #ffffff
+  color: #ffffff;
+  font-weight: bold;
 }
 
 canvas#symphony-stage {
@@ -44,9 +44,8 @@ canvas#sketchboard {
   font-weight: normal;
   font-size: 12px;
   text-transform: uppercase;
-  color: #709eec;
+  color: #cecece;
   width: 100%;
-  border-bottom: 1px solid #2d4061;
   padding: 0 0 7px;
   margin: 0 0 7px;
 }
@@ -56,7 +55,7 @@ canvas#sketchboard {
   font-weight: normal;
   font-size: 11px;
   text-transform: uppercase;
-  color: #fff;
+  color: #cecece;
   display: inline-block;
   margin: 0;
 }
@@ -68,24 +67,45 @@ canvas#sketchboard {
 }
 
 .symphony-ui li {
+  color: #cecece;
   line-height: 20px;
+}
+
+.symphony-ui li a {
+  color: #cecece;
 }
 
 .health-bar-container {
   width: 100px;
-  position: relative;
   border: 1px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.1);
   height: 6px;
   display: inline-block;
-  margin: 0;
-  top: -1px;
+  margin: 0 0 0 3px;
 }
 
 .health-bar {
   position: absolute;
   background: #009800;
   height: 4px;
+}
+
+.block-hash {
+  position: absolute;
+  bottom: 43px;
+  left: 122px;
+}
+
+.block-details-border {
+  border-left: 2px solid #fff;
+  border-top: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  height: 299px;
+  width: 42px;
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  opacity: 0.3;
 }
 
 .block-details {
@@ -100,6 +120,10 @@ canvas#sketchboard {
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
+}
+
+.block-details .view-details {
+  padding-top: 10px;
 }
 
 .block-details strong {
@@ -663,7 +687,7 @@ canvas#sketchboard {
 
 .hud {
   pointer-events: auto;
-  background: url(./assets/images/hud.png) no-repeat;
+  background: url(./assets/images/hud.png) no-repeat center center;
   position: fixed;
   background-size: cover;
   width: 100vw;
@@ -680,3 +704,17 @@ canvas#sketchboard {
   width: 103px;
 }
 
+.block-hash h2 {
+  padding: 0;
+}
+
+.block-hash h3 {
+  font-size: 12px;
+}
+
+#scope {
+  position: absolute;
+  bottom: 300px;
+  right: 81px;
+  opacity: 0.5;
+}
