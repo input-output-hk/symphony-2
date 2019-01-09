@@ -61,7 +61,7 @@ import './App.css'
 
 // import bitcoinLogo from './assets/images/bitcoin-logo.png'
 // import downArrow from './assets/images/down-arrow.svg'
-import crystalImage from './assets/images/crystal.png'
+// import crystalImage from './assets/images/crystal.png'
 import iohkLogo from './assets/images/iohk-logo.png'
 import txValueKey from './assets/images/tx-value-key.png'
 import txSpent from './assets/images/tx-spent.svg'
@@ -219,14 +219,18 @@ class App extends mixin(EventEmitter, Component) {
     this.initStage()
   }
 
-  drawScope (analyser, ctx) {
-    var width = ctx.canvas.width
+  drawScope (analyser) {
+    if (!this.refs.scope) {
+      return
+    }
 
-    var height = ctx.canvas.height
-    var timeData = new Uint8Array(analyser.frequencyBinCount)
-    var scaling = height / 256
-    var risingEdge = 0
-    var edgeThreshold = 5
+    const ctx = this.refs.scope.getContext('2d')
+    const width = ctx.canvas.width
+    const height = ctx.canvas.height
+    const timeData = new Uint8Array(analyser.frequencyBinCount)
+    const scaling = height / 256
+    let risingEdge = 0
+    const edgeThreshold = 5
 
     analyser.getByteTimeDomainData(timeData)
 
@@ -264,8 +268,6 @@ class App extends mixin(EventEmitter, Component) {
       soundDuration: this.config.audio.soundDuration,
       noteDuration: this.config.audio.noteDuration
     })
-
-    this.ctx = this.refs.scope.getContext('2d')
 
     this.crystalGenerator = new Crystal({
       firebaseDB: this.firebaseDB,
@@ -855,7 +857,6 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       let blockData = await this.getBlockData(hash)
-      console.log(blockData)
 
       const getGeometryWorker = new GetGeometryWorker()
       getGeometryWorker.onmessage = ({ data }) => {
@@ -1324,8 +1325,6 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    console.log('loadNearestBlocks')
-
     this.loading = true
 
     this.lastLoadPos = {
@@ -1485,8 +1484,6 @@ class App extends mixin(EventEmitter, Component) {
             }
           }
         }
-
-        console.log(this.heightsToLoad)
 
         this.heightsToLoad.forEach(async (height) => {
           if (this.loadingMutex.indexOf(height) === -1) {
@@ -1757,13 +1754,12 @@ class App extends mixin(EventEmitter, Component) {
       this.updatePicker()
     }
 
-    if (this.audio.analyser) {
-      this.drawScope(this.audio.analyser, this.ctx)
-    }
-
     this.getClosestBlock()
 
     if (this.blockReady) {
+      if (this.audio.analyser) {
+        this.drawScope(this.audio.analyser)
+      }
       this.loadNearestBlocks()
       this.setRenderOrder()
 
@@ -1920,9 +1916,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
 
-    let posX = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
-    let posZ = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
-
     this.updateClosestTrees()
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
@@ -1981,6 +1974,9 @@ class App extends mixin(EventEmitter, Component) {
       let block2 = prevBlock
       const nTX2 = Object.keys(block2.blockData.tx).length
       undersideTexture2 = await this.circuit.draw(nTX2, block2)
+    } else {
+      console.log(this.undersideL)
+      this.undersideL.visible = false
     }
 
     if (typeof nextBlock !== 'undefined') {
@@ -1992,6 +1988,8 @@ class App extends mixin(EventEmitter, Component) {
       let block3 = nextBlock
       const nTX3 = Object.keys(block3.blockData.tx).length
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
+    } else {
+      this.undersideR.visible = false
     }
 
     this.group.position.x = this.originOffset.x
@@ -2482,6 +2480,7 @@ class App extends mixin(EventEmitter, Component) {
 
       return (
         <div className={CSSClass}>
+
           <div className='cockpit-border' />
           {this.UICockpit()}
           {this.UICockpitButton()}
@@ -2503,15 +2502,15 @@ class App extends mixin(EventEmitter, Component) {
           </div>
 
           <div className='block-details'>
+            <h2 className='block-details-heading'>//BLOCK-{this.state.closestBlock.blockData.height}</h2>
             <div className='block-details-border' />
-            <h2>//Block-{this.state.closestBlock.blockData.height}</h2>
             <div><h3>Health:</h3>
               <div className='health-bar-container' title={healthInv}>
                 <div
                   className='health-bar'
                   style={{
                     width: 100 * healthInv,
-                    background: 'rgba(' + 255 * health + ', ' + 255 * healthInv + ', 0.0, 1.0)'
+                    background: 'rgba(' + 255 * healthInv + ', ' + 255 * healthInv + ', ' + 255 * healthInv + ', 1.0)'
                   }}
                 />
               </div>
@@ -2529,6 +2528,8 @@ class App extends mixin(EventEmitter, Component) {
               <li><h3>Version:</h3> <strong>{ this.state.closestBlock.blockData.ver }</strong></li>
               <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
+            <div className='scope-border' />
+            <canvas id='scope' ref='scope' width='220' height='80' />
           </div>
 
         </div>
@@ -2566,26 +2567,17 @@ class App extends mixin(EventEmitter, Component) {
 
   UITXDetails () {
     if (this.state.txSelected) {
-      // linearly interpolate between colours for health bar
-      let unhealthy = {
-
-      }
-      let healthy = {
-        r: 45,
-        g: 64,
-        b: 97
-      }
-
-      // let r = color1.red + percent * (color2.red - color1.red)
-      // let g = color1.green + percent * (color2.green - color1.green)
-      // let b = color1.blue + percent * (color2.blue - color1.blue)
-
       return (
         <div className='tx-details'>
+          <div className='tx-details-border tx-details-border-tl' />
+          <div className='tx-details-border tx-details-border-tr' />
+          <div className='tx-details-border tx-details-border-bl' />
+          <div className='tx-details-border tx-details-border-br' />
+
           <div className='tx-details-inner'>
             <h2><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>TX-{this.state.txSelected.hash}</a></h2>
 
-            <span className='tx-detail-item'><strong>{ moment.unix(this.state.txSelected.time).format('MM.DD.YY HH:mm:ss') }</strong></span>
+            <span className='tx-detail-item'><strong>{ moment.unix(this.state.txSelected.time).format('YYYY-MM-DD HH:mm:ss') }</strong></span>
             <span className='tx-detail-item'><strong>{this.state.txSelected.size} bytes</strong></span>
             <span className='tx-detail-item'><h3>Relayed By:</h3> <strong>{this.state.txSelected.relayed_by}</strong></span>
             <span className='tx-detail-item'><h3>Fee:</h3> <strong>{this.state.txSelected.fee} BTC</strong></span>
@@ -2634,7 +2626,7 @@ class App extends mixin(EventEmitter, Component) {
       <div className='symphony'>
         <canvas id={this.config.scene.canvasID} />
         {this.UI()}
-        <canvas id='scope' ref='scope' width='220' height='80' />
+
       </div>
     )
   }

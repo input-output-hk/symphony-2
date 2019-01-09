@@ -9,6 +9,10 @@ a {
   font-weight: bold;
 }
 
+a:hover {
+  color: #ffffff;
+}
+
 canvas#symphony-stage {
   width: 100vw;
   height: 100vh;
@@ -97,10 +101,10 @@ canvas#sketchboard {
 }
 
 .block-details-border {
-  border-left: 2px solid #fff;
-  border-top: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  height: 299px;
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  height: 270px;
   width: 42px;
   position: absolute;
   left: -1px;
@@ -120,6 +124,12 @@ canvas#sketchboard {
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
+}
+
+.block-details-heading {
+  position: absolute;
+  left: 0;
+  top: -29px;
 }
 
 .block-details .view-details {
@@ -256,11 +266,11 @@ canvas#sketchboard {
 }
 
 .tx-details {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
   position: absolute;
   left: 50%;
   border: 0;
-  padding: 10px;
+  padding: 15px;
   width: 600px;
   margin-left: -300px;
   text-align: center;
@@ -699,7 +709,7 @@ canvas#sketchboard {
 
 .coords {
   position: absolute;
-  top: 200px;
+  top: 164px;
   right: 199px;
   width: 103px;
 }
@@ -714,7 +724,55 @@ canvas#sketchboard {
 
 #scope {
   position: absolute;
-  bottom: 300px;
-  right: 81px;
   opacity: 0.5;
+  border: 0;
+  left: 1px;
+  bottom: -104px;
+}
+
+.scope-border {
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  height: 82px;
+  width: 42px;
+  position: absolute;
+  left: -1px;
+  bottom: -105px;
+  opacity: 0.3;
+}
+
+.tx-details-border {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  opacity: 0.3;
+}
+
+.tx-details-border-tl {
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  top: -1px;
+  left: -1px;
+}
+
+.tx-details-border-tr {
+  border-top: 1px solid #fff;
+  border-right: 1px solid #fff;
+  top: -1px;
+  right: -1px;
+}
+
+.tx-details-border-bl {
+  border-bottom: 1px solid #fff;
+  border-left: 1px solid #fff;
+  bottom: -1px;
+  left: -1px;
+}
+
+.tx-details-border-br {
+  border-bottom: 1px solid #fff;
+  border-right: 1px solid #fff;
+  bottom: -1px;
+  right: -1px;
 }

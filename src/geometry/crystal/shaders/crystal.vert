@@ -116,12 +116,12 @@ void main() {
 
     transformed.xz += offset.xz;
 
-	vec2 distVec = transformed.xz - uCamPos.xz;
+	// vec2 distVec = transformed.xz - uCamPos.xz;
 
-	if (uAutoPilot > 0.0) {
-		float camDistSq = dot(distVec, distVec);
-		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
-	}
+	// if (uAutoPilot > 0.0) {
+	// 	float camDistSq = dot(distVec, distVec);
+	// 	transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
+	// }
 
 		
     transformed.xz -= (uOriginOffset.xy);

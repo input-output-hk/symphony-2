@@ -72,7 +72,7 @@ export default class Audio extends EventEmitter {
       let wetLevel = audioContext.createGain()
 
       // set some decent values
-      delay.delayTime.value = 2.0
+      delay.delayTime.value = 1.0
       feedback.gain.value = 0.4
       wetLevel.gain.value = 0.4
 
