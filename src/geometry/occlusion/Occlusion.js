@@ -12,29 +12,9 @@ export default class Occlusion extends Base {
   constructor (args) {
     super(args)
 
-    this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
-    this.normalMap.wrapS = THREE.RepeatWrapping
-    this.normalMap.wrapT = THREE.RepeatWrapping
-    this.normalMap.repeat.set(4, 4)
-
     this.instanceTotal = 100
-
     this.blockHeightIndex = {}
-
-    this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/playa2/')
-      .load([
-        '0004.png',
-        '0002.png',
-        '0006.png',
-        '0005.png',
-        '0001.png',
-        '0003.png'
-      ])
-
     this.material = new OcclusionMaterial({
-      color: 0xffffff,
-      emissive: 0xffffff,
       transparent: true
     })
   }
@@ -50,16 +30,16 @@ export default class Occlusion extends Base {
 
     planeGeo.rotateX(Math.PI / 2)
     planeGeo.rotateY(Math.PI / 2)
-    planeGeo.translate(-300, -1.05, 0)
+    planeGeo.translate(-300, -3.00, 0)
     planeGeo.scale(1, 1, 1.1)
 
     planeGeoTop.rotateX(Math.PI / 2)
-    planeGeoTop.scale(1.18, 1, 10)
-    planeGeoTop.translate(0, -1.05, -704.5)
+    planeGeoTop.scale(1.18, 1, 25.5)
+    planeGeoTop.translate(0, -3.00, -1402.5)
 
     planeGeoBottom.rotateX(Math.PI / 2)
-    planeGeoBottom.scale(1.18, 1, 10)
-    planeGeoBottom.translate(0, -1.05, 704.5)
+    planeGeoBottom.scale(1.18, 1, 25.5)
+    planeGeoBottom.translate(0, -3.00, 1402.5)
 
     let planeMesh = new THREE.Mesh(planeGeo)
     let planeMeshTop = new THREE.Mesh(planeGeoTop)
@@ -138,17 +118,12 @@ export default class Occlusion extends Base {
   }
 }
 
-class OcclusionMaterial extends THREE.MeshStandardMaterial {
+class OcclusionMaterial extends THREE.ShaderMaterial {
   constructor (cfg) {
     super(cfg)
     this.type = 'ShaderMaterial'
 
-    this.uniforms = THREE.ShaderLib.standard.uniforms
-
-    this.uniforms.uTime = {
-      type: 'f',
-      value: 0.0
-    }
+    this.uniforms = {}
 
     this.uniforms.uOriginOffset = {
       type: 'v2',

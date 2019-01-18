@@ -51,11 +51,7 @@ export default class Tree extends Base {
       roughness: 0.2,
       opacity: 1.0,
       transparent: true,
-      // depthTest: false,
-      // depthWrite: false,
-      // side: THREE.DoubleSide,
-      // blending: THREE.AdditiveBlending,
-      // depthWrite: false,
+
       envMap: this.cubeMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.03, 0.03)
@@ -106,7 +102,7 @@ export default class Tree extends Base {
           let geometry = new THREE.InstancedBufferGeometry().copy(bufferGeo)
 
           geometry.computeVertexNormals()
-          geometry.translate(0, -380.0, 0)
+          geometry.translate(0, -382.5, 0)
 
           // this.loadedModels[merkleMap[nTX]] = geometry
 

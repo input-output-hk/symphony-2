@@ -40,6 +40,7 @@ export default class TextureHelper {
     defaultPositions = new Float32Array()
   } = {}) {
     let textureArray = new Float32Array(this.textureWidth * this.textureHeight * 4)
+    let lifeArray = []
     for (let i = 0; i < this.nodeCount; i++) {
       let location = new THREE.Vector3(
         Math.random() * 200 - 100,
@@ -50,6 +51,8 @@ export default class TextureHelper {
       location = location.normalize().multiplyScalar(this.config.scene.particleEmitterRadius)
 
       let lifeDuration = Math.ceil(Math.random() * this.config.scene.particleLifeMax)
+
+      lifeArray.push(lifeDuration)
 
       textureArray[i * 4 + 0] = location.x
       textureArray[i * 4 + 1] = location.y
@@ -76,7 +79,8 @@ export default class TextureHelper {
     positionTexture.needsUpdate = true
 
     return {
-      positionTexture: positionTexture
+      positionTexture: positionTexture,
+      lifeArray: lifeArray
     }
   }
 }

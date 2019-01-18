@@ -737,9 +737,33 @@ canvas#sketchboard {
   height: 82px;
   width: 42px;
   position: absolute;
-  left: -1px;
+  left: 0;
   bottom: -105px;
   opacity: 0.3;
+}
+
+.scope-grid-container {
+  height: 80px;
+  width: 220px;
+  position: absolute;
+  left: 1px;
+  bottom: -104px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+}
+
+.scope-grid-container div {
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  opacity: 0.2;
+}
+
+.scope-grid-container div.top {
+  border-top: none;
+}
+
+.scope-grid-container div.left {
+  border-left: none;
 }
 
 .tx-details-border {

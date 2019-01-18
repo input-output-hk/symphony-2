@@ -56,12 +56,12 @@ export default class Plane extends Base {
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
-    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 1, 1, 1, 1)
+    let planeGeo = new THREE.BoxGeometry(this.planeSize + 10, this.planeSize + 10, 3, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
     this.geometry.rotateY(Math.PI / 2)
-    this.geometry.translate(0, -0.5, 0)
+    this.geometry.translate(0, -1.5, 0)
 
     let blockPosition = blockGeoData.blockData.pos
 

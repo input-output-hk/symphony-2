@@ -22,7 +22,7 @@ export default class Glow extends Base {
   }
 
   async init () {
-    this.geometry = new THREE.SphereBufferGeometry(460000, 100, 100)
+    this.geometry = new THREE.SphereBufferGeometry(450000, 100, 100)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
     this.mesh.frustumCulled = false
@@ -49,7 +49,7 @@ class GlowMaterial extends THREE.ShaderMaterial {
 
     this.uniforms.uColor = {
       type: 'c',
-      value: new THREE.Color(0x003cff)
+      value: new THREE.Color(0x4c79a3)
     }
 
     this.uniforms.uCamPos = {

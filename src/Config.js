@@ -15,8 +15,9 @@ const Config = {
     autoRotateSpeed: 0.1, // speed of auto rotation
     bgColor: 0x121327,
     fogDensity: 0.00015,
+    particleLifeMin: 100, // min number of frames a particle can live for
     particleLifeMax: 1000, // max number of frames a particle can live for
-    particleEmitterRadius: 300000 // size of sphere which emits particles
+    particleEmitterRadius: 200000 // size of sphere which emits particles
   },
   debug: {
     debugPicker: false,

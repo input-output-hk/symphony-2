@@ -486,7 +486,7 @@ export default class Crystal extends Base {
     this.material.uniforms.uTime.value = args.time
     this.material.uniforms.uAudioTime.value = args.time
     this.material.uniforms.uCamPos.value = args.camPos
-    this.material.uniforms.uCamPosYPositive.value = args.camPos.y > 0
+    this.material.uniforms.uCamPosYPositive.value = args.camPos.y > 1
     this.material.uniforms.uAutoPilot.value = args.autoPilot
   }
 }

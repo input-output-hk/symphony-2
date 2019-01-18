@@ -6,6 +6,7 @@ uniform float opacity;
 uniform float uTime;
 uniform float uFrame;
 uniform float uParticleLifeMax;
+varying float vLifeAttr;
 
 #include <common>
 #include <color_pars_fragment>
@@ -26,9 +27,9 @@ void main() {
 	#include <color_fragment>
 	#include <alphatest_fragment>
 
-	outgoingLight = diffuseColor.rgb;
-
-	diffuseColor.a = vLife / uParticleLifeMax;
+	outgoingLight = mix(vec3(160./255., 111./255., 236./255.), vec3(112./255., 158./255., 236./255.), (vLifeAttr / uParticleLifeMax));
+	diffuseColor.a = (vLife / uParticleLifeMax);
+	diffuseColor.a *= 1.0 - (vLife / uParticleLifeMax);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 

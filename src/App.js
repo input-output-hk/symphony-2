@@ -71,24 +71,18 @@ import txSingle from './assets/images/tx-single.png'
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
-    this.config = deepAssign(Config, this.props.config)
 
+    this.config = deepAssign(Config, this.props.config)
     this.planeSize = 500
     this.planeOffsetMultiplier = 1080
     this.planeMargin = 100
     this.blockReady = false
     this.coils = 100
     this.radius = 1000000
-
     this.frame = 0
-
     this.loading = false
     this.blockGeoDataObject = {}
     this.hashes = []
-    this.timestampToLoad = this.setTimestampToLoad()
-
-    this.setBlockHashToLoad()
-    this.setHeightToLoad()
 
     this.blockPositions = null
     this.closestBlock = null
@@ -97,30 +91,18 @@ class App extends mixin(EventEmitter, Component) {
     this.closestBlockReadyForUpdate = false
     this.drawCircuits = true
     this.clock = new THREE.Clock()
-
     this.loadedHeights = []
-
     this.mousePos = new THREE.Vector2() // keep track of mouse position
-
     this.blockAnimStartTime = 0
-
     this.animatingCamera = false
-
     this.camPosTo = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camPosToTarget = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camFromPosition = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camFromRotation = new THREE.Vector3(0.0, 0.0, 0.0)
-
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
-
     this.txSpawnLocation = new THREE.Vector3(0.0, 0.0, 0.0)
-
     this.txSpawnStart = new THREE.Vector3(0, 0, 0)
     this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
-
-    this.cubeCamera = new THREE.CubeCamera(1.0, 2000, 512)
-    this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
-
     this.autoPilot = false
     this.autoPilotDirection = false
 
@@ -138,125 +120,14 @@ class App extends mixin(EventEmitter, Component) {
       posY: 0,
       posZ: 0
     }
-  }
 
-  /**
-   * Switch renderOrder of elements based on camera position
-   */
-  setRenderOrder () {
-    this.particles.renderOrder = -1
-
-    if (this.camera.position.y > 0) {
-      if (this.centerTree) {
-        this.centerTree.material.depthWrite = false
-      }
-      if (this.lTree) {
-        this.lTree.material.depthWrite = true
-      }
-      if (this.rTree) {
-        this.rTree.material.depthWrite = true
-      }
-
-      this.occlusion.renderOrder = 0
-
-      // this.txs.renderOrder = 8
-
-      this.crystal.renderOrder = 1
-      this.trees.renderOrder = 0
-      this.disk.renderOrder = 2
-      // this.glow.renderOrder = 7
-      this.plane.renderOrder = 3
-      this.crystalAO.renderOrder = 6
-
-      this.underside.position.y = -0.1
-      this.undersideL.position.y = -0.1
-      this.undersideR.position.y = -0.1
-
-      this.underside.renderOrder = 2
-      this.undersideL.renderOrder = 2
-      this.undersideR.renderOrder = 2
-
-      this.planetMesh.renderOrder = -1
-      // this.sprite.renderOrder = -2
-    } else {
-      if (this.centerTree) {
-        this.centerTree.material.depthWrite = true
-      }
-      if (this.lTree) {
-        this.lTree.material.depthWrite = true
-      }
-      if (this.rTree) {
-        this.rTree.material.depthWrite = true
-      }
-
-      this.occlusion.renderOrder = 10
-
-      this.underside.position.y = -1.05
-      this.undersideL.position.y = -1.05
-      this.undersideR.position.y = -1.05
-
-      this.crystal.renderOrder = 1
-      this.crystalAO.renderOrder = 2
-      this.plane.renderOrder = 3
-      this.underside.renderOrder = 4
-      this.undersideL.renderOrder = 4
-      this.undersideR.renderOrder = 4
-      this.trees.renderOrder = 5
-      this.disk.renderOrder = 6
-      // this.sprite.renderOrder = -2
-      this.planetMesh.renderOrder = 7
-    }
-
-    this.bg.renderOrder = -1
-
-    if (this.camera.position.y > 30000) {
-      this.disk.renderOrder = -1
-      // this.sprite.renderOrder = 0
-    }
+    this.setTimestampToLoad()
+    this.setBlockHashToLoad()
+    this.setHeightToLoad()
   }
 
   componentDidMount () {
     this.initStage()
-  }
-
-  drawScope (analyser) {
-    if (!this.refs.scope) {
-      return
-    }
-
-    const ctx = this.refs.scope.getContext('2d')
-    const width = ctx.canvas.width
-    const height = ctx.canvas.height
-    const timeData = new Uint8Array(analyser.frequencyBinCount)
-    const scaling = height / 256
-    let risingEdge = 0
-    const edgeThreshold = 5
-
-    analyser.getByteTimeDomainData(timeData)
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgb(255, 255, 255)'
-    ctx.beginPath()
-
-    // No buffer overrun protection
-    while (timeData[risingEdge++] - 128 > 0 && risingEdge <= width);
-    if (risingEdge >= width) {
-      risingEdge = 0
-    }
-
-    while (timeData[risingEdge++] - 128 < edgeThreshold && risingEdge <= width);
-    if (risingEdge >= width) {
-      risingEdge = 0
-    }
-
-    for (var x = risingEdge; x < timeData.length && x - risingEdge < width; x++) {
-      ctx.lineTo(x - risingEdge, height - timeData[x] * scaling)
-    }
-
-    ctx.stroke()
   }
 
   async initStage () {
@@ -348,6 +219,121 @@ class App extends mixin(EventEmitter, Component) {
 
     this.addEvents()
     this.animate()
+  }
+
+  /**
+   * Switch renderOrder of elements based on camera position
+   */
+  setRenderOrder () {
+    this.particles.renderOrder = -1
+
+    if (this.camera.position.y > 0) {
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = false
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
+
+      this.occlusion.renderOrder = 0
+
+      // this.txs.renderOrder = 8
+
+      this.crystal.renderOrder = 1
+      this.trees.renderOrder = 0
+      this.disk.renderOrder = 2
+      // this.glow.renderOrder = 7
+      this.plane.renderOrder = 3
+      this.crystalAO.renderOrder = 6
+
+      this.underside.position.y = -0.1
+      this.undersideL.position.y = -0.1
+      this.undersideR.position.y = -0.1
+
+      this.underside.renderOrder = 2
+      this.undersideL.renderOrder = 2
+      this.undersideR.renderOrder = 2
+
+      this.planetMesh.renderOrder = -1
+      // this.sprite.renderOrder = -2
+    } else {
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = true
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
+
+      this.occlusion.renderOrder = 10
+
+      this.underside.position.y = -3.1
+      this.undersideL.position.y = -3.1
+      this.undersideR.position.y = -3.1
+
+      this.crystal.renderOrder = 1
+      this.crystalAO.renderOrder = 2
+      this.plane.renderOrder = 3
+      this.underside.renderOrder = 4
+      this.undersideL.renderOrder = 4
+      this.undersideR.renderOrder = 4
+      this.trees.renderOrder = 5
+      this.disk.renderOrder = 6
+      // this.sprite.renderOrder = -2
+      this.planetMesh.renderOrder = 7
+    }
+
+    this.bg.renderOrder = -1
+
+    if (this.camera.position.y > 30000) {
+      this.disk.renderOrder = -1
+      // this.sprite.renderOrder = 0
+    }
+  }
+
+  drawScope (analyser) {
+    if (!this.refs.scope) {
+      return
+    }
+
+    const ctx = this.refs.scope.getContext('2d')
+    const width = ctx.canvas.width
+    const height = ctx.canvas.height
+    const timeData = new Uint8Array(analyser.frequencyBinCount)
+    const scaling = height / 256
+    let risingEdge = 0
+    const edgeThreshold = 5
+
+    analyser.getByteTimeDomainData(timeData)
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
+    ctx.fillRect(0, 0, width, height)
+
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgb(255, 255, 255)'
+    ctx.beginPath()
+
+    // No buffer overrun protection
+    while (timeData[risingEdge++] - 128 > 0 && risingEdge <= width);
+    if (risingEdge >= width) {
+      risingEdge = 0
+    }
+
+    while (timeData[risingEdge++] - 128 < edgeThreshold && risingEdge <= width);
+    if (risingEdge >= width) {
+      risingEdge = 0
+    }
+
+    for (var x = risingEdge; x < timeData.length && x - risingEdge < width; x++) {
+      ctx.lineTo(x - risingEdge, height - timeData[x] * scaling)
+    }
+
+    ctx.stroke()
   }
 
   async initUnconfirmedTX () {
@@ -681,16 +667,15 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setTimestampToLoad () {
-    let timestampToLoad = moment().valueOf() // default to today's date
+    this.timestampToLoad = moment().valueOf() // default to today's date
 
     if (typeof URLSearchParams !== 'undefined') {
       // get date from URL
       let urlParams = new URLSearchParams(window.location.search)
       if (urlParams.has('date')) {
-        timestampToLoad = moment(urlParams.get('date')).valueOf()
+        this.timestampToLoad = moment(urlParams.get('date')).valueOf()
       }
     }
-    return timestampToLoad
   }
 
   initPost () {
@@ -970,13 +955,13 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.plane)
 
     this.occlusion = await this.occlusionGenerator.init(blockGeoData)
+    this.group.add(this.occlusion)
 
     this.particles = await this.particlesGenerator.init({
       blockGeoData: blockGeoData,
       renderer: this.renderer
     })
-
-    this.group.add(this.occlusion)
+    this.scene.add(this.particles)
 
     let planeX = this.plane.geometry.attributes.planeOffset.array[0]
     let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
@@ -984,7 +969,6 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.position.x = planeX
     this.camera.position.z = planeZ
 
-    this.group.add(this.particles)
     // this.txSpawnStart = new THREE.Vector3(planeX, 1000000000, planeZ)
 
     this.controls.target = new THREE.Vector3(planeX, 0, planeZ)
@@ -998,12 +982,12 @@ class App extends mixin(EventEmitter, Component) {
     this.planeGenerator.updateOriginOffset(this.originOffset)
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
-    this.particlesGenerator.updateOriginOffset(this.originOffset)
+    // this.particlesGenerator.updateOriginOffset(this.originOffset)
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
     // this.glowGenerator.updateOriginOffset(this.originOffset)
-    this.bgGenerator.updateOriginOffset(this.originOffset)
+    // this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
@@ -1999,11 +1983,11 @@ class App extends mixin(EventEmitter, Component) {
     this.planeGenerator.updateOriginOffset(this.originOffset)
     this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
-    this.particlesGenerator.updateOriginOffset(this.originOffset)
+    // this.particlesGenerator.updateOriginOffset(this.originOffset)
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
-    this.bgGenerator.updateOriginOffset(this.originOffset)
+    // this.bgGenerator.updateOriginOffset(this.originOffset)
     // this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {
@@ -2529,6 +2513,81 @@ class App extends mixin(EventEmitter, Component) {
               <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
             <div className='scope-border' />
+            <div className='scope-grid-container'>
+
+              <div className='top left' />
+              <div className='top' />
+              <div className='top' />
+              <div className='top' />
+              <div className='top' />
+              <div className='top' />
+              <div className='top' />
+              <div className='top' />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+              <div className='left' />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+              <div />
+
+            </div>
             <canvas id='scope' ref='scope' width='220' height='80' />
           </div>
 

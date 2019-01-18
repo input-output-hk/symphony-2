@@ -263,8 +263,8 @@ void main() {
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
-	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) * (1.0-vSpentRatio+0.2));
-	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) * (1.0-vSpentRatio+0.2)) * 0.3;
+	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) );
+	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) ) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 

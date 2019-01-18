@@ -11,6 +11,7 @@ uniform vec2 uOriginOffset;
 uniform float uTime;
 uniform sampler2D positionTexture;
 
+varying float vLifeAttr;
 varying float vLife;
 
 #include <common>
@@ -26,6 +27,7 @@ void main() {
 
 	vec4 positionData = texture2D(positionTexture, position.xy);
 	
+	vLifeAttr = life;
 	vLife = positionData.w;
 
 	transformed.xyz = positionData.xyz;

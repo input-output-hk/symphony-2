@@ -157,8 +157,10 @@ export default class Particles extends Base {
     )
 
     let position = new THREE.BufferAttribute(positionArray, 3)
-
     this.geometry.addAttribute('position', position)
+
+    let life = new THREE.BufferAttribute(new Float32Array(positionData.lifeArray), 1)
+    this.geometry.addAttribute('life', life)
 
     let idArray = new Float32Array(this.particleCount)
     for (let index = 0; index < idArray.length; index++) {
@@ -267,7 +269,7 @@ class ParticlesMaterial extends THREE.PointsMaterial {
 
     this.uniforms.scale = {
       type: 'f',
-      value: this.baseScale
+      value: 10.0
     }
 
     this.uniforms.uSpawnStart = {
