@@ -78,7 +78,8 @@ varying vec3 vViewPosition;
 #include <packing>
 #include <dithering_pars_fragment>
 #include <color_pars_fragment>
-#include <uv_pars_fragment>
+// #include <uv_pars_fragment>
+varying vec2 vUv;
 //uniform mat3 uvTransform;
 #include <uv2_pars_fragment>
 #include <map_pars_fragment>
@@ -132,7 +133,7 @@ void main() {
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
 	// get derivative of quad UV and blur based on this
-	vec2 dt = fwidth(vUv-0.5) * 4000.0;
+	vec2 dt = fwidth(vUv-0.5) * 3500.0;
 	maxDerivative = clamp(max(dt.t, dt.s), 0.0, 6.0);
 	maxDerivative *= maxDerivative;
 

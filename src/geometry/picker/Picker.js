@@ -59,9 +59,9 @@ export default class Picker extends Base {
     let pickColor = new THREE.Color(0x999999)
 
     let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
-    sortedTX.sort(function (a, b) {
-      return b.value - a.value
-    })
+    // sortedTX.sort(function (a, b) {
+    //   return b.value - a.value
+    // })
 
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
       const tx = sortedTX[i]
@@ -149,9 +149,9 @@ export default class Picker extends Base {
     this.geometry.attributes.pickerColor.array = new Float32Array(this.instanceTotal * 3)
 
     let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
-    sortedTX.sort(function (a, b) {
-      return b.value - a.value
-    })
+    // sortedTX.sort(function (a, b) {
+    //   return b.value - a.value
+    // })
 
     for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
       const tx = sortedTX[i]

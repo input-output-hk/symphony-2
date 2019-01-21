@@ -1,5 +1,5 @@
 #pragma glslify: applyQuaternionToVector = require('../../../shaders/applyQuaternionToVector')
-
+#pragma glslify: snoise = require(glsl-noise/simplex/3d)
 
 uniform float uTime;
 uniform vec2 uOriginOffset;
@@ -44,9 +44,15 @@ void main() {
     transformed.y += offset.y;
     transformed.xz += (offset.xz - uOriginOffset);
 
-	vec2 toCenterVec = normalize(-offset.xz) * (mod(uTime, 30000.0) * 20.0);
-	transformed.xz += toCenterVec;
 
+	vec3 toCenterVec = normalize(-offset.xyz) * (mod(uTime * 20.0, 300000.0));
+	transformed.xyz += toCenterVec;
+
+	float noiseVal = snoise(transformed.xyz * 0.00005) * 1000.0;
+
+	transformed.x += noiseVal;
+	transformed.y += noiseVal;
+	transformed.z += noiseVal;
 
 	vTopVertex = topVertex;
 

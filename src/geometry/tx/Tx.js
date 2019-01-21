@@ -12,23 +12,24 @@ export default class Tx extends Base {
   constructor (args) {
     super(args)
 
-    this.instanceTotal = 10000
+    this.instanceTotal = 1000
 
     this.material = new TxMaterial({
       flatShading: true,
-      color: 0x869cff,
-      transparent: true
+      color: 0x709eec,
+      opacity: 0.6,
+      transparent: true,
+      fog: false
     })
   }
 
-  async init (blockPositions, height) {
+  async init (blockPositions) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
 
-    // set up base geometry
-    let coneGeo = new THREE.ConeGeometry(10, 20000, 3)
+    let coneGeo = new THREE.CylinderGeometry(0, 40, 40000, 3, 32)
     let coneBufferGeo = new THREE.BufferGeometry().fromGeometry(coneGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(coneBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
@@ -36,7 +37,7 @@ export default class Tx extends Base {
 
     let maxHeight = (blockPositions.length / 2) - 1
 
-    for (let index = 1; index < this.instanceTotal; index++) {
+    for (let index = 0; index < this.instanceTotal; index++) {
       let randHeight = Math.floor(Math.random() * maxHeight)
 
       let x = blockPositions[randHeight * 2 + 0]
@@ -70,35 +71,35 @@ export default class Tx extends Base {
     this.geometry.addAttribute('offset', offsets)
     this.geometry.addAttribute('quaternion', quaternions)
 
-    let topVertex = [
-      1, 1, 0,
-      1, 1, 0,
-      1, 1, 0,
+    // let topVertex = [
+    //   1, 1, 0,
+    //   1, 1, 0,
+    //   1, 1, 0,
 
-      1, 1, 1,
-      1, 1, 1,
-      1, 1, 1,
+    //   1, 1, 1,
+    //   1, 1, 1,
+    //   1, 1, 1,
 
-      0, 0, 0,
-      0, 0, 0,
-      0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
 
-      0, 0, 0,
-      0, 0, 0,
-      0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
 
-      0, 0, 0,
-      0, 0, 0,
-      0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0,
 
-      0, 0, 0,
-      0, 0, 0,
-      0, 0, 0
-    ]
+    //   0, 0, 0,
+    //   0, 0, 0,
+    //   0, 0, 0
+    // ]
 
-    const TVArray = new Float32Array(topVertex)
-    const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
-    this.geometry.addAttribute('topVertex', TVAttribute)
+    // const TVArray = new Float32Array(topVertex)
+    // const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
+    // this.geometry.addAttribute('topVertex', TVAttribute)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

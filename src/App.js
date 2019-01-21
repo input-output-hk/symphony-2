@@ -52,7 +52,7 @@ import Tree from './geometry/tree/Tree'
 import Disk from './geometry/disk/Disk'
 import Bg from './geometry/bg/Bg'
 import Glow from './geometry/glow/Glow'
-// import Tx from './geometry/tx/Tx'
+import Tx from './geometry/tx/Tx'
 import Underside from './geometry/underside/Underside'
 import Particles from './geometry/particles/Particles'
 
@@ -134,7 +134,7 @@ class App extends mixin(EventEmitter, Component) {
     await this.initFirebase()
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
-    this.audio = new AudioManager({
+    this.audioManager = new AudioManager({
       sampleRate: this.config.audio.sampleRate,
       soundDuration: this.config.audio.soundDuration,
       noteDuration: this.config.audio.noteDuration
@@ -177,9 +177,9 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
-    // this.txGenerator = new Tx({
-    //   config: this.config
-    // })
+    this.txGenerator = new Tx({
+      config: this.config
+    })
 
     this.particlesGenerator = new Particles({
       planeSize: this.planeSize,
@@ -240,7 +240,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.occlusion.renderOrder = 0
 
-      // this.txs.renderOrder = 8
+//      this.txs.renderOrder = 8
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -249,9 +249,9 @@ class App extends mixin(EventEmitter, Component) {
       this.plane.renderOrder = 3
       this.crystalAO.renderOrder = 6
 
-      this.underside.position.y = -0.1
-      this.undersideL.position.y = -0.1
-      this.undersideR.position.y = -0.1
+      this.underside.position.y = -3.1
+      this.undersideL.position.y = -3.1
+      this.undersideR.position.y = -3.1
 
       this.underside.renderOrder = 2
       this.undersideL.renderOrder = 2
@@ -492,7 +492,7 @@ class App extends mixin(EventEmitter, Component) {
       mousePos: this.mousePos
     })
 
-    this.audio.playNote(this.closestBlock.blockData, index + 1)
+    this.audioManager.playNote(this.closestBlock.blockData, index + 1)
 
     // get tx data
     let txData = await window.fetch('https://blockchain.info/rawtx/' + TXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
@@ -595,7 +595,7 @@ class App extends mixin(EventEmitter, Component) {
       this.lastSelectedID = -1
       this.emit('txDeselect', {})
 
-      this.audio.stopNotes()
+      this.audioManager.stopNotes()
 
       this.setState({
         txSelected: null
@@ -625,7 +625,7 @@ class App extends mixin(EventEmitter, Component) {
         this.lastSelectedID = -1
         this.emit('txDeselect', {})
 
-        this.audio.stopNotes()
+        this.audioManager.stopNotes()
 
         this.selectedLight.position.x = -999999
         this.selectedLight.position.z = -999999
@@ -944,9 +944,8 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAO.translateY(0.1)
     this.group.add(this.crystalAO)
 
-    // this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
-
-    // this.group.add(this.txs)
+    this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
+    this.group.add(this.txs)
 
     this.trees = await this.treeGenerator.init(blockGeoData)
     this.group.add(this.trees)
@@ -988,7 +987,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.glowGenerator.updateOriginOffset(this.originOffset)
     // this.bgGenerator.updateOriginOffset(this.originOffset)
-    // this.txGenerator.updateOriginOffset(this.originOffset)
+    this.txGenerator.updateOriginOffset(this.originOffset)
 
     // this.txSpawnDestination = new THREE.Vector3(this.originOffset.x, 0.0, this.originOffset.y)
 
@@ -1242,12 +1241,12 @@ class App extends mixin(EventEmitter, Component) {
           const blockPos = new THREE.Vector3(blockGeoData.blockData.pos.x, 0, blockGeoData.blockData.pos.z)
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
-          if (typeof this.audio.gainNodes[height] !== 'undefined') {
+          if (typeof this.audioManager.gainNodes[height] !== 'undefined') {
             let vol = map((blockDist * 0.001), 0, 100, 0.5, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
-            this.audio.gainNodes[height].gain.value = vol
+            this.audioManager.gainNodes[height].gain.value = vol
           }
 
           if (blockDist < closestDist) {
@@ -1563,7 +1562,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   goToRandomBlock () {
-    this.audio.stopNotes()
+    this.audioManager.stopNotes()
 
     this.autoPilotDirection = false
     this.autoPilot = false
@@ -1644,7 +1643,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   startAutoPilot () {
-    this.audio.stopNotes()
+    this.audioManager.stopNotes()
 
     this.setAutoPilotState()
     this.autoPilotAnimLoop()
@@ -1741,8 +1740,8 @@ class App extends mixin(EventEmitter, Component) {
     this.getClosestBlock()
 
     if (this.blockReady) {
-      if (this.audio.analyser) {
-        this.drawScope(this.audio.analyser)
+      if (this.audioManager.analyser) {
+        this.drawScope(this.audioManager.analyser)
       }
       this.loadNearestBlocks()
       this.setRenderOrder()
@@ -1763,9 +1762,9 @@ class App extends mixin(EventEmitter, Component) {
         camPos: this.camera.position
       })
 
-      // this.txGenerator.update({
-      //   time: window.performance.now()
-      // })
+      this.txGenerator.update({
+        time: window.performance.now()
+      })
 
       this.undersideGenerator.update({
         time: window.performance.now()
@@ -1813,7 +1812,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.resize()
 
-    this.audio.on('loopend', (blockData) => {
+    this.audioManager.on('loopend', (blockData) => {
       this.crystalGenerator.updateBlockStartTimes(blockData)
       this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
@@ -1904,20 +1903,20 @@ class App extends mixin(EventEmitter, Component) {
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
-    for (const height in this.audio.audioSources) {
-      if (this.audio.audioSources.hasOwnProperty(height)) {
+    for (const height in this.audioManager.audioSources) {
+      if (this.audioManager.audioSources.hasOwnProperty(height)) {
         if (
           height < this.closestBlock.blockData.height - 10 ||
           height > this.closestBlock.blockData.height + 10
         ) {
-          this.audio.audioSources[height].stop()
-          delete this.audio.audioSources[height]
-          delete this.audio.buffers[height]
-          delete this.audio.gainNodes[height]
+          this.audioManager.audioSources[height].stop()
+          delete this.audioManager.audioSources[height]
+          delete this.audioManager.buffers[height]
+          delete this.audioManager.gainNodes[height]
           console.log('stopped audio at height: ' + height)
         }
 
-        clearTimeout(this.audio.loops[height])
+        clearTimeout(this.audioManager.loops[height])
       }
     }
 
@@ -1933,8 +1932,8 @@ class App extends mixin(EventEmitter, Component) {
         this.plane.geometry.attributes.planeOffset.array[indexOffset + 1])
     )
 
-    if (typeof this.audio.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      this.audio.generate(this.closestBlock.blockData)
+    if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
+      this.audioManager.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
@@ -1950,8 +1949,8 @@ class App extends mixin(EventEmitter, Component) {
     undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
 
     if (typeof prevBlock !== 'undefined') {
-      if (typeof this.audio.buffers[prevBlock.blockData.height] === 'undefined') {
-        this.audio.generate(prevBlock.blockData)
+      if (typeof this.audioManager.buffers[prevBlock.blockData.height] === 'undefined') {
+        this.audioManager.generate(prevBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(prevBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
       }
@@ -1959,13 +1958,12 @@ class App extends mixin(EventEmitter, Component) {
       const nTX2 = Object.keys(block2.blockData.tx).length
       undersideTexture2 = await this.circuit.draw(nTX2, block2)
     } else {
-      console.log(this.undersideL)
       this.undersideL.visible = false
     }
 
     if (typeof nextBlock !== 'undefined') {
-      if (typeof this.audio.buffers[nextBlock.blockData.height] === 'undefined') {
-        this.audio.generate(nextBlock.blockData)
+      if (typeof this.audioManager.buffers[nextBlock.blockData.height] === 'undefined') {
+        this.audioManager.generate(nextBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(nextBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
       }
@@ -1988,7 +1986,7 @@ class App extends mixin(EventEmitter, Component) {
     this.diskGenerator.updateOriginOffset(this.originOffset)
 
     // this.bgGenerator.updateOriginOffset(this.originOffset)
-    // this.txGenerator.updateOriginOffset(this.originOffset)
+    this.txGenerator.updateOriginOffset(this.originOffset)
 
     if (undersideTexture1) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
@@ -2193,7 +2191,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async lookupTXFromHash () {
-    this.audio.stopNotes()
+    this.audioManager.stopNotes()
 
     this.autoPilot = false
     this.autoPilotDirection = false
@@ -2297,7 +2295,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async lookupBlockFromHash () {
-    this.audio.stopNotes()
+    this.audioManager.stopNotes()
 
     this.autoPilot = false
     this.autoPilotDirection = false

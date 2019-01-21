@@ -198,15 +198,11 @@ export default class Particles extends Base {
     this.material.uniforms.uTime.value = args.time
     this.material.uniforms.uDeltaTime.value = args.deltaTime
     this.material.uniforms.uFrame.value = this.frame
-    //  this.material.uniforms.uSpawnStart.value = args.spawnStart
 
     this.material.uniforms.uSpawnDestination.value = args.spawnDestination
-
     this.positionMaterial.uniforms.uTime.value = args.time
     this.positionMaterial.uniforms.uDeltaTime.value = args.deltaTime
-
     this.positionMaterial.uniforms.uSpawnStart.value = args.spawnStart
-
     this.positionMaterial.uniforms.uSpawnDestination.value = args.spawnDestination
     this.positionMaterial.uniforms.uFrame.value = this.frame
 

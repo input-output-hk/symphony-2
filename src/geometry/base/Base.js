@@ -57,9 +57,9 @@ export default class Base {
 
     let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
 
-    sortedTX.sort(function (a, b) {
-      return b.value - a.value
-    })
+    // sortedTX.sort(function (a, b) {
+    //   return b.value - a.value
+    // })
 
     for (let i = 0; i < blockTxCount; i++) {
       const tx = sortedTX[i]

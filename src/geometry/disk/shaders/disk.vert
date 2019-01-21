@@ -19,7 +19,10 @@ varying vec3 vViewPosition;
 #endif
 
 #include <common>
-#include <uv_pars_vertex>
+// #include <uv_pars_vertex>
+varying vec2 vUv;
+uniform mat3 uvTransform;
+
 #include <uv2_pars_vertex>
 #include <displacementmap_pars_vertex>
 #include <color_pars_vertex>
@@ -32,7 +35,8 @@ varying vec3 vViewPosition;
 
 void main() {
 
-	#include <uv_vertex>
+	// #include <uv_vertex>
+	vUv = ( uvTransform * vec3( uv, 1 ) ).xy;
 	#include <uv2_vertex>
 	#include <color_vertex>
 
@@ -61,7 +65,8 @@ void main() {
 
 	vViewPosition = - mvPosition.xyz;
 
-	#include <worldpos_vertex>
+	//#include <worldpos_vertex>
+	vec4 worldPosition = modelMatrix * vec4( transformed, 1.0 );
 	vWorldPosition = worldPosition;
 
 	#include <shadowmap_vertex>

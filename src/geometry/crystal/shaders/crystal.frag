@@ -259,7 +259,7 @@ void main() {
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
 	float absNoise = abs(noiseAmount) * 30.0;
-	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise);
+	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (1.0-vSpentRatio);
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 

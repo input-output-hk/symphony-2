@@ -20,13 +20,13 @@ export default class CrystalAO extends Base {
       transparent: true,
       side: THREE.DoubleSide,
       map: this.map,
-      opacity: 0.3,
+      opacity: 0.45,
       depthTest: true,
       depthWrite: false
     })
 
     this.txIndexOffsets = {}
-    this.instanceTotal = 4000
+    this.instanceTotal = 10000
     this.txCount = 0
   }
 
@@ -40,9 +40,7 @@ export default class CrystalAO extends Base {
     // set up base geometry
     let planeGeo = new THREE.PlaneGeometry(1, 1, 1, 1)
     let planeBufferGeo = new THREE.BufferGeometry().fromGeometry(planeGeo)
-
     this.geometry = new THREE.InstancedBufferGeometry().copy(planeBufferGeo)
-
     this.geometry.rotateX(Math.PI / 2)
 
     // attributes

@@ -37,17 +37,10 @@ export default class Disk extends Base {
       emissive: 0x000000,
       metalness: 0.4,
       roughness: 0.3,
-      opacity: 0.6,
+      opacity: 1.0,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
-      // bumpMap: this.bumpMap,
-      // bumpScale: 0.2
-      // roughnessMap: this.roughnessMap
-      // metalnessMap: this.roughnessMap
-      normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.0, 0.0),
-
       fog: false
     })
   }
