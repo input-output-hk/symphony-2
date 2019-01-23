@@ -158,38 +158,7 @@ export default class Tx extends Base {
     this.geometry.addAttribute('offset', offsets)
 
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
-
     this.geometry.addAttribute('quaternion', quaternions)
-
-    // let topVertex = [
-    //   1, 1, 0,
-    //   1, 1, 0,
-    //   1, 1, 0,
-
-    //   1, 1, 1,
-    //   1, 1, 1,
-    //   1, 1, 1,
-
-    //   0, 0, 0,
-    //   0, 0, 0,
-    //   0, 0, 0,
-
-    //   0, 0, 0,
-    //   0, 0, 0,
-    //   0, 0, 0,
-
-    //   0, 0, 0,
-    //   0, 0, 0,
-    //   0, 0, 0,
-
-    //   0, 0, 0,
-    //   0, 0, 0,
-    //   0, 0, 0
-    // ]
-
-    // const TVArray = new Float32Array(topVertex)
-    // const TVAttribute = new THREE.BufferAttribute(TVArray, 1)
-    // this.geometry.addAttribute('topVertex', TVAttribute)
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 

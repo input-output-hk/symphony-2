@@ -1,10 +1,7 @@
-#pragma glslify: curlNoise = require('./curlNoise');
-
 varying vec2 vUv;
 
 uniform sampler2D positionTexture;
 uniform sampler2D defaultPositionTexture;
-uniform vec2 uOriginOffset;
 
 void main() {
   vec4 currentPosition;

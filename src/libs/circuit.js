@@ -45,9 +45,7 @@ export default class Circuit extends EventEmitter {
         console.log(url)
         let texture = new THREE.TextureLoader().load(url)
         resolve(texture)
-      }).catch(function (error) {
-        let msg = error
-
+      }).catch(function () {
         if (this.offscreenMode) {
           const nearestBlocksWorker = new CircuitWorker()
           nearestBlocksWorker.onmessage = async ({ data }) => {

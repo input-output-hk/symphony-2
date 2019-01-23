@@ -21,15 +21,10 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-
+    this.random = seedrandom
     this.voronoi = new Voronoi()
-
     this.instanceTotal = 10 * 3000
-
     this.txCount = 0
-
-    this.uTime = 0
-
     this.txIndexOffsets = {}
 
     this.cubeMap = new THREE.CubeTextureLoader()
