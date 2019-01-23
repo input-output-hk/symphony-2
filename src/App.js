@@ -225,6 +225,7 @@ class App extends mixin(EventEmitter, Component) {
    * Switch renderOrder of elements based on camera position
    */
   setRenderOrder () {
+    this.txs.renderOrder = -1
     this.particles.renderOrder = -1
 
     if (this.camera.position.y > 0) {
@@ -239,8 +240,6 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       this.occlusion.renderOrder = 0
-
-//      this.txs.renderOrder = 8
 
       this.crystal.renderOrder = 1
       this.trees.renderOrder = 0
@@ -291,7 +290,7 @@ class App extends mixin(EventEmitter, Component) {
     this.bg.renderOrder = -1
 
     if (this.camera.position.y > 30000) {
-      this.disk.renderOrder = -1
+      // this.disk.renderOrder = -1
       // this.sprite.renderOrder = 0
     }
   }
@@ -334,68 +333,6 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     ctx.stroke()
-  }
-
-  async initUnconfirmedTX () {
-    let txData = await window.fetch('https://blockchain.info/unconfirmed-transactions?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-    let txDataJSON = await txData.json()
-
-    this.txSpawnStart.x = 0.0
-    this.txSpawnStart.y = 0.0
-    this.txSpawnStart.z = 0.0
-
-    return
-
-    await this.asyncForEach(txDataJSON.txs, async (tx) => {
-      await this.asyncForEach(tx.inputs, (input) => {
-        return new Promise(async (resolve, reject) => {
-          let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-          let inputDataJSON = await inputData.json()
-
-          //          let blockHeight = inputDataJSON.block_height
-          let blockHeight = this.closestBlock.blockData.height - 1
-
-          if (
-            typeof this.blockPositions[blockHeight * 2 + 0] === 'undefined' ||
-              typeof this.blockPositions[blockHeight * 2 + 1] === 'undefined'
-          ) {
-            resolve()
-          } else {
-            console.log(this.txSpawnStart.x)
-            this.txSpawnStart.x = this.blockPositions[blockHeight * 2 + 0]
-            this.txSpawnStart.y = 50.0
-            this.txSpawnStart.z = this.blockPositions[blockHeight * 2 + 1]
-
-            resolve()
-
-            // this.txSpawnDestination.x = this.blockPositions[blockHeight * 2 + 0]
-            // this.txSpawnDestination.y = 500.0
-            // this.txSpawnDestination.z = this.blockPositions[blockHeight * 2 + 1]
-
-            // let toCenter = this.txSpawnStart.clone()
-            // toCenter.normalize()
-
-            // let that = this
-            // new TWEEN.Tween(that.txSpawnStart)
-            //   .to(
-            //     toCenter.multiplyScalar(460000),
-            //     500
-            //   )
-            //   .onUpdate(function () {
-            //     that.txSpawnStart.x = this.x
-            //     that.txSpawnStart.y = this.y
-            //     that.txSpawnStart.z = this.z
-            //   })
-            //   .onComplete(() => {
-            //     resolve()
-            //   })
-            //   .easing(TWEEN.Easing.Quadratic.In)
-            //   .start()
-          }
-        })
-      })
-      return true
-    })
   }
 
   initGUI () {
@@ -944,7 +881,26 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAO.translateY(0.1)
     this.group.add(this.crystalAO)
 
-    this.txs = await this.txGenerator.init(this.blockPositions, blockGeoData.blockData.height)
+    let txData = await window.fetch('https://blockchain.info/unconfirmed-transactions?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    let txDataJSON = await txData.json()
+
+    let txHeights = []
+    await this.asyncForEach(txDataJSON.txs, async (tx) => {
+      await this.asyncForEach(tx.inputs, (input) => {
+        return new Promise(async (resolve, reject) => {
+          let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+          let inputDataJSON = await inputData.json()
+          txHeights.push(inputDataJSON.block_height)
+          resolve()
+        })
+      })
+    })
+
+    this.txs = await this.txGenerator.init({
+      blockPositions: this.blockPositions,
+      renderer: this.renderer,
+      txHeights: txHeights
+    })
     this.group.add(this.txs)
 
     this.trees = await this.treeGenerator.init(blockGeoData)
@@ -1013,9 +969,37 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async unconfirmedLoop () {
-    await this.initUnconfirmedTX()
+    await this.getUnconfirmed()
+    this.unconfirmedLoop()
+  }
 
-    // this.unconfirmedLoop()
+  getUnconfirmed () {
+    return new Promise((resolve, reject) => {
+      setTimeout(async () => {
+        let txData = await window.fetch('https://blockchain.info/unconfirmed-transactions?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+        let txDataJSON = await txData.json()
+
+        let txHeights = []
+        await this.asyncForEach(txDataJSON.txs, async (tx) => {
+          await this.asyncForEach(tx.inputs, (input) => {
+            return new Promise(async (resolve, reject) => {
+              let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+              let inputDataJSON = await inputData.json()
+              txHeights.push(inputDataJSON.block_height)
+              resolve()
+            })
+          })
+        })
+
+        await this.txGenerator.updateGeometry({
+          blockPositions: this.blockPositions,
+          renderer: this.renderer,
+          txHeights: txHeights
+        })
+
+        resolve()
+      }, 4000)
+    })
   }
 
   createCubeMap (pos) {

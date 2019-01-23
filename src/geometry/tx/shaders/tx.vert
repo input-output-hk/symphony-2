@@ -4,9 +4,11 @@
 uniform float uTime;
 uniform vec2 uOriginOffset;
 
-attribute vec3 offset;
+uniform sampler2D positionTexture;
+
+attribute vec2 offset;
 attribute vec4 quaternion;
-attribute float topVertex;
+// attribute float topVertex;
 
 varying float vTopVertex;
 
@@ -39,22 +41,28 @@ void main() {
 
 	#include <begin_vertex>
 
-	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
+	vec4 positionData = texture2D(positionTexture, offset.xy);
 
-    transformed.y += offset.y;
-    transformed.xz += (offset.xz - uOriginOffset);
+	if (positionData.w == 0.0) {
+		transformed.xyz = vec3(0.0);
+	} else {
+    	transformed.xyz *= (positionData.w - 1.0);
+		transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 
+    	// transformed.y += offset.y;
 
-	vec3 toCenterVec = normalize(-offset.xyz) * (mod(uTime * 20.0, 300000.0));
-	transformed.xyz += toCenterVec;
+		transformed.xyz += positionData.xyz;
 
-	float noiseVal = snoise(transformed.xyz * 0.00005) * 1000.0;
+		float noiseVal = snoise(transformed.xyz * 0.00005) * 1000.0;
 
-	transformed.x += noiseVal;
-	transformed.y += noiseVal;
-	transformed.z += noiseVal;
+		transformed.x += noiseVal;
+		transformed.y += noiseVal;
+		transformed.z += noiseVal;
 
-	vTopVertex = topVertex;
+		transformed.xz -= uOriginOffset;
+	}
+
+	//vTopVertex = topVertex;
 
 	#include <morphtarget_vertex>
 	#include <skinning_vertex>
