@@ -2,21 +2,19 @@
 
 #define PHYSICAL
 
-attribute vec3 offset;
-attribute vec2 planeOffset;
-
 uniform vec2 uOriginOffset;
 
+attribute vec3 offset;
+attribute vec2 planeOffset;
 attribute vec4 quaternion;
 
-varying vec3 vViewPosition;
-
 varying vec3 vWorldPosition;
-
 varying vec3 vTransformed;
 varying vec3 vOffset;
 varying vec2 vPlaneOffset;
 varying vec3 vPosition;
+
+varying vec3 vViewPosition;
 
 #ifndef FLAT_SHADED
 
@@ -75,7 +73,6 @@ void main() {
 	vPosition = vec3(modelMatrix * vec4(position, 1.0));
 
 	#include <worldpos_vertex>
-
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
 

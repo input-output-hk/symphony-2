@@ -6,6 +6,7 @@ const detector = new Detector()
 
 const Config = {
   scene: {
+    showIntro: false,
     fullScreen: true,
     width: 300,
     height: 300,
@@ -40,9 +41,9 @@ const Config = {
     messagingSenderId: '532264380396'
   },
   camera: {
-    fovMap: 45,
-    fovFly: 80,
-    initPos: {x: 0.0, y: 500.0, z: 0.0}
+    fov: 80,
+    initPos: new THREE.Vector3(0.0, 1300000.0, 0.0),
+    initTarget: new THREE.Vector3(0.0, 0.0, 0.0)
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
 }

@@ -141,7 +141,7 @@ export default class Tx extends Base {
     this.positionMesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), this.positionMaterial)
     this.positionScene.add(this.positionMesh)
 
-    let coneGeo = new THREE.CylinderGeometry(0, 200, 90000, 3, 32)
+    let coneGeo = new THREE.CylinderGeometry(0, 200, 80000, 3, 64)
     let coneBufferGeo = new THREE.BufferGeometry().fromGeometry(coneGeo)
     this.geometry = new THREE.InstancedBufferGeometry().copy(coneBufferGeo)
     this.geometry.rotateX(Math.PI / 2)
@@ -176,12 +176,6 @@ export default class Tx extends Base {
     this.defaultPositionTexture = positionData.positionTexture
 
     this.quatArray = positionData.quatArray
-
-    // this.passThroughTexture(
-    //   positionData.positionTexture,
-    //   this.positionRenderTarget1
-    // )
-    // this.passThroughTexture(this.positionRenderTarget1.texture, this.positionRenderTarget2)
 
     this.positionMaterial.uniforms.defaultPositionTexture.value = this.defaultPositionTexture
     this.material.uniforms.defaultPositionTexture.value = this.defaultPositionTexture

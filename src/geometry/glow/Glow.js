@@ -32,10 +32,7 @@ export default class Glow extends Base {
   }
 
   update (args) {
-    this.material.uniforms.uTime.value = args.time * 0.001
-
-    // this.material.uniforms.uCamPos.value = new THREE.Vector3().subVectors(args.camPos, new THREE.Vector3(0.0, 0.0, 0.0))
-
+    this.material.uniforms.uTime.value = args.time * 0.0005
     this.material.uniforms.uCamPos.value = args.camPos
   }
 }

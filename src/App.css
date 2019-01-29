@@ -800,3 +800,121 @@ canvas#sketchboard {
   bottom: -1px;
   right: -1px;
 }
+
+.loading-container {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  
+}
+
+.loading-container h1 {
+  font-weight: 300;
+  font-size: 1vw;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+}
+
+.loading-container h1 span {
+  font-weight: 500;
+}
+
+.symphony-logo {
+  width: 17vw;
+  opacity: 0.8;
+  animation: pulsate 2.0s ease-in-out infinite both, blur-in 2.5s ease-in, opacity-pulse 2.0s ease-in-out infinite both;
+}
+
+.loaded {
+  opacity: 0.0;
+  filter: blur(6ex);
+  transition: opacity 10s, filter 10s, visibility 10s;
+  visibility: hidden;
+  /* animation: zoom-in 10s ease-in; */
+}
+
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes opacity-pulse {
+  0% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes blur-in {
+  0% {
+    filter: blur(6ex);
+  }
+  100% {
+    filter: blur(0ex);
+  }
+}
+
+@keyframes zoom-in {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(3.0);
+  }
+}
+
+.intro-container {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  z-index: 1;
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  text-align: center;
+  justify-content: center;
+  padding-bottom: 6%;
+}
+
+.intro-container h1 {
+  font-weight: 500;
+  font-size: 1vw;
+  text-transform: uppercase;
+  position: absolute;
+  opacity: 0;
+  filter: blur(6ex);
+  transition: opacity 2s, filter 2s;
+}
+
+.intro-container h1.show {
+  opacity: 1;
+  filter: blur(0ex);
+  transition: opacity 3s, filter 3s;
+  /* animation: opacity-pulse 4.0s ease-in-out infinite both; */
+}
+
+.intro-container h1 a {
+  font-weight: 500
+}

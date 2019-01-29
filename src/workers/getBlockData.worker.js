@@ -3,7 +3,6 @@ import 'firebase/firestore'
 import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
-import { map } from '../utils/math'
 
 let config = {}
 
@@ -16,8 +15,7 @@ self.addEventListener('message', async function (e) {
 
       firebase.initializeApp(config.fireBase)
 
-      const settings = {timestampsInSnapshots: true}
-      firebase.firestore().settings(settings)
+      firebase.firestore()
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
 

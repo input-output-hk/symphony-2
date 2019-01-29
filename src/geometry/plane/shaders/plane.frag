@@ -1,8 +1,3 @@
-varying vec3 vReflect;
-varying vec3 vRefract[3];
-//varying float vReflectionFactor;
-varying vec3 worldNormal;
-
 #define PHYSICAL
 
 uniform vec3 diffuse;
@@ -17,7 +12,6 @@ uniform float opacity;
 #endif
 
 varying vec3 vViewPosition;
-varying vec2 vPlaneOffset;
 
 #ifndef FLAT_SHADED
 

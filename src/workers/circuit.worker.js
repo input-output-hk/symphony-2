@@ -13,8 +13,7 @@ self.addEventListener('message', async function (e) {
 
       firebase.initializeApp(data.config.fireBase)
 
-      const settings = {timestampsInSnapshots: true}
-      firebase.firestore().settings(settings)
+      firebase.firestore()
       const FBStorage = firebase.storage()
       const FBStorageRef = FBStorage.ref()
       const FBStorageCircuitRef = FBStorageRef.child('bitcoin_circuits')

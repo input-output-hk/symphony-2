@@ -16,9 +16,6 @@ export default class Disk extends Base {
     this.uOffset = 0.880
 
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
-    // this.normalMap.wrapS = THREE.RepeatWrapping
-    // this.normalMap.wrapT = THREE.RepeatWrapping
-    // this.normalMap.repeat.set(4, 4)
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa/')
@@ -55,8 +52,6 @@ export default class Disk extends Base {
 
     this.mesh.rotateY(Math.PI)
     this.mesh.translateY(-10)
-
-    // this.mesh.receiveShadow = true
 
     return this.mesh
   }

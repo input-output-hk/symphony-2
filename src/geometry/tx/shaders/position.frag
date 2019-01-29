@@ -1,3 +1,5 @@
+#pragma glslify: random = require('../../../shaders/random')
+
 varying vec2 vUv;
 
 uniform sampler2D positionTexture;
@@ -30,7 +32,7 @@ void main() {
     } else {
 
         vec3 toCenter = normalize(-previousPosition.xyz);
-        currentPosition.xyz += toCenter * 100.0;
+        currentPosition.xyz += toCenter * (100.0 + (random(vUv.x) * 50.0));
 
         if (currentPosition.w < 2.0) {
           currentPosition.w += 0.002;

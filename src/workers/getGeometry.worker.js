@@ -24,8 +24,7 @@ self.addEventListener('message', async function (e) {
 
       firebase.initializeApp(config.fireBase)
 
-      const settings = {timestampsInSnapshots: true}
-      firebase.firestore().settings(settings)
+      firebase.firestore()
       const firebaseDB = firebase.firestore()
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
