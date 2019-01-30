@@ -5,7 +5,7 @@ void main() {
 	vec3 surfaceNormal = normalize( normalMatrix * normal );
 	vec3 cameraNormal = normalize( normalMatrix * uCamPos );
 
-	vIntensity = pow( 1.0 - dot(surfaceNormal, cameraNormal), 2.0 );
+	vIntensity = pow( 1.0 - dot(surfaceNormal, cameraNormal), 1.5 );
 	
 	//vIntensity /= pow(dot(uCamPos, uCamPos) * 0.0000000000013, 3.5);
 

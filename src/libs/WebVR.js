@@ -1,3 +1,4 @@
+
 /**
  * @author mrdoob / http://mrdoob.com
  * @author Mugen87 / https://github.com/Mugen87
@@ -40,6 +41,8 @@ export default class WebVR {
         button.textContent = 'EXIT VR'
 
         currentSession = session
+
+        session.depthFar = 5000000
       }
 
       function onSessionEnded (event) {
@@ -66,7 +69,10 @@ export default class WebVR {
 
       button.onclick = function () {
         if (currentSession === null) {
-          device.requestSession({ immersive: true, exclusive: true /* DEPRECATED */ }).then(onSessionStarted)
+          device.requestSession({
+            immersive: true,
+            exclusive: true /* DEPRECATED */
+          }).then(onSessionStarted)
         } else {
           currentSession.end()
         }

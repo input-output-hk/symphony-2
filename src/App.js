@@ -104,8 +104,7 @@ class App extends mixin(EventEmitter, Component) {
     this.autoPilot = false
     this.autoPilotDirection = false
     this.mapControlsYPos = 500
-
-    this.WebVR = new VRLib()
+    this.isVR = true
 
     this.state = {
       loading: true,
@@ -225,6 +224,8 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   addVR () {
+    this.renderer.vr.enabled = true
+    this.WebVR = new VRLib()
     document.body.appendChild(this.WebVR.createButton(this.renderer))
   }
 
@@ -359,7 +360,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.renderer.setClearColor(0)
-    this.renderer.render(this.pickingScene, this.camera, this.pickingTexture)
+    this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
 
     let pixelBuffer = new Uint8Array(4)
 
@@ -594,14 +595,14 @@ class App extends mixin(EventEmitter, Component) {
 
   initPost () {
     this.composer = new EffectComposer(this.renderer)
-    this.renderPass = new RenderPass(this.scene, this.camera)
+    this.renderPass = new RenderPass(this.scene, this.cameraMain)
     this.composer.addPass(this.renderPass)
 
     this.setPostSettings()
   }
 
   setPostSettings () {
-    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.camera)
+    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.cameraMain)
     // this.ssaaRenderPass.unbiased = true
     // this.composer.addPass(this.ssaaRenderPass)
 
@@ -951,8 +952,8 @@ class App extends mixin(EventEmitter, Component) {
       this.autoPilotTween.stop()
     }
 
-    if (typeof this.cameraRotationTween !== 'undefined') {
-      this.cameraRotationTween.stop()
+    if (typeof this.cameraMainRotationTween !== 'undefined') {
+      this.cameraMainRotationTween.stop()
     }
 
     this.autoPilot = false
@@ -978,17 +979,15 @@ class App extends mixin(EventEmitter, Component) {
 
     this.animatingCamera = false
 
-    let that = this
-
     switch (type) {
       case 'map':
       case 'underside':
-        this.controls = new MapControls(this.camera)
+        this.controls = new MapControls(this.cameraMain)
         this.controls.domElement = this.renderer.domElement
         this.controls.enableDamping = true
         this.controls.dampingFactor = 0.25
         this.controls.screenSpacePanning = true
-        this.controls.minDistance = 50
+        this.controls.minDistance = 0
         this.controls.maxDistance = 3000
         this.controls.maxPolarAngle = Math.PI / 2
         this.controls.rotateSpeed = 0.05
@@ -998,8 +997,8 @@ class App extends mixin(EventEmitter, Component) {
         break
 
       case 'fly':
-        this.controls = new FlyControls(this.camera)
-        this.controls.movementSpeed = 100
+        this.controls = new FlyControls(this.cameraMain)
+        this.controls.movementSpeed = 100 * 0.01
         this.controls.domElement = this.renderer.domElement
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
@@ -1564,8 +1563,8 @@ class App extends mixin(EventEmitter, Component) {
       this.autoPilotTween.stop()
     }
 
-    if (typeof this.cameraRotationTween !== 'undefined') {
-      this.cameraRotationTween.stop()
+    if (typeof this.cameraMainRotationTween !== 'undefined') {
+      this.cameraMainRotationTween.stop()
     }
 
     this.autoPilot = false
@@ -1725,9 +1724,9 @@ class App extends mixin(EventEmitter, Component) {
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
     if (this.config.debug.debugPicker && this.pickingScene) {
-      this.renderer.render(this.pickingScene, this.camera)
+      this.renderer.render(this.pickingScene, this.cameraMain)
     } else {
-      this.renderer.render(this.scene, this.camera)
+      this.renderer.render(this.scene, this.cameraMain)
       // this.composer.render()
     }
   }
@@ -1770,6 +1769,8 @@ class App extends mixin(EventEmitter, Component) {
       if (this.config.scene.showIntro) {
         this.startIntro()
       } else {
+        // this.switchControls('map')
+
         this.goToLatestBlock()
       }
     })
@@ -2070,16 +2071,20 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera () {
-    this.camera = new THREE.PerspectiveCamera(
+    this.cameraMain = new THREE.PerspectiveCamera(
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
       1.0,
       5000000
     )
-    // window.camera = this.camera
 
-    // this.camContainer = new THREE.Object3D()
-    // this.camContainer.add(this.camera)
+    if (this.isVR) {
+      this.camera = new THREE.PerspectiveCamera()
+      this.camera.add(this.cameraMain)
+      this.scene.add(this.camera)
+    } else {
+      this.camera = this.cameraMain
+    }
 
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
@@ -2087,7 +2092,9 @@ class App extends mixin(EventEmitter, Component) {
 
     this.camera.lookAt(this.config.camera.initTarget)
 
-    this.camera.fov = this.config.camera.fov
+    this.cameraMain.fov = this.config.camera.fov
+
+    this.cameraMain.updateMatrixWorld()
     this.camera.updateMatrixWorld()
   }
 
@@ -2101,9 +2108,14 @@ class App extends mixin(EventEmitter, Component) {
       canvas: this.canvas
     })
 
-    this.renderer.setPixelRatio(1)
+    // this.renderer.setPixelRatio(1)
 
-    this.renderer.vr.enabled = true
+    // this.renderer.vr.getCamera(new THREE.PerspectiveCamera(
+    //   undefined,
+    //   undefined,
+    //   1.0,
+    //   5000000
+    // ))
   }
 
   /**
@@ -2121,8 +2133,8 @@ class App extends mixin(EventEmitter, Component) {
     this.config.scene.width = this.width
     this.config.scene.height = this.height
 
-    this.camera.aspect = this.width / this.height
-    this.camera.updateProjectionMatrix()
+    this.cameraMain.aspect = this.width / this.height
+    this.cameraMain.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height, false)
 
     this.composer.setSize(this.width, this.height)
@@ -2233,7 +2245,7 @@ class App extends mixin(EventEmitter, Component) {
 
   animateCamRotation (duration) {
     let o = {t: 0}
-    this.cameraRotationTween = new TWEEN.Tween(o)
+    this.cameraMainRotationTween = new TWEEN.Tween(o)
       .to({t: 1}, duration)
       .onUpdate(function () {
         THREE.Quaternion.slerp(this.camFromQuaternion, this.camToQuaternion, this.camMoveQuaternion, o.t)
