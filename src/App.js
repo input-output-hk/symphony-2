@@ -224,9 +224,11 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   addVR () {
-    this.renderer.vr.enabled = true
-    this.WebVR = new VRLib()
-    document.body.appendChild(this.WebVR.createButton(this.renderer))
+    if (this.isVR) {
+      this.renderer.vr.enabled = true
+      this.WebVR = new VRLib()
+      document.body.appendChild(this.WebVR.createButton(this.renderer))
+    }
   }
 
   /**
@@ -360,6 +362,9 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.renderer.setClearColor(0)
+    if (this.isVR) {
+      this.renderer.vr.enabled = true
+    }
     this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
 
     let pixelBuffer = new Uint8Array(4)
@@ -857,7 +862,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.emit('sceneReady')
 
-    // this.unconfirmedLoop()
+    this.unconfirmedLoop()
 
     return true
   }
@@ -904,6 +909,10 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeCamera.position.copy(pos)
 
     //    this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
+
+    if (this.renderer.vr.enabled) {
+      this.renderer.vr.enabled = false
+    }
     this.cubeCamera.update(this.renderer, this.scene)
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
@@ -1625,7 +1634,7 @@ class App extends mixin(EventEmitter, Component) {
     this.prepareCamAnim(to, toTarget)
 
     this.autoPilotTween = new TWEEN.Tween(this.camera.position)
-      .to(to, 10000)
+      .to(to, 20000)
       .onUpdate(function () {
         if (!this.autoPilot) {
           return
@@ -1723,11 +1732,20 @@ class App extends mixin(EventEmitter, Component) {
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
-    if (this.config.debug.debugPicker && this.pickingScene) {
-      this.renderer.render(this.pickingScene, this.cameraMain)
-    } else {
-      this.renderer.render(this.scene, this.cameraMain)
-      // this.composer.render()
+    if (this.particlesGenerator && this.particlesGenerator.positionScene) {
+      if (this.config.debug.debugPicker && this.pickingScene) {
+        if (this.isVR) {
+          this.renderer.vr.enabled = true
+        }
+        this.renderer.render(this.pickingScene, this.cameraMain)
+      } else {
+        // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
+        if (this.isVR) {
+          this.renderer.vr.enabled = true
+        }
+        this.renderer.render(this.scene, this.cameraMain)
+        // this.composer.render()
+      }
     }
   }
 
@@ -2107,15 +2125,6 @@ class App extends mixin(EventEmitter, Component) {
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
-
-    // this.renderer.setPixelRatio(1)
-
-    // this.renderer.vr.getCamera(new THREE.PerspectiveCamera(
-    //   undefined,
-    //   undefined,
-    //   1.0,
-    //   5000000
-    // ))
   }
 
   /**

@@ -18,7 +18,7 @@ export default class Particles extends Base {
   constructor (args) {
     super(args)
 
-    this.renderer = args.renderer
+    // this.renderer = args.renderer
 
     this.particleCount = 100000
 
@@ -119,11 +119,16 @@ export default class Particles extends Base {
       fragmentShader: PassThroughFrag
     })
     let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), this.passThroughMaterial)
+    mesh.frustumCulled = false
     this.passThroughScene.add(mesh)
   }
 
   passThroughTexture (input, output) {
     this.passThroughMaterial.uniforms.texture.value = input
+
+    if (this.renderer.vr.enabled) {
+      this.renderer.vr.enabled = false
+    }
     this.renderer.render(this.passThroughScene, this.quadCamera, output)
   }
 
@@ -133,10 +138,7 @@ export default class Particles extends Base {
     let positionData = this.textureHelper.createPositionTexture()
     this.defaultPositionTexture = positionData.positionTexture
 
-    this.passThroughTexture(
-      positionData.positionTexture,
-      this.positionRenderTarget1
-    )
+    this.passThroughTexture(positionData.positionTexture, this.positionRenderTarget1)
     this.passThroughTexture(this.positionRenderTarget1.texture, this.positionRenderTarget2)
 
     this.positionMaterial.uniforms.defaultPositionTexture.value = this.defaultPositionTexture
@@ -145,6 +147,7 @@ export default class Particles extends Base {
     this.positionScene = new THREE.Scene()
 
     this.positionMesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), this.positionMaterial)
+    this.positionMesh.frustumCulled = false
     this.positionScene.add(this.positionMesh)
 
     this.geometry = new THREE.BufferGeometry()
@@ -188,6 +191,9 @@ export default class Particles extends Base {
     }
     this.positionMaterial.uniforms.positionTexture.value = inputPositionRenderTarget.texture
 
+    if (this.renderer.vr.enabled) {
+      this.renderer.vr.enabled = false
+    }
     this.renderer.render(this.positionScene, this.quadCamera, this.outputPositionRenderTarget)
 
     this.material.uniforms.positionTexture.value = this.outputPositionRenderTarget.texture
