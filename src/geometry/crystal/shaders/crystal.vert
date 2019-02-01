@@ -93,7 +93,7 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	transformed.xz *= (scale * attackLoad);
+	transformed.xz *= ((scale * attackLoad)  * 1.07);
 	// transformed.xz *= scale;
 
 	transformed.y *= ((offset.y+ (3.0 * vEnvelope)) * attackLoad);

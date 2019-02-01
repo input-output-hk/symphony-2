@@ -8688,10 +8688,10 @@ three-orbit-controls@^82.1.0:
   resolved "https://registry.yarnpkg.com/three-orbit-controls/-/three-orbit-controls-82.1.0.tgz#11a7f33d0a20ecec98f098b37780f6537374fab4"
   integrity sha1-EafzPQog7OyY8Jizd4D2U3N0+rQ=
 
-three@^0.100.0:
-  version "0.100.0"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.100.0.tgz#262841c0b7d88ebd62af73f28d9f578963b3aa00"
-  integrity sha512-/lN2rdE1OqIwJr4/HcSaOisiCY0uVA0sqPpbCG5nil2uICEdS0LfGwSVYTtZDsIpR76r3++h5H3Hzg5D+SJBRQ==
+three@^0.101.0:
+  version "0.101.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.101.0.tgz#a72a5b09d28f627868a6b428e15f234eb0dc6b9f"
+  integrity sha512-eHgP4nQsCHoeMv76E9ZWIqHufVzfDlPlU5FQuGNefkongDtSjXNLNJ5IbuAc/at3iQJCjXBX2X6DGt8dayDZHA==
 
 throat@^4.0.0:
   version "4.1.0"

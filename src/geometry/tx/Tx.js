@@ -102,9 +102,7 @@ export default class Tx extends Base {
 
   passThroughTexture (input, output) {
     this.passThroughMaterial.uniforms.texture.value = input
-    if (this.renderer.vr.enabled) {
-      this.renderer.vr.enabled = false
-    }
+    this.renderer.vr.enabled = false
     this.renderer.render(this.passThroughScene, this.quadCamera, output)
   }
 
@@ -208,9 +206,7 @@ export default class Tx extends Base {
     }
     this.positionMaterial.uniforms.positionTexture.value = inputPositionRenderTarget.texture
 
-    if (this.renderer.vr.enabled) {
-      this.renderer.vr.enabled = false
-    }
+    this.renderer.vr.enabled = false
     this.renderer.render(this.positionScene, this.quadCamera, this.outputPositionRenderTarget)
 
     this.material.uniforms.positionTexture.value = this.outputPositionRenderTarget.texture

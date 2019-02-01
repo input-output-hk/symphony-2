@@ -230,7 +230,8 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
+	// float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
+	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 8.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += noiseAmount * 0.5;
 

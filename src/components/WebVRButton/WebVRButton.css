@@ -1,0 +1,25 @@
+:local(.enter) {
+    opacity: 0.5;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 45px;
+    height: 37px;
+    background-size: 45px;
+    background-image: url(../../assets/images/vr.png);
+    background-repeat: no-repeat;
+    background-color: transparent;
+    z-index: 999;
+    border: none;
+    display: block;
+}
+
+:local(.enter):hover {
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+:local(.exit) {
+    composes: enter;
+    background-position: 0 -41px;
+}

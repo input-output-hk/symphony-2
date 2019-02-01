@@ -16,6 +16,12 @@ import AudioManager from './libs/audio/audioManager'
 import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
+import WebVR from './libs/WebVR'
+
+// Components
+import BlockDetails from './components/BlockDetails/BlockDetails'
+import WebVRButton from './components/WebVRButton/WebVRButton'
+import Sidebar from './components/Sidebar/Sidebar'
 
 // Workers
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
@@ -60,14 +66,9 @@ import Particles from './geometry/particles/Particles'
 import './App.css'
 
 // Images
-import iohkLogo from './assets/images/iohk-logo.png'
-import txValueKey from './assets/images/tx-value-key.png'
-import txSpent from './assets/images/tx-spent.svg'
-import txUnspent from './assets/images/tx-unspent.svg'
-import txSingle from './assets/images/tx-single.png'
+
 import logo from './assets/images/logo-square.png'
 
-import VRLib from './libs/WebVR'
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
@@ -104,7 +105,8 @@ class App extends mixin(EventEmitter, Component) {
     this.autoPilot = false
     this.autoPilotDirection = false
     this.mapControlsYPos = 500
-    this.isVR = true
+
+    this.WebVR = new WebVR() // WebVR lib
 
     this.state = {
       loading: true,
@@ -133,7 +135,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initStage () {
-    await this.initFirebase()
+    this.initFirebase()
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
     this.audioManager = new AudioManager({
@@ -202,12 +204,12 @@ class App extends mixin(EventEmitter, Component) {
     this.heightsToLoad = []
     this.loadingMutex = []
 
-    this.canvas = document.getElementById(this.config.scene.canvasID)
-
     this.initGUI()
+
+    this.initRenderer()
     this.initScene()
     this.initCamera()
-    this.initRenderer()
+
     this.initPost()
     // this.initControls()
     this.initLights()
@@ -215,7 +217,6 @@ class App extends mixin(EventEmitter, Component) {
     this.initEnvironment()
     this.initGeometry()
     this.addEvents()
-    this.addVR()
     // this.animate()
 
     this.renderer.setAnimationLoop(function () {
@@ -223,12 +224,8 @@ class App extends mixin(EventEmitter, Component) {
     }.bind(this))
   }
 
-  addVR () {
-    if (this.isVR) {
-      this.renderer.vr.enabled = true
-      this.WebVR = new VRLib()
-      document.body.appendChild(this.WebVR.createButton(this.renderer))
-    }
+  enableVR () {
+    this.renderer.vr.enabled = true
   }
 
   /**
@@ -294,46 +291,6 @@ class App extends mixin(EventEmitter, Component) {
     this.bg.renderOrder = -1
   }
 
-  drawScope (analyser) {
-    if (!this.refs.scope) {
-      return
-    }
-
-    const ctx = this.refs.scope.getContext('2d')
-    const width = ctx.canvas.width
-    const height = ctx.canvas.height
-    const timeData = new Uint8Array(analyser.frequencyBinCount)
-    const scaling = height / 256
-    let risingEdge = 0
-    const edgeThreshold = 5
-
-    analyser.getByteTimeDomainData(timeData)
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgb(255, 255, 255)'
-    ctx.beginPath()
-
-    // No buffer overrun protection
-    while (timeData[risingEdge++] - 128 > 0 && risingEdge <= width);
-    if (risingEdge >= width) {
-      risingEdge = 0
-    }
-
-    while (timeData[risingEdge++] - 128 < edgeThreshold && risingEdge <= width);
-    if (risingEdge >= width) {
-      risingEdge = 0
-    }
-
-    for (var x = risingEdge; x < timeData.length && x - risingEdge < width; x++) {
-      ctx.lineTo(x - risingEdge, height - timeData[x] * scaling)
-    }
-
-    ctx.stroke()
-  }
-
   initGUI () {
     if (this.config.showGUI) {
       this.gui = new dat.GUI()
@@ -362,7 +319,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.renderer.setClearColor(0)
-    if (this.isVR) {
+    if (this.WebVR.VRSupported) {
       this.renderer.vr.enabled = true
     }
     this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
@@ -641,7 +598,7 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.SMAAPass)
   }
 
-  async initFirebase () {
+  initFirebase () {
     try {
       firebase.initializeApp(this.config.fireBase)
 
@@ -842,8 +799,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.closestBlockReadyForUpdate = true
 
-    // this.closestBlock = blockGeoData
-
     let undersideGroup = await this.undersideGenerator.init()
 
     this.underside = undersideGroup.underside
@@ -862,7 +817,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.emit('sceneReady')
 
-    this.unconfirmedLoop()
+    // this.unconfirmedLoop()
 
     return true
   }
@@ -908,15 +863,12 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeCamera = new THREE.CubeCamera(1.0, 1500, 512)
     this.cubeCamera.position.copy(pos)
 
-    //    this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipMapLinearFilter
-
     if (this.renderer.vr.enabled) {
       this.renderer.vr.enabled = false
     }
     this.cubeCamera.update(this.renderer, this.scene)
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
-    // this.plane.material.envMap = this.cubeCamera.renderTarget.texture
     this.trees.material.envMap = this.cubeCamera.renderTarget.texture
 
     if (this.centerTree) {
@@ -979,8 +931,6 @@ class App extends mixin(EventEmitter, Component) {
 
   switchControls (type) {
     this.stopAutoPilotAnimation()
-    this.deselectTx()
-
     if (this.controls) {
       this.controls.dispose()
       this.controls = null
@@ -1012,6 +962,8 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
         this.controls.dragToLook = false
+
+        this.deselectTx()
 
         break
 
@@ -1531,19 +1483,19 @@ class App extends mixin(EventEmitter, Component) {
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 5000)
+      .to(aboveStart, 500)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
         new TWEEN.Tween(that.camera.position)
-          .to(to, 5000)
+          .to(to, 500)
           .onUpdate(function () {
             that.camera.position.set(this.x, this.y, this.z)
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 10000)
+              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 1000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
@@ -1654,11 +1606,6 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(5000)
   }
 
-  animate () {
-    window.requestAnimationFrame(this.animate.bind(this))
-    this.renderFrame()
-  }
-
   renderFrame () {
     this.frame++
 
@@ -1677,8 +1624,8 @@ class App extends mixin(EventEmitter, Component) {
     this.getClosestBlock()
 
     if (this.blockReady) {
-      if (this.audioManager.analyser) {
-        this.drawScope(this.audioManager.analyser)
+      if (this.audioManager.analyser && window.oscilloscope) {
+        window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
       this.loadNearestBlocks()
       this.setRenderOrder()
@@ -1734,13 +1681,13 @@ class App extends mixin(EventEmitter, Component) {
 
     if (this.particlesGenerator && this.particlesGenerator.positionScene) {
       if (this.config.debug.debugPicker && this.pickingScene) {
-        if (this.isVR) {
+        if (this.WebVR.VRSupported) {
           this.renderer.vr.enabled = true
         }
         this.renderer.render(this.pickingScene, this.cameraMain)
       } else {
         // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
-        if (this.isVR) {
+        if (this.WebVR.VRSupported) {
           this.renderer.vr.enabled = true
         }
         this.renderer.render(this.scene, this.cameraMain)
@@ -2064,11 +2011,8 @@ class App extends mixin(EventEmitter, Component) {
 
   initScene () {
     this.group = new THREE.Group()
-
     this.scene = new THREE.Scene()
-
     this.scene.add(this.group)
-
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
@@ -2096,7 +2040,7 @@ class App extends mixin(EventEmitter, Component) {
       5000000
     )
 
-    if (this.isVR) {
+    if (this.WebVR.VRSupported) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
       this.scene.add(this.camera)
@@ -2120,11 +2064,15 @@ class App extends mixin(EventEmitter, Component) {
    * Set up renderer
    */
   initRenderer () {
+    this.canvas = document.getElementById(this.config.scene.canvasID)
+
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
+
+    this.WebVR.setRenderer(this.renderer)
   }
 
   /**
@@ -2343,56 +2291,6 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(10000)
   }
 
-  UISidebar () {
-    let sidebarClassName = 'sidebar'
-
-    if (this.state.sidebarOpen) {
-      sidebarClassName += ' open'
-    } else {
-      sidebarClassName += ' closed'
-    }
-
-    return (
-      <div className={sidebarClassName}>
-        <button className='expand' onClick={this.toggleSidebar.bind(this)} />
-        <h1>Symphony</h1>
-        <h2>Interactive Blockchain Map</h2>
-        <div className='section key'>
-          <h3>Transaction Value</h3>
-          <div className='sidebar-show'><img alt='Transaction' src={txSingle} /></div>
-          <div className='sidebar-hide'><img alt='Transaction key' src={txValueKey} /></div>
-          <h3>Spending</h3>
-          <div className='sidebar-show'><img alt='Transaction spending' src={txSpent} /></div>
-          <div className='sidebar-hide'>
-            <span className='spending-key'><img alt='Spent transaction' src={txSpent} /> <span>Spent</span></span>
-            <span className='spending-key'><img alt='Unspent transaction' src={txUnspent} /> <span>Unspent</span></span>
-          </div>
-        </div>
-        <div className='section explore'>
-          <h3>Explore</h3>
-          <ul>
-            <li>
-              <button className='search' onClick={this.toggleSidebar.bind(this)} />
-              <span onClick={this.toggleBlockSearch.bind(this)}>Locate Block</span>
-              <span onClick={this.toggleTxSearch.bind(this)}>Locate Transaction</span>
-              <span onClick={this.goToRandomBlock.bind(this)}>Random Block</span>
-            </li>
-            <li>
-              <button className='calendar' onClick={this.toggleSidebar.bind(this)} />
-              <span onClick={this.toggleDateSearch.bind(this)}>Jump to Date</span>
-            </li>
-          </ul>
-        </div>
-        <div className='sidebar-footer'>
-          <div className='sidebar-footer-inner'>
-            <span className='iohk-supported'>IOHK Supported Project</span>
-            <img className='iohk-logo' alt='IOHK Logo' src={iohkLogo} />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   UITXSearchBox () {
     if (this.state.txSearchOpen) {
       return (
@@ -2419,245 +2317,36 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  UICockpit () {
-    if (this.state.controlType === 'fly') {
-      return (
-        <div className='hud'>
-          <div className='coords'>
-            <div className='posX'>X: { this.state.posX }</div>
-            <div className='posY'>Y: { this.state.posY }</div>
-            <div className='posZ'>Z: { this.state.posZ }</div>
-          </div>
-        </div>
-      )
-    }
-  }
-
-  UIBlockDetails () {
-    if (this.state.closestBlock) {
-      const health = this.state.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.state.closestBlock.blockData.healthRatio
-      const healthInv = (1.0 - health)
-
-      let CSSClass = 'block-details-container'
-
-      if (this.state.controlType === 'fly') {
-        CSSClass += ' cockpit'
-      }
-
-      return (
-        <div className={CSSClass}>
-
-          <div className='cockpit-border' />
-          {this.UICockpit()}
-          {this.UICockpitButton()}
-
-          <div className='controls-container'>
-            <div className='auto-pilot-controls'>
-              <span title='Auto Pilot backwards in time' className='backward' onClick={() => this.toggleAutoPilotDirection('backward')} />
-              <span title='Stop Auto Pilot' className='stop' onClick={() => this.stopAutoPilot()} />
-              <span title='Auto Pilot forwards in time' className='forward' onClick={() => this.toggleAutoPilotDirection('forward')} />
-            </div>
-            {this.UIUndersideButton()}
-          </div>
-
-          {this.UITXDetails()}
-
-          <div className='block-hash'>
-            <h2>//BLOCK-{ this.state.closestBlock.blockData.height }</h2>
-            <h3>{ this.state.closestBlock.blockData.hash }</h3>
-          </div>
-
-          <div className='block-details'>
-            <h2 className='block-details-heading'>//BLOCK-{this.state.closestBlock.blockData.height}</h2>
-            <div className='block-details-border' />
-            <div><h3>Health:</h3>
-              <div className='health-bar-container' title={healthInv}>
-                <div
-                  className='health-bar'
-                  style={{
-                    width: 100 * healthInv,
-                    background: 'rgba(' + 255 * healthInv + ', ' + 255 * healthInv + ', ' + 255 * healthInv + ', 1.0)'
-                  }}
-                />
-              </div>
-            </div>
-            <ul>
-              <li><h3>No. of Tx:</h3> <strong>{ this.state.closestBlock.blockData.n_tx }</strong></li>
-              <li><h3>Output Total:</h3> <strong>{ (this.state.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
-              <li><h3>Fees:</h3> <strong>{ (this.state.closestBlock.blockData.fee / 100000000).toFixed(2) }</strong></li>
-              <li><h3>Date:</h3> <strong>{ moment.unix(this.state.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
-              <li><h3>Bits:</h3> <strong>{ this.state.closestBlock.blockData.bits }</strong></li>
-              <li><h3>Size:</h3> <strong>{ this.state.closestBlock.blockData.size / 1000 } KB</strong></li>
-              <li><h3>Height:</h3> <strong>{ this.state.closestBlock.blockData.height }</strong></li>
-              <li><h3>Merkle Root:</h3> <strong>{ this.state.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
-              <li><h3>Nonce:</h3> <strong>{ this.state.closestBlock.blockData.nonce }</strong></li>
-              <li><h3>Version:</h3> <strong>{ this.state.closestBlock.blockData.ver }</strong></li>
-              <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.state.closestBlock.blockData.height}>View Details</a></strong></h3></li>
-            </ul>
-            <div className='scope-border' />
-            <div className='scope-grid-container'>
-
-              <div className='top left' />
-              <div className='top' />
-              <div className='top' />
-              <div className='top' />
-              <div className='top' />
-              <div className='top' />
-              <div className='top' />
-              <div className='top' />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-              <div className='left' />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
-
-            </div>
-            <canvas id='scope' ref='scope' width='220' height='80' />
-          </div>
-
-        </div>
-      )
-    }
-  }
-
-  UICockpitButton () {
-    if (this.state.controlType === 'fly') {
-      return (
-        <button title='Toggle Cockpit Controls' onClick={this.toggleTopView.bind(this)} className='toggle-cockpit-controls enter' />
-      )
-    } else {
-      return (
-        <button title='Toggle Cockpit Controls' onClick={this.toggleFlyControls.bind(this)} className='toggle-cockpit-controls leave' />
-      )
-    }
-  }
-
-  UIUndersideButton () {
-    if (this.state.controlType !== 'underside') {
-      return (
-        <div className='flip-view-container'>
-          <button title='Show Merkle Tree' onClick={this.toggleUndersideView.bind(this)} className='flip-view' />
-        </div>
-      )
-    } else {
-      return (
-        <div className='flip-view-container'>
-          <button title='Show Block Top' onClick={this.toggleTopView.bind(this)} className='flip-view' />
-        </div>
-      )
-    }
-  }
-
-  UITXDetails () {
-    if (this.state.txSelected) {
-      return (
-        <div className='tx-details'>
-          <div className='tx-details-border tx-details-border-tl' />
-          <div className='tx-details-border tx-details-border-tr' />
-          <div className='tx-details-border tx-details-border-bl' />
-          <div className='tx-details-border tx-details-border-br' />
-
-          <div className='tx-details-inner'>
-            <h2><a target='_blank' href={'https://www.blockchain.com/btc/tx/' + this.state.txSelected.hash}>TX-{this.state.txSelected.hash}</a></h2>
-
-            <span className='tx-detail-item'><strong>{ moment.unix(this.state.txSelected.time).format('YYYY-MM-DD HH:mm:ss') }</strong></span>
-            <span className='tx-detail-item'><strong>{this.state.txSelected.size} bytes</strong></span>
-            <span className='tx-detail-item'><h3>Relayed By:</h3> <strong>{this.state.txSelected.relayed_by}</strong></span>
-            <span className='tx-detail-item'><h3>Fee:</h3> <strong>{this.state.txSelected.fee} BTC</strong></span>
-
-            <ul className='input-output'>
-              <li className='inputs'><h3>Inputs:</h3>
-                <ul>
-                  {this.state.txSelected.inputs.slice(0, 5).map(function (el, index) {
-                    return <li key={index}>
-                      { typeof el.prev_out !== 'undefined' ? el.prev_out.value / 100000000 : 0 } BTC</li>
-                  })}
-                  {this.state.txSelected.inputs.length > 5 ? '...' : ''}
-                </ul>
-              </li>
-
-              <li className='outputs'><h3>Outputs:</h3>
-                <ul>
-                  {this.state.txSelected.out.slice(0, 5).map(function (el, index) {
-                    return <li key={index}>{el.value / 100000000} BTC ({el.spent ? 'Spent' : 'Unspent'})</li>
-                  })}
-                  {this.state.txSelected.out.length > 5 ? '...' : ''}
-                  <li className='out-total'><strong>Total:</strong> {(this.state.txSelected.outTotal).toFixed(2)} BTC</li>
-                </ul>
-              </li>
-            </ul>
-
-          </div>
-        </div>
-      )
-    }
-  }
-
   UI () {
     return (
       <div className='symphony-ui'>
-        {this.UISidebar()}
+        <Sidebar
+          toggleSidebar={this.toggleSidebar.bind(this)}
+          toggleBlockSearch={this.toggleBlockSearch.bind(this)}
+          toggleTxSearch={this.toggleTxSearch.bind(this)}
+          goToRandomBlock={this.goToRandomBlock.bind(this)}
+          toggleDateSearch={this.toggleDateSearch.bind(this)}
+          sidebarOpen={this.state.sidebarOpen}
+        />
         {this.UITXSearchBox()}
         {this.UIBlockSearchBox()}
-        {this.UIBlockDetails()}
+        <BlockDetails
+          posX={this.state.posX}
+          posY={this.state.posY}
+          posZ={this.state.posZ}
+          closestBlock={this.state.closestBlock}
+          controlType={this.state.controlType}
+          txSelected={this.state.txSelected}
+          toggleAutoPilotDirection={this.toggleAutoPilotDirection.bind(this)}
+          toggleTopView={this.toggleTopView.bind(this)}
+          toggleUndersideView={this.toggleUndersideView.bind(this)}
+          toggleFlyControls={this.toggleFlyControls.bind(this)}
+        />
+        <WebVRButton
+          startVRSession={this.WebVR.startVRSession}
+          endVRSession={this.WebVR.endVRSession}
+          VRSupported={this.WebVR.VRSupported}
+        />
       </div>
     )
   }

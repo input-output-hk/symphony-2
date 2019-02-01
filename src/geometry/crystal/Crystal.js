@@ -1,10 +1,5 @@
 // libs
 import * as THREE from 'three'
-import SimplexNoise from 'simplex-noise'
-import { map } from '../../utils/math'
-import Voronoi from 'voronoi'
-import VoronoiTools from '../../utils/VoronoiTools'
-import seedrandom from 'seedrandom'
 
 // base geometry class
 import Base from '../base/Base'
@@ -21,8 +16,6 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    this.random = seedrandom
-    this.voronoi = new Voronoi()
     this.instanceTotal = 10 * 3000
     this.txCount = 0
     this.txIndexOffsets = {}
@@ -69,6 +62,7 @@ export default class Crystal extends Base {
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+    // let tubeGeo = new THREE.BoxGeometry(1, 1, 1)
     tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
     tubeGeo.vertices[0].add(new THREE.Vector3(0, 0.02, 0))
     tubeGeo.vertices[1].add(new THREE.Vector3(0, 0.02, 0))

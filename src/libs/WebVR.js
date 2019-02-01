@@ -1,196 +1,118 @@
-
-/**
- * @author mrdoob / http://mrdoob.com
- * @author Mugen87 / https://github.com/Mugen87
- *
- * Based on @tojiro's vr-samples-utils.js
- */
-
 export default class WebVR {
-  createButton (renderer, options) {
-    if (options && options.frameOfReferenceType) {
-      renderer.vr.setFrameOfReferenceType(options.frameOfReferenceType)
-    }
+  constructor (args) {
+    this.renderer = null
+    this.currentSession = null
+    this.device = null
+    this.cameraDepthFar = 5000000
+    this.mode = '' // XR or VR
+    this.setupDevice()
+    this.VRSupported = false
+  }
 
-    function showEnterVR (device) {
-      button.style.display = ''
+  setRenderer (renderer) {
+    this.renderer = renderer
+  }
 
-      button.style.cursor = 'pointer'
-      button.style.left = 'calc(50% - 50px)'
-      button.style.width = '100px'
+  setMode (device, mode) {
+    this.VRSupported = true
+    this.device = device
+    this.mode = mode
+    this.renderer.vr.setDevice(device)
+  }
 
-      button.textContent = 'ENTER VR'
-
-      button.onmouseenter = function () { button.style.opacity = '1.0' }
-      button.onmouseleave = function () { button.style.opacity = '0.5' }
-
-      button.onclick = function () {
-        device.isPresenting ? device.exitPresent() : device.requestPresent([ { source: renderer.domElement } ])
-      }
-
-      renderer.vr.setDevice(device)
-    }
-
-    function showEnterXR (device) {
-      var currentSession = null
-
-      function onSessionStarted (session) {
-        session.addEventListener('end', onSessionEnded)
-
-        renderer.vr.setSession(session)
-        button.textContent = 'EXIT VR'
-
-        currentSession = session
-
-        session.depthFar = 5000000
-      }
-
-      function onSessionEnded (event) {
-        currentSession.removeEventListener('end', onSessionEnded)
-
-        renderer.vr.setSession(null)
-        button.textContent = 'ENTER VR'
-
-        currentSession = null
-      }
-
-      //
-
-      button.style.display = ''
-
-      button.style.cursor = 'pointer'
-      button.style.left = 'calc(50% - 50px)'
-      button.style.width = '100px'
-
-      button.textContent = 'ENTER VR'
-
-      button.onmouseenter = function () { button.style.opacity = '1.0' }
-      button.onmouseleave = function () { button.style.opacity = '0.5' }
-
-      button.onclick = function () {
-        if (currentSession === null) {
-          device.requestSession({
-            immersive: true,
-            exclusive: true /* DEPRECATED */
-          }).then(onSessionStarted)
-        } else {
-          currentSession.end()
-        }
-      }
-
-      renderer.vr.setDevice(device)
-    }
-
-    function showVRNotFound () {
-      button.style.display = ''
-
-      button.style.cursor = 'auto'
-      button.style.left = 'calc(50% - 75px)'
-      button.style.width = '150px'
-
-      button.textContent = 'VR NOT FOUND'
-
-      button.onmouseenter = null
-      button.onmouseleave = null
-
-      button.onclick = null
-
-      renderer.vr.setDevice(null)
-    }
-
-    function stylizeElement (element) {
-      element.style.position = 'absolute'
-      element.style.bottom = '20px'
-      element.style.padding = '12px 6px'
-      element.style.border = '1px solid #fff'
-      element.style.borderRadius = '4px'
-      element.style.background = 'rgba(0,0,0,0.1)'
-      element.style.color = '#fff'
-      element.style.font = 'normal 13px sans-serif'
-      element.style.textAlign = 'center'
-      element.style.opacity = '0.5'
-      element.style.outline = 'none'
-      element.style.zIndex = '999'
-    }
-
+  setupDevice () {
     if ('xr' in navigator) {
-      var button = document.createElement('button')
-      button.style.display = 'none'
-
-      stylizeElement(button)
-
       navigator.xr.requestDevice().then(function (device) {
-        device.supportsSession({ immersive: true, exclusive: true /* DEPRECATED */ })
-          .then(function () { showEnterXR(device) })
-          .catch(showVRNotFound)
-      }).catch(showVRNotFound)
-
-      return button
+        device.supportsSession({ immersive: true, exclusive: true })
+          .then(function () {
+            this.setMode(device, 'XR')
+          })
+          .catch(this.VRNotFound.bind(this))
+      }).catch(this.VRNotFound.bind(this))
     } else if ('getVRDisplays' in navigator) {
-      var button = document.createElement('button')
-      button.style.display = 'none'
-
-      stylizeElement(button)
-
       window.addEventListener('vrdisplayconnect', function (event) {
-        showEnterVR(event.display)
+        this.setMode(event.display, 'VR')
       }, false)
 
       window.addEventListener('vrdisplaydisconnect', function (event) {
-        showVRNotFound()
+        this.VRNotFound().bind(this)
       }, false)
 
       window.addEventListener('vrdisplaypresentchange', function (event) {
-        button.textContent = event.display.isPresenting ? 'EXIT VR' : 'ENTER VR'
+
       }, false)
 
       window.addEventListener('vrdisplayactivate', function (event) {
-        event.display.requestPresent([ { source: renderer.domElement } ])
+        event.display.requestPresent([ { source: this.renderer.domElement } ])
       }, false)
 
       navigator.getVRDisplays()
         .then(function (displays) {
           if (displays.length > 0) {
-            showEnterVR(displays[ 0 ])
+            this.setMode(displays[0], 'VR')
           } else {
-            showVRNotFound()
+            this.VRNotFound().bind(this)
           }
-        }).catch(showVRNotFound)
-
-      return button
+        }).catch(this.VRNotFound.bind(this))
     } else {
-      var message = document.createElement('a')
-      message.href = 'https://webvr.info'
-      message.innerHTML = 'WEBVR NOT SUPPORTED'
-
-      message.style.left = 'calc(50% - 90px)'
-      message.style.width = '180px'
-      message.style.textDecoration = 'none'
-
-      stylizeElement(message)
-
-      return message
+      this.VRNotFound().bind(this)
     }
   }
 
-  // DEPRECATED
-
-  checkAvailability () {
-    console.warn('WEBVR.checkAvailability has been deprecated.')
-    return new Promise(function () {})
+  enterVR () {
+    if (this.device.isPresenting) {
+      this.device.exitPresent()
+    } else {
+      this.device.requestPresent([{
+        source: this.renderer.domElement
+      }])
+    }
   }
 
-  getMessageContainer () {
-    console.warn('WEBVR.getMessageContainer has been deprecated.')
-    return document.createElement('div')
+  enterXR () {
+    if (this.currentSession === null) {
+      this.device.requestSession({
+        immersive: true,
+        exclusive: true
+      }).then(this.onSessionStarted)
+    } else {
+      this.currentSession.end()
+    }
   }
 
-  getButton () {
-    console.warn('WEBVR.getButton has been deprecated.')
-    return document.createElement('div')
+  startVRSession () {
+    switch (this.mode) {
+      case 'VR':
+        this.enterVR()
+        break
+
+      case 'XR':
+        this.enterXR()
+
+        break
+
+      default:
+        break
+    }
   }
 
-  getVRDisplay () {
-    console.warn('WEBVR.getVRDisplay has been deprecated.')
+  endVRSession () {
+    switch (this.mode) {
+      case 'VR':
+        this.device.exitPresent()
+        break
+
+      case 'XR':
+        this.currentSession.end()
+        break
+
+      default:
+        break
+    }
+  }
+
+  VRNotFound () {
+    this.VRSupported = false
+    this.renderer.vr.setDevice(null)
   }
 }
