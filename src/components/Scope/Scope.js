@@ -1,8 +1,5 @@
 import React, { Component } from 'react'
-
 import styles from './Scope.css'
-
-let canvas = document.createElement('canvas')
 
 export default class Scope extends Component {
   constructor (props) {
@@ -53,84 +50,84 @@ export default class Scope extends Component {
   render () {
     return (
       <div>
-        <div className='scope-border' />
-        <div className='scope-grid-container'>
+        <div className={styles.scopeBorder} />
+        <div className={styles.scopeGridContainer}>
 
-          <div className='top left' />
-          <div className='top' />
-          <div className='top' />
-          <div className='top' />
-          <div className='top' />
-          <div className='top' />
-          <div className='top' />
-          <div className='top' />
+          <div className={styles.scopeGridContainerChildTopLeft} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
+          <div className={styles.scopeGridContainerChildTop} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
-          <div className='left' />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
-          <div />
+          <div className={styles.scopeGridContainerChildLeft} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
+          <div className={styles.scopeGridContainerChild} />
 
         </div>
 
-        <canvas id='scope' ref='scope' width='220' height='80' />
+        <canvas id={styles.scope} ref='scope' width='220' height='80' />
       </div>
     )
   }

@@ -8,10 +8,15 @@ export default class FlyControls {
   constructor (object, domElement) {
     this.object = object
 
+    this.closestBlockBBox = null
+
     this.domElement = (domElement !== undefined) ? domElement : document
     if (domElement) {
       this.domElement.setAttribute('tabindex', -1)
     }
+
+    this.BBox = null
+    this.boxMatrixInverse = null
 
     // API
 
@@ -24,6 +29,8 @@ export default class FlyControls {
     // disable default target object behavior
 
     // internals
+
+    this.prevCamPos = new THREE.Vector3(0, 0, 0)
 
     this.tmpQuaternion = new THREE.Quaternion()
 
@@ -50,6 +57,11 @@ export default class FlyControls {
 
     this.updateMovementVector()
     this.updateRotationVector()
+  }
+
+  updateClosestBlockBBox (BBox, boxMatrixInverse) {
+    this.BBox = BBox
+    this.boxMatrixInverse = boxMatrixInverse
   }
 
   handleEvent (event) {
@@ -181,9 +193,22 @@ export default class FlyControls {
     var moveMult = delta * this.movementSpeed
     var rotMult = delta * this.rollSpeed
 
+    this.prevCamPos = this.object.position.clone()
+
     this.object.translateX(this.moveVector.x * moveMult)
     this.object.translateY(this.moveVector.y * moveMult)
     this.object.translateZ(this.moveVector.z * moveMult)
+
+    if (this.BBox) {
+      let inversePoint = this.object.position.clone()
+      inversePoint.applyMatrix4(this.boxMatrixInverse)
+
+      if (this.BBox.containsPoint(inversePoint)) {
+        this.object.position.x = this.prevCamPos.x
+        this.object.position.y = this.prevCamPos.y
+        this.object.position.z = this.prevCamPos.z
+      }
+    }
 
     this.tmpQuaternion.set(this.rotationVector.x * rotMult, this.rotationVector.y * rotMult, this.rotationVector.z * rotMult, 1).normalize()
     this.object.quaternion.multiply(this.tmpQuaternion)

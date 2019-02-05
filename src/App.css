@@ -722,49 +722,7 @@ canvas#sketchboard {
   font-size: 12px;
 }
 
-#scope {
-  position: absolute;
-  opacity: 0.5;
-  border: 0;
-  left: 1px;
-  bottom: -104px;
-}
 
-.scope-border {
-  border-left: 1px solid #fff;
-  border-top: 1px solid #fff;
-  border-bottom: 1px solid #fff;
-  height: 82px;
-  width: 42px;
-  position: absolute;
-  left: 0;
-  bottom: -105px;
-  opacity: 0.3;
-}
-
-.scope-grid-container {
-  height: 80px;
-  width: 220px;
-  position: absolute;
-  left: 1px;
-  bottom: -104px;
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-}
-
-.scope-grid-container div {
-  border-top: 1px solid #fff;
-  border-left: 1px solid #fff;
-  opacity: 0.2;
-}
-
-.scope-grid-container div.top {
-  border-top: none;
-}
-
-.scope-grid-container div.left {
-  border-left: none;
-}
 
 .tx-details-border {
   position: absolute;
@@ -836,7 +794,7 @@ canvas#sketchboard {
 .loaded {
   opacity: 0.0;
   filter: blur(6ex);
-  transition: opacity 10s, filter 10s, visibility 10s;
+  /* transition: opacity 10s, filter 10s, visibility 10s; */
   visibility: hidden;
   /* animation: zoom-in 10s ease-in; */
 }

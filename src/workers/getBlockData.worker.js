@@ -19,10 +19,10 @@ self.addEventListener('message', async function (e) {
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
 
-      firebase.auth().signInAnonymously().catch(function (error) {
-        console.log(error.code)
-        console.log(error.message)
-      })
+      // firebase.auth().signInAnonymously().catch(function (error) {
+      //   console.log(error.code)
+      //   console.log(error.message)
+      // })
 
       // first check firebase
       let blockRef = docRef.doc(data.hash)
@@ -69,9 +69,9 @@ const cacheBlockData = async function (hash, docRef) {
   let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + config.blockchainInfo.apiCode)
   let block = await result.json()
 
-  block.tx.forEach(function (tx, index) {
+  block.tx.forEach(function (tx) {
     let txValue = 0
-    tx.out.forEach((output, index) => {
+    tx.out.forEach((output) => {
       txValue += output.value
     })
     tx.value = txValue

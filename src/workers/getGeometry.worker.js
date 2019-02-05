@@ -28,10 +28,10 @@ self.addEventListener('message', async function (e) {
       const firebaseDB = firebase.firestore()
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
-      firebase.auth().signInAnonymously().catch(function (error) {
-        console.log(error.code)
-        console.log(error.message)
-      })
+      // firebase.auth().signInAnonymously().catch(function (error) {
+      //   console.log(error.code)
+      //   console.log(error.message)
+      // })
 
       // check for data in cache
       let blockRefGeo = docRefGeo.doc(blockData.hash)
@@ -53,7 +53,8 @@ self.addEventListener('message', async function (e) {
 
         blockGeoData = {
           offsets: offsetsArray,
-          scales: scalesArray
+          scales: scalesArray,
+          height: blockData.height
         }
       }
 

@@ -20,6 +20,8 @@ import * as THREE from 'three'
 const MapControls = function (object, domElement) {
   this.object = object
 
+  this.closestBlockBBox = null
+
   this.domElement = (domElement !== undefined) ? domElement : document
 
   // Set to false to disable this control
@@ -88,6 +90,10 @@ const MapControls = function (object, domElement) {
   //
   // public methods
   //
+
+  this.updateClosestBlockBBox = function (BBox) {
+    scope.closestBlockBBox = BBox
+  }
 
   this.getPolarAngle = function () {
     return spherical.phi

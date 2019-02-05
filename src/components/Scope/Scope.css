@@ -1,0 +1,45 @@
+:local(#scope) {
+    position: absolute;
+    opacity: 0.5;
+    border: 0;
+    left: 1px;
+    bottom: -104px;
+}
+  
+:local(.scopeBorder) {
+    border-left: 1px solid #fff;
+    border-top: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+    height: 82px;
+    width: 42px;
+    position: absolute;
+    left: 0;
+    bottom: -105px;
+    opacity: 0.3;
+}
+
+:local(.scopeGridContainer) {
+    height: 80px;
+    width: 220px;
+    position: absolute;
+    left: 1px;
+    bottom: -104px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+}
+
+:local(.scopeGridContainerChild) {
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    opacity: 0.2;
+}
+
+:local(.scopeGridContainerChildTop) {
+    composes: scopeGridContainerChild;
+    border-top: none;
+}
+
+:local(.scopeGridContainerChildLeft) {
+    composes: scopeGridContainerChild;
+    border-left: none;
+}

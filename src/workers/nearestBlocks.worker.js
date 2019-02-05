@@ -2,10 +2,17 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/storage'
 
+import BlockHeightHelper from '../helpers/BlockHeightHelper'
+
 self.addEventListener('message', async function (e) {
   let data = e.data
   switch (data.cmd) {
     case 'get':
+
+      const blockHeightHelper = new BlockHeightHelper({
+        baseurl: 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url=',
+        apiCode: data.config.blockchainInfo.apiCode
+      })
 
       firebase.initializeApp(data.config.fireBase)
 
@@ -14,20 +21,8 @@ self.addEventListener('message', async function (e) {
       const docRef = firebaseDB.collection('bitcoin_blocks')
       const docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
-      let closestBlocksData = []
-      let closestBlocksGeoData = []
-
-      let blockData = docRef
-        .where('height', '>', data.closestHeight - 5)
-        .where('height', '<', data.closestHeight + 5)
-        .orderBy('height', 'asc')
-
-      let querySnapshot = await blockData.get()
-
-      querySnapshot.forEach(snapshot => {
-        let data = snapshot.data()
-        closestBlocksData.push(data)
-      })
+      let closestBlocksData = {}
+      let closestBlocksGeoData = {}
 
       let blockGeoData = docRefGeo
         .where('height', '>', data.closestHeight - 5)
@@ -50,7 +45,31 @@ self.addEventListener('message', async function (e) {
         blockData.offsets = offsetsArray
         blockData.scales = scalesArray
 
-        closestBlocksGeoData.push(data)
+        closestBlocksGeoData[data.height] = data
+      })
+
+      let blockData = docRef
+        .where('height', '>', data.closestHeight - 5)
+        .where('height', '<', data.closestHeight + 5)
+        .orderBy('height', 'asc')
+
+      let querySnapshot = await blockData.get()
+
+      querySnapshot.forEach(snapshot => {
+        let data = snapshot.data()
+        closestBlocksData[data.height] = data
+      })
+
+      // check for missing blockdata entries which were too big to cache
+
+      Object.keys(closestBlocksGeoData).forEach(async (height) => {
+        if (typeof closestBlocksData[height] === 'undefined') {
+          console.log('block at height ' + height + ' is missing from db')
+
+          let block = blockHeightHelper(height)
+
+          closestBlocksData[height] = block
+        }
       })
 
       let returnData = {

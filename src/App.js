@@ -17,6 +17,7 @@ import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 import WebVR from './libs/WebVR'
+import TextGeometry from './libs/vendor/TextGeometry/TextGeometry'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -66,12 +67,14 @@ import Particles from './geometry/particles/Particles'
 import './App.css'
 
 // Images
-
 import logo from './assets/images/logo-square.png'
 
 class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
+
+    this.loadFont = require('load-bmfont')
+    this.SDFShader = require('./libs/vendor/TextGeometry/shaders/sdf')
 
     this.config = deepAssign(Config, this.props.config)
     this.planeSize = 500
@@ -105,6 +108,8 @@ class App extends mixin(EventEmitter, Component) {
     this.autoPilot = false
     this.autoPilotDirection = false
     this.mapControlsYPos = 500
+    this.closestHeight = null
+    this.originOffset = new THREE.Vector2(0, 0)
 
     this.WebVR = new WebVR() // WebVR lib
 
@@ -653,7 +658,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initLights () {
-    this.sunLight = new THREE.DirectionalLight(0xffffff, 1.1)
+    this.sunLight = new THREE.DirectionalLight(0xffffff, 2.0)
     this.sunLight.position.set(0, 10000000, 20000000)
     this.scene.add(this.sunLight)
 
@@ -746,6 +751,40 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initGeometry () {
+    this.loadFont('./assets/fonts/DejaVu-sdf.fnt', function (err, font) {
+      if (!err) {
+        var textureLoader = new THREE.TextureLoader()
+        textureLoader.load('./assets/fonts/DejaVu-sdf.png', function (texture) {
+          texture.needsUpdate = true
+          texture.minFilter = THREE.LinearMipMapLinearFilter
+          texture.magFilter = THREE.LinearFilter
+          texture.generateMipmaps = true
+          texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
+
+          let geometry = new TextGeometry({
+            width: 100,
+            align: 'right',
+            font: font,
+            flipY: texture.flipY,
+            text: 'TIT'
+          })
+
+          let material = new THREE.RawShaderMaterial(this.SDFShader({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            color: 0xffffff
+          }))
+
+          let mesh = new THREE.Mesh(geometry, material)
+
+          this.group.add(mesh)
+        }.bind(this))
+      } else {
+        console.log(err)
+      }
+    }.bind(this))
+
     if (!this.blockHashToLoad) {
       let url
       if (this.heightToLoad !== null) {
@@ -808,6 +847,52 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.underside)
     this.group.add(this.undersideL)
     this.group.add(this.undersideR)
+
+    // box occluder
+    let planeX = this.plane.geometry.attributes.planeOffset.array[0]
+    let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
+    let quat = new THREE.Quaternion(
+      this.plane.geometry.attributes.quaternion.array[0],
+      this.plane.geometry.attributes.quaternion.array[1],
+      this.plane.geometry.attributes.quaternion.array[2],
+      this.plane.geometry.attributes.quaternion.array[3]
+    )
+
+    let boxGeo = new THREE.BoxGeometry(515, 515, 10)
+    this.occluder = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0xffffff),
+      side: THREE.DoubleSide,
+      colorWrite: false,
+      transparent: true
+    }))
+
+    this.occluder.position.y = -2.5
+
+    this.occluder.frustumCulled = false
+    this.occluder.position.x = planeX
+    this.occluder.position.z = planeZ
+    this.occluder.applyQuaternion(quat)
+    this.occluder.rotateX(Math.PI / 2)
+    this.occluder.updateMatrix()
+    this.occluder.updateMatrixWorld()
+
+    this.occluder.geometry.computeBoundingBox()
+    this.occluder.updateMatrixWorld(true)
+
+    let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
+    let inverseBox = this.occluder.clone()
+    inverseBox.applyMatrix(boxMatrixInverse)
+
+    let bb = new THREE.Box3().setFromObject(inverseBox)
+
+    let helper = new THREE.Box3Helper(bb, 0xffff00)
+    this.scene.add(helper)
+
+    if (this.controls) {
+      this.controls.updateClosestBlockBBox(bb, boxMatrixInverse)
+    }
+
+    this.group.add(this.occluder)
 
     this.blockReady = true
 
@@ -947,7 +1032,8 @@ class App extends mixin(EventEmitter, Component) {
         this.controls.dampingFactor = 0.25
         this.controls.screenSpacePanning = true
         this.controls.minDistance = 0
-        this.controls.maxDistance = 3000
+        // this.controls.maxDistance = 3000
+        this.controls.maxDistance = 300000
         this.controls.maxPolarAngle = Math.PI / 2
         this.controls.rotateSpeed = 0.05
         this.controls.panSpeed = 0.25
@@ -1063,10 +1149,14 @@ class App extends mixin(EventEmitter, Component) {
 
   getClosestBlock () {
     if (this.camera.position.y >= 2000) {
-      this.setState({closestBlock: null})
+      if (this.state.closestBlock !== null) {
+        this.setState({closestBlock: null})
+      }
       this.closestBlockReadyForUpdate = true
       return
     }
+
+    // console.log(this.blockGeoDataObject)
 
     this.prevClosestBlock = this.closestBlock
     if (Object.keys(this.blockGeoDataObject).length > 0) {
@@ -1090,6 +1180,12 @@ class App extends mixin(EventEmitter, Component) {
           if (blockDist < closestDist) {
             closestDist = blockDist
             this.closestBlock = blockGeoData
+            if (this.controls) {
+              // let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
+              // let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
+
+              // this.controls.updateClosestBlockBBox()
+            }
           }
         }
       }
@@ -1160,8 +1256,8 @@ class App extends mixin(EventEmitter, Component) {
 
       let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-      let start = this.closestHeight - 10
-      let end = this.closestHeight + 10
+      let start = this.closestHeight - 5
+      let end = this.closestHeight + 5
 
       if (start < 0) {
         start = 0
@@ -1248,9 +1344,11 @@ class App extends mixin(EventEmitter, Component) {
         closestBlocksData = data.closestBlocksData
         closestBlocksGeoData = data.closestBlocksGeoData
 
-        closestBlocksGeoData.forEach(async (blockGeoData, i) => {
+        Object.keys(closestBlocksGeoData).forEach(async (key) => {
+          let blockGeoData = closestBlocksGeoData[key]
+
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-            if (typeof closestBlocksData[i] !== 'undefined') {
+            if (typeof closestBlocksData[key] !== 'undefined') {
               if (
                 blockGeoData.height < this.closestHeight - 10 ||
                   blockGeoData.height > this.closestHeight + 10
@@ -1259,7 +1357,7 @@ class App extends mixin(EventEmitter, Component) {
                 return
               }
 
-              blockGeoData.blockData = closestBlocksData[i]
+              blockGeoData.blockData = closestBlocksData[key]
 
               blockGeoData.blockData.pos = {}
               blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
@@ -1357,7 +1455,12 @@ class App extends mixin(EventEmitter, Component) {
         nearestBlocksWorker.terminate()
       }
     }
-    nearestBlocksWorker.postMessage({ cmd: 'get', closestHeight: this.closestHeight, config: this.config })
+    nearestBlocksWorker.postMessage({
+      cmd: 'get',
+      closestHeight: this.closestHeight,
+      config: this.config,
+      maxHeight: this.maxHeight
+    })
   }
 
   toggleTxSearch () {
@@ -1464,14 +1567,16 @@ class App extends mixin(EventEmitter, Component) {
 
     this.hideMerkleDetail()
 
-    this.closestHeight = this.maxHeight
+    if (this.closestHeight === null) {
+      this.closestHeight = this.maxHeight
+    }
 
-    this.loadNearestBlocks(true, this.maxHeight)
+    this.loadNearestBlocks(true, this.closestHeight)
 
     this.closeSidebar()
 
-    let posX = this.blockPositions[this.maxHeight * 2 + 0]
-    let posZ = this.blockPositions[this.maxHeight * 2 + 1]
+    let posX = this.blockPositions[this.closestHeight * 2 + 0]
+    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
     let toTarget = new THREE.Vector3(posX, 0, posZ)
@@ -1671,11 +1776,11 @@ class App extends mixin(EventEmitter, Component) {
       this.treeGenerator.update(window.performance.now())
     }
 
-    this.setState({
-      posX: this.camera.position.x.toFixed(3),
-      posY: this.camera.position.y.toFixed(3),
-      posZ: this.camera.position.z.toFixed(3)
-    })
+    // this.setState({
+    //   posX: this.camera.position.x.toFixed(3),
+    //   posY: this.camera.position.y.toFixed(3),
+    //   posZ: this.camera.position.z.toFixed(3)
+    // })
 
     this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
@@ -1806,15 +1911,60 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    this.originOffset = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
+    let quat = new THREE.Quaternion(
+      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 0],
+      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 1],
+      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 2],
+      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 3]
+    )
+
+    this.occluder.rotation.x = 0
+    this.occluder.rotation.z = 0
+
+    let posX = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
+    let posZ = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
+
+    this.occluder.position.x = posX
+    this.occluder.position.z = posZ
+    this.occluder.applyQuaternion(quat)
+    this.occluder.rotateX(Math.PI / 2)
+    this.occluder.updateMatrix(true)
+    this.occluder.updateMatrixWorld(true)
+
+    this.occluder.geometry.computeBoundingBox()
+    this.occluder.updateMatrixWorld(true)
+
+    let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
+    let inverseBox = this.occluder.clone()
+    inverseBox.applyMatrix(boxMatrixInverse)
+
+    let bb = new THREE.Box3().setFromObject(inverseBox)
+
+    let helper = new THREE.Box3Helper(bb, 0xffff00)
+    this.scene.add(helper)
+
+    if (this.controls) {
+      this.controls.updateClosestBlockBBox(bb, boxMatrixInverse)
+    }
+
     this.setState({
       closestBlock: this.closestBlock
     })
 
-    this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
-
     this.updateClosestTrees()
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+
+    this.updateOriginOffsets()
 
     for (const height in this.audioManager.audioSources) {
       if (this.audioManager.audioSources.hasOwnProperty(height)) {
@@ -1832,12 +1982,6 @@ class App extends mixin(EventEmitter, Component) {
         clearTimeout(this.audioManager.loops[height])
       }
     }
-
-    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
-    this.originOffset = new THREE.Vector2(
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-    )
 
     this.createCubeMap(
       new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
@@ -1887,17 +2031,6 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideR.visible = false
     }
 
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-
-    this.treeGenerator.updateOriginOffset(this.originOffset)
-    this.planeGenerator.updateOriginOffset(this.originOffset)
-    this.occlusionGenerator.updateOriginOffset(this.originOffset)
-    this.crystalGenerator.updateOriginOffset(this.originOffset)
-    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
-    this.diskGenerator.updateOriginOffset(this.originOffset)
-    this.txGenerator.updateOriginOffset(this.originOffset)
-
     if (undersideTexture1) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
     }
@@ -1909,6 +2042,16 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
+  }
+
+  updateOriginOffsets () {
+    this.treeGenerator.updateOriginOffset(this.originOffset)
+    this.planeGenerator.updateOriginOffset(this.originOffset)
+    this.occlusionGenerator.updateOriginOffset(this.originOffset)
+    this.crystalGenerator.updateOriginOffset(this.originOffset)
+    this.crystalAOGenerator.updateOriginOffset(this.originOffset)
+    this.diskGenerator.updateOriginOffset(this.originOffset)
+    this.txGenerator.updateOriginOffset(this.originOffset)
   }
 
   async updateClosestTrees () {
@@ -1968,6 +2111,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async updateMerkleDetail (blockGeoData, circuitIndex, texture) {
+    // if (typeof texture.image === 'undefined') {
+    //   return
+    // }
+
     let undersidePlane
 
     switch (circuitIndex) {
@@ -1994,7 +2141,11 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 3]
     )
 
+    // texture.needsUpdate = true
     texture.minFilter = THREE.LinearMipMapLinearFilter
+    texture.magFilter = THREE.LinearFilter
+    texture.generateMipmaps = true
+    texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
 
     undersidePlane.material.map = texture
     undersidePlane.rotation.x = 0
@@ -2012,6 +2163,7 @@ class App extends mixin(EventEmitter, Component) {
   initScene () {
     this.group = new THREE.Group()
     this.scene = new THREE.Scene()
+    // this.group = this.scene
     this.scene.add(this.group)
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
@@ -2047,6 +2199,8 @@ class App extends mixin(EventEmitter, Component) {
     } else {
       this.camera = this.cameraMain
     }
+
+    window.camera = this.camera
 
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
