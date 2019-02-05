@@ -10,7 +10,7 @@ self.addEventListener('message', async function (e) {
     case 'get':
 
       const blockHeightHelper = new BlockHeightHelper({
-        baseurl: 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url=',
+        baseUrl: 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url=',
         apiCode: data.config.blockchainInfo.apiCode
       })
 
@@ -62,12 +62,10 @@ self.addEventListener('message', async function (e) {
 
       // check for missing blockdata entries which were too big to cache
 
-      Object.keys(closestBlocksGeoData).forEach(async (height) => {
+      await asyncForEach(Object.keys(closestBlocksGeoData), async (height) => {
         if (typeof closestBlocksData[height] === 'undefined') {
           console.log('block at height ' + height + ' is missing from db')
-
-          let block = blockHeightHelper(height)
-
+          let block = await blockHeightHelper.populateData(height)
           closestBlocksData[height] = block
         }
       })
@@ -89,3 +87,9 @@ self.addEventListener('message', async function (e) {
 
   self.postMessage(e.data)
 }, false)
+
+const asyncForEach = async function (array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array)
+  }
+}

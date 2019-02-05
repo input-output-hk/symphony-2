@@ -858,41 +858,34 @@ class App extends mixin(EventEmitter, Component) {
       this.plane.geometry.attributes.quaternion.array[3]
     )
 
-    let boxGeo = new THREE.BoxGeometry(515, 515, 10)
-    this.occluder = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0xffffff),
-      side: THREE.DoubleSide,
-      colorWrite: false,
-      transparent: true
+    let boxGeo = new THREE.BoxGeometry(this.planeSize + 15, this.planeSize + 15, 10)
+    this.boundingBoxObj = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+      colorWrite: false
     }))
 
-    this.occluder.position.y = -2.5
+    this.boundingBoxObj.visible = false
 
-    this.occluder.frustumCulled = false
-    this.occluder.position.x = planeX
-    this.occluder.position.z = planeZ
-    this.occluder.applyQuaternion(quat)
-    this.occluder.rotateX(Math.PI / 2)
-    this.occluder.updateMatrix()
-    this.occluder.updateMatrixWorld()
+    this.boundingBoxObj.position.y = -2.5
+    this.boundingBoxObj.frustumCulled = false
+    this.boundingBoxObj.position.x = planeX
+    this.boundingBoxObj.position.z = planeZ
+    this.boundingBoxObj.applyQuaternion(quat)
+    this.boundingBoxObj.rotateX(Math.PI / 2)
+    this.boundingBoxObj.updateMatrix()
+    this.boundingBoxObj.updateMatrixWorld()
+    this.boundingBoxObj.geometry.computeBoundingBox()
+    this.boundingBoxObj.updateMatrixWorld(true)
 
-    this.occluder.geometry.computeBoundingBox()
-    this.occluder.updateMatrixWorld(true)
+    this.boxMatrixInverse = new THREE.Matrix4().getInverse(this.boundingBoxObj.matrixWorld)
+    let inverseBox = this.boundingBoxObj.clone()
+    inverseBox.applyMatrix(this.boxMatrixInverse)
+    this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
-    let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
-    let inverseBox = this.occluder.clone()
-    inverseBox.applyMatrix(boxMatrixInverse)
+    this.on('controlsEnabled', () => {
+      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
+    })
 
-    let bb = new THREE.Box3().setFromObject(inverseBox)
-
-    let helper = new THREE.Box3Helper(bb, 0xffff00)
-    this.scene.add(helper)
-
-    if (this.controls) {
-      this.controls.updateClosestBlockBBox(bb, boxMatrixInverse)
-    }
-
-    this.group.add(this.occluder)
+    this.scene.add(this.boundingBoxObj)
 
     this.blockReady = true
 
@@ -902,7 +895,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.emit('sceneReady')
 
-    // this.unconfirmedLoop()
+    this.unconfirmedLoop()
 
     return true
   }
@@ -1043,7 +1036,7 @@ class App extends mixin(EventEmitter, Component) {
 
       case 'fly':
         this.controls = new FlyControls(this.cameraMain)
-        this.controls.movementSpeed = 100 * 0.01
+        this.controls.movementSpeed = 100
         this.controls.domElement = this.renderer.domElement
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
@@ -1056,6 +1049,8 @@ class App extends mixin(EventEmitter, Component) {
       default:
         break
     }
+
+    this.emit('controlsEnabled')
 
     this.setState({controlType: type})
   }
@@ -1691,7 +1686,7 @@ class App extends mixin(EventEmitter, Component) {
     this.prepareCamAnim(to, toTarget)
 
     this.autoPilotTween = new TWEEN.Tween(this.camera.position)
-      .to(to, 20000)
+      .to(to, 12000)
       .onUpdate(function () {
         if (!this.autoPilot) {
           return
@@ -1912,45 +1907,51 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+
+    console.log({indexOffset})
+
     this.originOffset = new THREE.Vector2(
       this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
       this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
     )
 
+    let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+
+    // get rotation
     let quat = new THREE.Quaternion(
-      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 0],
-      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 1],
-      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 2],
-      this.plane.geometry.attributes.quaternion.array[indexOffset * 4 + 3]
+      this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 0],
+      this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 1],
+      this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 2],
+      this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 3]
     )
 
-    this.occluder.rotation.x = 0
-    this.occluder.rotation.z = 0
+    this.boundingBoxObj.rotation.x = 0
+    this.boundingBoxObj.rotation.y = 0
+    this.boundingBoxObj.rotation.z = 0
+    this.boundingBoxObj.updateMatrix(true)
+    this.boundingBoxObj.updateMatrixWorld(true)
 
     let posX = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
     let posZ = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
 
-    this.occluder.position.x = posX
-    this.occluder.position.z = posZ
-    this.occluder.applyQuaternion(quat)
-    this.occluder.rotateX(Math.PI / 2)
-    this.occluder.updateMatrix(true)
-    this.occluder.updateMatrixWorld(true)
+    console.log(quat)
+    this.boundingBoxObj.position.x = posX
+    this.boundingBoxObj.position.z = posZ
+    this.boundingBoxObj.applyQuaternion(quat)
+    this.boundingBoxObj.rotateX(Math.PI / 2)
+    this.boundingBoxObj.updateMatrix(true)
+    this.boundingBoxObj.updateMatrixWorld(true)
 
-    this.occluder.geometry.computeBoundingBox()
-    this.occluder.updateMatrixWorld(true)
+    this.boundingBoxObj.geometry.computeBoundingBox()
+    this.boundingBoxObj.updateMatrixWorld(true)
 
-    let boxMatrixInverse = new THREE.Matrix4().getInverse(this.occluder.matrixWorld)
-    let inverseBox = this.occluder.clone()
-    inverseBox.applyMatrix(boxMatrixInverse)
-
-    let bb = new THREE.Box3().setFromObject(inverseBox)
-
-    let helper = new THREE.Box3Helper(bb, 0xffff00)
-    this.scene.add(helper)
+    this.boxMatrixInverse = new THREE.Matrix4().getInverse(this.boundingBoxObj.matrixWorld)
+    let inverseBox = this.boundingBoxObj.clone()
+    inverseBox.applyMatrix(this.boxMatrixInverse)
+    this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
     if (this.controls) {
-      this.controls.updateClosestBlockBBox(bb, boxMatrixInverse)
+      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
     }
 
     this.setState({
@@ -1960,11 +1961,6 @@ class App extends mixin(EventEmitter, Component) {
     this.updateClosestTrees()
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
-
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-
-    this.updateOriginOffsets()
 
     for (const height in this.audioManager.audioSources) {
       if (this.audioManager.audioSources.hasOwnProperty(height)) {
@@ -2042,6 +2038,11 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+
+    this.updateOriginOffsets()
   }
 
   updateOriginOffsets () {
