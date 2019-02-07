@@ -1,15 +1,12 @@
-export default class BlockHeightHelper {
+
+export default class BlockDataHelper {
   constructor (args) {
-    this.baseUrl = args.baseUrl
-    this.apiCode = args.apiCode
+    this.config = args.config
   }
 
-  async populateData (height) {
-    let url = this.baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.apiCode)
-
-    let blockData = await fetch(url)
-    let blockDataJSON = await blockData.json()
-    let block = blockDataJSON.blocks[0]
+  async cacheBlockData (hash, docRef) {
+    let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+    let block = await result.json()
 
     block.tx.forEach(function (tx) {
       let txValue = 0
@@ -18,6 +15,8 @@ export default class BlockHeightHelper {
       })
       tx.value = txValue
     })
+
+    // sortTXData(block.tx)
 
     let outputTotal = 0
     let transactions = []
@@ -58,9 +57,33 @@ export default class BlockHeightHelper {
 
     block.outputTotal = outputTotal
     block.tx = transactions
+    block.cacheTime = new Date()
 
     block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
 
+    // save to firebase
+    try {
+      await docRef.doc(block.hash).set(block, { merge: false })
+      console.log('Block data for: ' + block.hash + ' successfully written!')
+    } catch (error) {
+      console.log(error)
+    }
     return block
+  }
+
+  sortTXData (tx) {
+    tx.sort(function (a, b) {
+      let transactionValueA = 0
+      a.out.forEach((output, index) => {
+        transactionValueA += output.value
+      })
+
+      let transactionValueB = 0
+      b.out.forEach((output, index) => {
+        transactionValueB += output.value
+      })
+
+      return transactionValueA - transactionValueB
+    })
   }
 }

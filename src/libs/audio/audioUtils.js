@@ -87,12 +87,7 @@ export default class Audio extends EventEmitter {
       let txTime = map(i, 0, txCount, 0, this.soundDuration - 9)
       txTimes.push(txTime)
 
-      let spentCount = 0
-      for (let index = 0; index < tx.out.length; index++) {
-        spentCount += tx.out[index].spent
-      }
-
-      let mappedSpentRatio = map((1.0 - (spentCount / tx.out.length)), 1.0, 0.0, 8.0, 1.0)
+      let mappedSpentRatio = map((1.0 - (tx.spentCount / tx.outputCount)), 1.0, 0.0, 8.0, 1.0)
 
       spent.push(mappedSpentRatio)
 

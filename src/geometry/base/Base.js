@@ -121,25 +121,9 @@ export default class Base {
         txTime
       )
 
-      let spentCount = 0
-
-      for (let outIndex = 0; outIndex < tx.out.length; outIndex++) {
-        const el = tx.out[outIndex]
-        if (el.spent === 1) {
-          spentCount++
-        }
-      }
-
-      let spentRatio = 1
-      if (spentCount !== 0) {
-        spentRatio = spentCount / tx.out.length
-      } else {
-        spentRatio = 0.0
-      }
-
       spentRatiosAttr.setX(
         txIndexOffset,
-        spentRatio
+        tx.spentRatio
       )
     }
 

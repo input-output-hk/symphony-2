@@ -4,6 +4,8 @@ import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
 
+import BlockDataHelper from '../helpers/BlockDataHelper'
+
 let config = {}
 
 self.addEventListener('message', async function (e) {
@@ -19,10 +21,9 @@ self.addEventListener('message', async function (e) {
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
 
-      // firebase.auth().signInAnonymously().catch(function (error) {
-      //   console.log(error.code)
-      //   console.log(error.message)
-      // })
+      let blockDataHelper = new BlockDataHelper({
+        config: config
+      })
 
       // first check firebase
       let blockRef = docRef.doc(data.hash)
@@ -45,7 +46,7 @@ self.addEventListener('message', async function (e) {
       if (!shouldCache) {
         console.log('Block data for: ' + data.hash + ' returned from cache')
       } else {
-        blockData = await cacheBlockData(data.hash, docRef)
+        blockData = await blockDataHelper.cacheBlockData(data.hash, docRef)
       }
 
       let returnData = {
@@ -64,76 +65,3 @@ self.addEventListener('message', async function (e) {
 
   self.postMessage(e.data)
 }, false)
-
-const cacheBlockData = async function (hash, docRef) {
-  let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + config.blockchainInfo.apiCode)
-  let block = await result.json()
-
-  block.tx.forEach(function (tx) {
-    let txValue = 0
-    tx.out.forEach((output) => {
-      txValue += output.value
-    })
-    tx.value = txValue
-  })
-
-  // sortTXData(block.tx)
-
-  let outputTotal = 0
-  let transactions = []
-
-  for (let i = 0; i < block.tx.length; i++) {
-    const tx = block.tx[i]
-
-    let out = []
-    tx.out.forEach((output) => {
-      out.push({
-        spent: output.spent ? 1 : 0
-      })
-    })
-
-    if (typeof tx.value === 'undefined') {
-      tx.value = 0
-    }
-
-    transactions.push({
-      hash: tx.hash,
-      time: tx.time,
-      value: tx.value,
-      out: out
-    })
-
-    outputTotal += tx.value
-  }
-
-  block.outputTotal = outputTotal
-  block.tx = transactions
-  block.cacheTime = new Date()
-
-  block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
-
-  // save to firebase
-  try {
-    await docRef.doc(block.hash).set(block, { merge: false })
-    console.log('Block data for: ' + block.hash + ' successfully written!')
-  } catch (error) {
-    console.log(error)
-  }
-  return block
-}
-
-const sortTXData = function (tx) {
-  tx.sort(function (a, b) {
-    let transactionValueA = 0
-    a.out.forEach((output, index) => {
-      transactionValueA += output.value
-    })
-
-    let transactionValueB = 0
-    b.out.forEach((output, index) => {
-      transactionValueB += output.value
-    })
-
-    return transactionValueA - transactionValueB
-  })
-}

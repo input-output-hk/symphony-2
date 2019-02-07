@@ -26,9 +26,9 @@ export default class WebVR {
         device.supportsSession({ immersive: true, exclusive: true })
           .then(function () {
             this.setMode(device, 'XR')
-          })
+          }.bind(this))
           .catch(this.VRNotFound.bind(this))
-      }).catch(this.VRNotFound.bind(this))
+      }.bind(this)).catch(this.VRNotFound.bind(this))
     } else if ('getVRDisplays' in navigator) {
       window.addEventListener('vrdisplayconnect', function (event) {
         this.setMode(event.display, 'VR')
@@ -53,7 +53,7 @@ export default class WebVR {
           } else {
             this.VRNotFound().bind(this)
           }
-        }).catch(this.VRNotFound.bind(this))
+        }.bind(this)).catch(this.VRNotFound.bind(this))
     } else {
       this.VRNotFound().bind(this)
     }

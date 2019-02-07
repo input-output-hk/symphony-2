@@ -1,25 +1,33 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
+import 'firebase/auth'
 import 'firebase/storage'
 
-import BlockHeightHelper from '../helpers/BlockHeightHelper'
+import moment from 'moment'
+
+// import BlockHeightHelper from '../helpers/BlockHeightHelper'
+
+import BlockDataHelper from '../helpers/BlockDataHelper'
+
+let firebaseDB
+let docRef
+let docRefGeo
 
 self.addEventListener('message', async function (e) {
   let data = e.data
   switch (data.cmd) {
     case 'get':
 
-      const blockHeightHelper = new BlockHeightHelper({
-        baseUrl: 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url=',
-        apiCode: data.config.blockchainInfo.apiCode
-      })
-
       firebase.initializeApp(data.config.fireBase)
 
       firebase.firestore()
-      const firebaseDB = firebase.firestore()
-      const docRef = firebaseDB.collection('bitcoin_blocks')
-      const docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
+      firebaseDB = firebase.firestore()
+      docRef = firebaseDB.collection('bitcoin_blocks')
+      docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
+
+      let blockDataHelper = new BlockDataHelper({
+        config: data.config
+      })
 
       let closestBlocksData = {}
       let closestBlocksGeoData = {}
@@ -28,6 +36,7 @@ self.addEventListener('message', async function (e) {
         .where('height', '>', data.closestHeight - 5)
         .where('height', '<', data.closestHeight + 5)
         .orderBy('height', 'asc')
+        .limit(10)
 
       let geoSnapshot = await blockGeoData.get()
 
@@ -52,23 +61,35 @@ self.addEventListener('message', async function (e) {
         .where('height', '>', data.closestHeight - 5)
         .where('height', '<', data.closestHeight + 5)
         .orderBy('height', 'asc')
+        .limit(10)
 
+      console.time('nearest')
       let querySnapshot = await blockData.get()
+      console.timeEnd('nearest')
 
-      querySnapshot.forEach(snapshot => {
+      let dataArr = []
+      querySnapshot.forEach(async snapshot => {
         let data = snapshot.data()
-        closestBlocksData[data.height] = data
+        dataArr.push(data)
       })
 
-      // check for missing blockdata entries which were too big to cache
-
-      await asyncForEach(Object.keys(closestBlocksGeoData), async (height) => {
-        if (typeof closestBlocksData[height] === 'undefined') {
-          console.log('block at height ' + height + ' is missing from db')
-          let block = await blockHeightHelper.populateData(height)
-          closestBlocksData[height] = block
+      await asyncForEach(dataArr, async (data) => {
+        if (moment().valueOf() - data.cacheTime.toMillis() > 86400000) {
+          console.log('Block: ' + data.hash + ' is out of date, re-adding')
+          closestBlocksData[data.height] = await blockDataHelper.cacheBlockData(data.hash, docRef)
+        } else {
+          closestBlocksData[data.height] = data
         }
       })
+
+      // // check for missing blockdata entries which were too big to cache
+      // await asyncForEach(Object.keys(closestBlocksGeoData), async (height) => {
+      //   if (typeof closestBlocksData[height] === 'undefined') {
+      //     console.log('block at height ' + height + ' is missing from db')
+      //     let block = await blockHeightHelper.populateData(height)
+      //     closestBlocksData[height] = block
+      //   }
+      // })
 
       let returnData = {
         closestBlocksData: closestBlocksData,

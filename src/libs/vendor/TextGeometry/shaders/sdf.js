@@ -28,9 +28,11 @@ module.exports = function createSDFShader (opt) {
       'uniform mat4 projectionMatrix;',
       'uniform mat4 modelViewMatrix;',
       'varying vec2 vUv;',
+      'varying float vFragDepth;',
       'void main() {',
       'vUv = uv;',
       'gl_Position = projectionMatrix * modelViewMatrix * position;',
+      'vFragDepth = 1.0 + gl_Position.w;',
       '}'
     ].join('\n'),
     fragmentShader: [
@@ -41,6 +43,8 @@ module.exports = function createSDFShader (opt) {
       'uniform float opacity;',
       'uniform vec3 color;',
       'uniform sampler2D map;',
+      'uniform float logDepthBufFC;',
+      'varying float vFragDepth;',
       'varying vec2 vUv;',
 
       'float aastep(float value) {',
@@ -55,6 +59,7 @@ module.exports = function createSDFShader (opt) {
       'void main() {',
       '  vec4 texColor = texture2D(map, vUv);',
       '  float alpha = aastep(texColor.a);',
+      '  gl_FragDepthEXT = log2( vFragDepth ) * logDepthBufFC * 0.5;',
       '  gl_FragColor = vec4(color, opacity * alpha);',
       alphaTest === 0
         ? ''
