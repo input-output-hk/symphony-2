@@ -28,7 +28,7 @@ export default class Picker extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(0)
+    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
     this.pickerColorArray = new Float32Array(this.instanceTotal * 3)

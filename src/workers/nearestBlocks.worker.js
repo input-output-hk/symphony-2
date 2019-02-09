@@ -1,11 +1,9 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
-import 'firebase/storage'
+// import 'firebase/storage'
 
 import moment from 'moment'
-
-// import BlockHeightHelper from '../helpers/BlockHeightHelper'
 
 import BlockDataHelper from '../helpers/BlockDataHelper'
 
@@ -24,6 +22,11 @@ self.addEventListener('message', async function (e) {
       firebaseDB = firebase.firestore()
       docRef = firebaseDB.collection('bitcoin_blocks')
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
+
+      firebase.auth().signInAnonymously().catch(function (error) {
+        console.log(error.code)
+        console.log(error.message)
+      })
 
       let blockDataHelper = new BlockDataHelper({
         config: data.config
@@ -81,15 +84,6 @@ self.addEventListener('message', async function (e) {
           closestBlocksData[data.height] = data
         }
       })
-
-      // // check for missing blockdata entries which were too big to cache
-      // await asyncForEach(Object.keys(closestBlocksGeoData), async (height) => {
-      //   if (typeof closestBlocksData[height] === 'undefined') {
-      //     console.log('block at height ' + height + ' is missing from db')
-      //     let block = await blockHeightHelper.populateData(height)
-      //     closestBlocksData[height] = block
-      //   }
-      // })
 
       let returnData = {
         closestBlocksData: closestBlocksData,

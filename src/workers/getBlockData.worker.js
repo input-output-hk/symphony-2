@@ -1,7 +1,7 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
-import 'firebase/storage'
+// import 'firebase/storage'
 import moment from 'moment'
 
 import BlockDataHelper from '../helpers/BlockDataHelper'

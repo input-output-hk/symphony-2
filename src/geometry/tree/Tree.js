@@ -118,7 +118,8 @@ export default class Tree extends Base {
   }
 
   async init (blockGeoData) {
-    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
+    // let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
+    let planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
     let quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry

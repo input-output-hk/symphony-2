@@ -53,7 +53,7 @@ export default class Plane extends Base {
 
   async init (blockGeoData) {
     this.planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
-    this.planeOffsetsArray.fill(9999999, 0, this.instanceTotal * 2)
+    // this.planeOffsetsArray.fill(9999999, 0, this.instanceTotal * 2)
 
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 

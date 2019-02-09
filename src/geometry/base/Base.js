@@ -55,14 +55,8 @@ export default class Base {
       blockGeoData.blockData.tx[i].sequence = i
     }
 
-    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
-
-    // sortedTX.sort(function (a, b) {
-    //   return b.value - a.value
-    // })
-
     for (let i = 0; i < blockTxCount; i++) {
-      const tx = sortedTX[i]
+      const tx = blockGeoData.blockData.tx[i]
 
       const txIndexOffset = this.txCount + i
 
@@ -87,9 +81,9 @@ export default class Base {
       quaternionsAttr.array[txIndexOffset * 4 + 3] = object.quaternion.w
 
       let scale = blockGeoData.scales[i]
-      // if (scale > 20) {
-      //   scale = 20
-      // }
+      if (scale > 20) {
+        scale = 20
+      }
 
       scalesAttr.setX(
         txIndexOffset,
@@ -121,9 +115,30 @@ export default class Base {
         txTime
       )
 
+      let spentCount = 0
+
+      let spentRatio = 1
+
+      if (typeof tx.out !== 'undefined') {
+        for (let outIndex = 0; outIndex < tx.out.length; outIndex++) {
+          const el = tx.out[outIndex]
+          if (el.spent === 1) {
+            spentCount++
+          }
+        }
+
+        if (spentCount !== 0) {
+          spentRatio = spentCount / tx.out.length
+        } else {
+          spentRatio = 0.0
+        }
+      } else {
+        spentRatio = tx.spentRatio
+      }
+
       spentRatiosAttr.setX(
         txIndexOffset,
-        tx.spentRatio
+        spentRatio
       )
     }
 

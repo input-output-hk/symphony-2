@@ -6,8 +6,7 @@ export default class WebVRButton extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      vrActive: false,
-      VRSupported: this.props.VRSupported
+      vrActive: false
     }
   }
 
@@ -26,7 +25,7 @@ export default class WebVRButton extends Component {
   render () {
     let className = 'not-supported'
 
-    if (this.state.VRSupported) {
+    if (this.props.VRSupported) {
       if (this.state.vrActive) {
         className = styles.exit
       } else {

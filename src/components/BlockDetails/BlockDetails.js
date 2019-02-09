@@ -115,7 +115,7 @@ export default class BlockDetails extends Component {
           <div className='controls-container'>
             <div className='auto-pilot-controls'>
               <span title='Auto Pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
-              <span title='Stop Auto Pilot' className='stop' onClick={() => this.stopAutoPilot()} />
+              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
               <span title='Auto Pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
             </div>
             {this.UIUndersideButton()}

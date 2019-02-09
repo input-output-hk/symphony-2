@@ -36,22 +36,23 @@ export default class Crystal extends Base {
       opacity: 1,
       color: 0xffffff,
       emissive: 0x000000,
-      metalness: 0.6,
+      metalness: 1,
       roughness: 0.18,
       transparent: true,
       side: THREE.DoubleSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
-      normalScale: new THREE.Vector2(0.01, 0.01),
+      normalScale: new THREE.Vector2(0.02, 0.02),
       alphaMap: this.alphaMap,
-      bumpMap: this.bumpMap,
-      roughnessMap: this.roughnessMap,
-      bumpScale: 0.01
+      // bumpMap: this.bumpMap,
+      roughnessMap: this.roughnessMap
+      // bumpScale: 0.05
     })
   }
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
+    // this.offsetsArray.fill(9999999, 0, this.instanceTotal * 3)
 
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)

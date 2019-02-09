@@ -93,7 +93,16 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	transformed.xz *= ((scale * attackLoad)  * 1.07);
+	float scaleVar = scale;
+
+	// vec2 distVec = transformed.xz - uCamPos.xz;
+	// if (uAutoPilot > 0.0) {
+	// 	float camDistSq = max(dot(distVec, distVec), 2.0);
+	// 	transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
+	// 	// scaleVar *= smoothstep(0.0, 20.0, camDistSq);
+	// }
+
+	transformed.xz *= ((scaleVar * attackLoad)  * 1.07);
 	// transformed.xz *= scale;
 
 	transformed.y *= ((offset.y+ (3.0 * vEnvelope)) * attackLoad);
@@ -117,19 +126,18 @@ void main() {
 
 	vec2 distVec = transformed.xz - uCamPos.xz;
 
-	//vDistTo = dot(distVec, distVec);
-
 	if (uAutoPilot > 0.0) {
-		float camDistSq = max(dot(distVec, distVec), 2.0);
+		float camDistSq = dot(distVec, distVec);
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
 	}
+
 		
     transformed.xz -= (uOriginOffset.xy);
 
 	vTransformed = transformed;
 	vTopVertex = topVertex;
 	vBottomVertex = 1.0 - topVertex;
-	vScale = scale;
+	vScale = scaleVar;
 
 	#include <project_vertex>
 	#include <logdepthbuf_vertex>

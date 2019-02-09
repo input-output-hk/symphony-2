@@ -14,7 +14,7 @@ void main() {
   vec4 defaultPosition = texture2D(defaultPositionTexture, vUv);
   vec4 currentPosition = texture2D(positionTexture, vUv);
 
-  currentPosition.xyz = currentPosition.xyz + curlNoise(currentPosition.xyz * 0.0000025) * 300.8;
+  currentPosition.xyz = currentPosition.xyz + curlNoise(currentPosition.xyz * 0.0000045) * 300.8;
 
   currentPosition.w -= 1.0;
   if (currentPosition.w < 0.0 ) {

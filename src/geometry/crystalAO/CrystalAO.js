@@ -32,6 +32,8 @@ export default class CrystalAO extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
+    // this.offsetsArray.fill(9999999, 0, this.instanceTotal * 3)
+
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
 

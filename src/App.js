@@ -91,7 +91,6 @@ class App extends mixin(EventEmitter, Component) {
     this.prevClosestBlock = null
     this.underside = null
     this.closestBlockReadyForUpdate = false
-    this.drawCircuits = true
     this.clock = new THREE.Clock()
     this.loadedHeights = []
     this.mousePos = new THREE.Vector2() // keep track of mouse position
@@ -769,7 +768,7 @@ class App extends mixin(EventEmitter, Component) {
             align: 'right',
             font: font,
             flipY: texture.flipY,
-            text: 'VR UI TEXT'
+            text: ''
           })
 
           let material = new THREE.RawShaderMaterial(this.SDFShader({
@@ -898,7 +897,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.emit('sceneReady')
 
-    // this.unconfirmedLoop()
+    this.unconfirmedLoop()
 
     return true
   }
@@ -941,15 +940,15 @@ class App extends mixin(EventEmitter, Component) {
     // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.cubeCamera = new THREE.CubeCamera(1, 500, 256)
+    this.cubeCamera = new THREE.CubeCamera(1, 1500, 512)
+
     this.cubeCamera.position.copy(pos)
 
     if (this.renderer.vr.enabled) {
       this.renderer.vr.enabled = false
     }
-    this.render.antialias = false
+
     this.cubeCamera.update(this.renderer, this.scene)
-    this.render.antialias = true
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
     this.trees.material.envMap = this.cubeCamera.renderTarget.texture
@@ -1180,12 +1179,6 @@ class App extends mixin(EventEmitter, Component) {
           if (blockDist < closestDist) {
             closestDist = blockDist
             this.closestBlock = blockGeoData
-            if (this.controls) {
-              // let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
-              // let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
-
-              // this.controls.updateClosestBlockBBox()
-            }
           }
         }
       }
@@ -1559,6 +1552,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   goToLatestBlock () {
+    this.setState({
+      showIntro: false
+    })
+
     this.audioManager.stopNotes()
 
     this.autoPilotDirection = false
@@ -1587,19 +1584,19 @@ class App extends mixin(EventEmitter, Component) {
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 500)
+      .to(aboveStart, 2000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
         new TWEEN.Tween(that.camera.position)
-          .to(to, 500)
+          .to(to, 2000)
           .onUpdate(function () {
             that.camera.position.set(this.x, this.y, this.z)
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 1000)
+              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 2000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
@@ -1690,7 +1687,7 @@ class App extends mixin(EventEmitter, Component) {
     this.prepareCamAnim(to, toTarget)
 
     this.autoPilotTween = new TWEEN.Tween(this.camera.position)
-      .to(to, 12000)
+      .to(to, 20000)
       .onUpdate(function () {
         if (!this.autoPilot) {
           return
@@ -1785,7 +1782,7 @@ class App extends mixin(EventEmitter, Component) {
     //   posZ: this.camera.position.z.toFixed(3)
     // })
 
-    this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
+    // this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
     if (this.particlesGenerator && this.particlesGenerator.positionScene) {
       if (this.config.debug.debugPicker && this.pickingScene) {
@@ -1967,10 +1964,6 @@ class App extends mixin(EventEmitter, Component) {
     this.group.position.z = this.originOffset.y
     this.updateOriginOffsets()
 
-    this.updateClosestTrees()
-
-    this.pickerGenerator.updateGeometry(this.closestBlock)
-
     for (const height in this.audioManager.audioSources) {
       if (this.audioManager.audioSources.hasOwnProperty(height)) {
         if (
@@ -1999,6 +1992,12 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
+
+    return
+
+    this.updateClosestTrees()
+
+    this.pickerGenerator.updateGeometry(this.closestBlock)
 
     let undersideTexture1 = null
     let undersideTexture2 = null
@@ -2196,6 +2195,8 @@ class App extends mixin(EventEmitter, Component) {
       1.0,
       5000000
     )
+
+    //this.WebVR.VRSupported = true
 
     if (this.WebVR.VRSupported) {
       this.camera = new THREE.PerspectiveCamera()
@@ -2500,10 +2501,11 @@ class App extends mixin(EventEmitter, Component) {
           toggleTopView={this.toggleTopView.bind(this)}
           toggleUndersideView={this.toggleUndersideView.bind(this)}
           toggleFlyControls={this.toggleFlyControls.bind(this)}
+          stopAutoPilot={this.stopAutoPilot.bind(this)}
         />
         <WebVRButton
-          startVRSession={this.WebVR.startVRSession}
-          endVRSession={this.WebVR.endVRSession}
+          startVRSession={this.WebVR.startVRSession.bind(this.WebVR)}
+          endVRSession={this.WebVR.endVRSession.bind(this.WebVR)}
           VRSupported={this.WebVR.VRSupported}
         />
       </div>

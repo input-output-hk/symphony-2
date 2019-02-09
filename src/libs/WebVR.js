@@ -1,3 +1,4 @@
+
 export default class WebVR {
   constructor (args) {
     this.renderer = null
@@ -32,7 +33,7 @@ export default class WebVR {
     } else if ('getVRDisplays' in navigator) {
       window.addEventListener('vrdisplayconnect', function (event) {
         this.setMode(event.display, 'VR')
-      }, false)
+      }.bind(this), false)
 
       window.addEventListener('vrdisplaydisconnect', function (event) {
         this.VRNotFound().bind(this)
@@ -70,17 +71,36 @@ export default class WebVR {
   }
 
   enterXR () {
+    console.log('enterXR')
     if (this.currentSession === null) {
       this.device.requestSession({
         immersive: true,
         exclusive: true
-      }).then(this.onSessionStarted)
+      }).then(this.onSessionStarted.bind(this))
     } else {
-      this.currentSession.end()
+      if (this.currentSession) {
+        this.currentSession.end()
+      }
     }
   }
 
+  onSessionStarted (session) {
+    session.addEventListener('end', this.onSessionEnded.bind(this))
+    this.renderer.vr.setSession(session)
+    this.currentSession = session
+    this.currentSession.depthFar = this.cameraDepthFar
+  }
+
+  onSessionEnded () {
+    this.currentSession.removeEventListener('end', this.onSessionEnded)
+    this.renderer.vr.setSession(null)
+    this.currentSession = null
+  }
+
   startVRSession () {
+
+    console.log('startVRSession')
+
     switch (this.mode) {
       case 'VR':
         this.enterVR()
@@ -103,7 +123,9 @@ export default class WebVR {
         break
 
       case 'XR':
-        this.currentSession.end()
+        if (this.currentSession) {
+          this.currentSession.end()
+        }
         break
 
       default:
