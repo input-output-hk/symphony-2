@@ -40,12 +40,14 @@ export default class BlockDataHelper {
         spentRatio = 0.0
       }
 
+      spentRatio = spentRatio.toFixed(2)
+
       if (typeof tx.value === 'undefined') {
         tx.value = 0
       }
 
       transactions.push({
-        hash: tx.hash,
+        index: tx.tx_index,
         time: tx.time,
         value: tx.value,
         spentRatio: spentRatio,
@@ -60,6 +62,8 @@ export default class BlockDataHelper {
     block.cacheTime = new Date()
 
     block.healthRatio = (block.fee / block.outputTotal) * 2000 // 0 == healthy
+
+    block.healthRatio = block.healthRatio.toFixed(2)
 
     // save to firebase
     try {

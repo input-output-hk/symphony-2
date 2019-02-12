@@ -123,7 +123,7 @@ export default class Tree extends Base {
     let quatArray = new Float32Array(this.instanceTotal * 4)
 
     // set up base geometry
-    let nTX = Object.keys(blockGeoData.blockData.tx).length
+    let nTX = blockGeoData.blockData.n_tx
     if (nTX > 128) {
       nTX = 128
     }
@@ -223,7 +223,7 @@ export default class Tree extends Base {
     let planeOffsetsArray = new Float32Array(2)
     let quatArray = new Float32Array(4)
 
-    let nTX = Object.keys(blockData.tx).length
+    let nTX = blockData.n_tx
 
     nTX--
     nTX |= nTX >> 1
@@ -239,7 +239,7 @@ export default class Tree extends Base {
     if (typeof this.loadedModels[this.merkleMap[nTX]] !== 'undefined') {
       geometry = this.loadedModels[this.merkleMap[nTX]].clone()
     } else {
-      let geometryTemp = await this.loadTreeModel(Object.keys(blockData.tx).length)
+      let geometryTemp = await this.loadTreeModel(blockData.n_tx)
       geometry = geometryTemp.clone()
       this.loadedModels[this.merkleMap[nTX]] = geometry
     }

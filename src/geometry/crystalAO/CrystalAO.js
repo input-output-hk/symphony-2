@@ -79,7 +79,7 @@ export default class CrystalAO extends Base {
     this.geometry.addAttribute('blockStartTime', blockStartTimes)
     this.geometry.addAttribute('blockLoadTime', blockLoadTimes)
 
-    this.txCount += blockGeoData.blockData.tx.length
+    this.txCount += blockGeoData.blockData.n_tx
 
     this.mesh = new THREE.Mesh(this.geometry, this.material)
 
@@ -92,7 +92,7 @@ export default class CrystalAO extends Base {
     const txIndexOffset = this.txIndexOffsets[blockData.height]
     const offsetTime = window.performance.now()
 
-    for (let i = 0; i < blockData.tx.length; i++) {
+    for (let i = 0; i < blockData.n_tx; i++) {
       this.geometry.attributes.blockStartTime.array[txIndexOffset + i] = offsetTime
     }
 
@@ -103,7 +103,7 @@ export default class CrystalAO extends Base {
     const txIndexOffset = this.txIndexOffsets[blockData.height]
     const offsetTime = window.performance.now()
 
-    for (let i = 0; i < blockData.tx.length; i++) {
+    for (let i = 0; i < blockData.n_tx; i++) {
       this.geometry.attributes.blockLoadTime.array[txIndexOffset + i] = offsetTime
     }
 
@@ -117,7 +117,7 @@ export default class CrystalAO extends Base {
   }
 
   async updateGeometry (blockGeoData) {
-    if (this.txCount + blockGeoData.blockData.tx.length > this.instanceTotal) {
+    if (this.txCount + blockGeoData.blockData.n_tx > this.instanceTotal) {
       this.txCount = 0
     }
 
@@ -138,7 +138,7 @@ export default class CrystalAO extends Base {
       this.geometry.attributes.txTime
     )
 
-    this.txCount += blockGeoData.blockData.tx.length
+    this.txCount += blockGeoData.blockData.n_tx
 
     this.updateBlockStartTimes(blockGeoData.blockData)
     this.updateBlockLoadTimes(blockGeoData.blockData)

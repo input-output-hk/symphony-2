@@ -12,7 +12,7 @@ export default class Picker extends Base {
   constructor (args) {
     super(args)
 
-    this.instanceTotal = 3 * 2000
+    this.instanceTotal = 4000
 
     this.uTime = 0
 
@@ -58,14 +58,7 @@ export default class Picker extends Base {
 
     let pickColor = new THREE.Color(0x999999)
 
-    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
-    // sortedTX.sort(function (a, b) {
-    //   return b.value - a.value
-    // })
-
-    for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-      const tx = sortedTX[i]
-
+    for (let i = 0; i < blockGeoData.blockData.n_tx; i++) {
       pickColor.setHex(i + 1)
       pickingColors.array[i * 3 + 0] = pickColor.r
       pickingColors.array[i * 3 + 1] = pickColor.g
@@ -95,8 +88,8 @@ export default class Picker extends Base {
       quaternions.array[i * 4 + 3] = object.quaternion.w
 
       let scale = blockGeoData.scales[i]
-      if (scale > 10) {
-        scale = 10
+      if (scale > 20) {
+        scale = 20
       }
 
       scales.setX(
@@ -104,15 +97,15 @@ export default class Picker extends Base {
         scale
       )
 
-      let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
+      let txValue = blockGeoData.blockData.txValues[i] * 0.00000001
+      if (txValue > 2000) {
+        txValue = 2000
       }
       if (txValue < 0.5) {
         txValue = 0.5
       }
 
-      this.txMap[i] = tx.hash
+      this.txMap[i] = blockGeoData.blockData.txIndexes[i]
 
       offsets.setY(
         i,
@@ -148,14 +141,7 @@ export default class Picker extends Base {
     this.geometry.attributes.quaternion.array = new Float32Array(this.instanceTotal * 4)
     this.geometry.attributes.pickerColor.array = new Float32Array(this.instanceTotal * 3)
 
-    let sortedTX = JSON.parse(JSON.stringify(blockGeoData.blockData.tx))
-    // sortedTX.sort(function (a, b) {
-    //   return b.value - a.value
-    // })
-
-    for (let i = 0; i < blockGeoData.blockData.tx.length; i++) {
-      const tx = sortedTX[i]
-
+    for (let i = 0; i < blockGeoData.blockData.n_tx; i++) {
       pickColor.setHex(i + 1)
       this.geometry.attributes.pickerColor.array[i * 3 + 0] = pickColor.r
       this.geometry.attributes.pickerColor.array[i * 3 + 1] = pickColor.g
@@ -194,15 +180,15 @@ export default class Picker extends Base {
         scale
       )
 
-      let txValue = (tx.value * 0.00000001)
-      if (txValue > 1000) {
-        txValue = 1000
+      let txValue = blockGeoData.blockData.txValues[i] * 0.00000001
+      if (txValue > 2000) {
+        txValue = 2000
       }
       if (txValue < 0.5) {
         txValue = 0.5
       }
 
-      this.txMap[i] = tx.hash
+      this.txMap[i] = blockGeoData.blockData.txIndexes[i]
 
       this.geometry.attributes.offset.setY(
         i,

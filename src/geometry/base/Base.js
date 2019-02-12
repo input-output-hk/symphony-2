@@ -46,18 +46,15 @@ export default class Base {
     spentRatiosAttr,
     txTimesAttr
   ) {
+    console.log(blockGeoData)
+
     let blockPosition = blockGeoData.blockData.pos
 
     this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount
 
-    let blockTxCount = blockGeoData.blockData.tx.length
-    for (let i = 0; i < blockTxCount; i++) {
-      blockGeoData.blockData.tx[i].sequence = i
-    }
+    let blockTxCount = blockGeoData.blockData.n_tx
 
     for (let i = 0; i < blockTxCount; i++) {
-      const tx = blockGeoData.blockData.tx[i]
-
       const txIndexOffset = this.txCount + i
 
       let x = blockGeoData.offsets[i * 2 + 0]
@@ -90,7 +87,7 @@ export default class Base {
         scale
       )
 
-      let txValue = (tx.value * 0.00000001)
+      let txValue = blockGeoData.blockData.txValues[i] * 0.00000001
       if (txValue > 2000) {
         txValue = 2000
       }
@@ -108,33 +105,14 @@ export default class Base {
         txValue
       )
 
-      let txTime = map(tx.sequence, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
+      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
 
       txTimesAttr.setX(
         txIndexOffset,
         txTime
       )
 
-      let spentCount = 0
-
-      let spentRatio = 1
-
-      if (typeof tx.out !== 'undefined') {
-        for (let outIndex = 0; outIndex < tx.out.length; outIndex++) {
-          const el = tx.out[outIndex]
-          if (el.spent === 1) {
-            spentCount++
-          }
-        }
-
-        if (spentCount !== 0) {
-          spentRatio = spentCount / tx.out.length
-        } else {
-          spentRatio = 0.0
-        }
-      } else {
-        spentRatio = tx.spentRatio
-      }
+      let spentRatio = blockGeoData.blockData.txSpentRatios[i]
 
       spentRatiosAttr.setX(
         txIndexOffset,

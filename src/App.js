@@ -109,6 +109,7 @@ class App extends mixin(EventEmitter, Component) {
     this.closestHeight = null
     this.originOffset = new THREE.Vector2(0, 0)
     this.WebVR = new WebVR() // WebVR lib
+    this.txCountBufferSize = 4000 // buffer size for tx counts
 
     this.state = {
       loading: true,
@@ -648,11 +649,30 @@ class App extends mixin(EventEmitter, Component) {
       const getBlockDataWorker = new GetBlockDataWorker()
       getBlockDataWorker.onmessage = async ({ data }) => {
         if (data.blockData) {
+          data.blockData.txValues = data.txValues
+          data.blockData.txSpentRatios = data.txSpentRatios
+          data.blockData.txIndexes = data.txIndexes
+
           resolve(data.blockData)
         }
         getBlockDataWorker.terminate()
       }
-      getBlockDataWorker.postMessage({ cmd: 'get', config: this.config, hash: hash })
+
+      let sendObj = {
+        cmd: 'get',
+        hash: hash,
+        config: this.config,
+        maxHeight: this.maxHeight,
+        txValues: new Float32Array(this.txCountBufferSize),
+        txIndexes: new Uint32Array(this.txCountBufferSize),
+        txSpentRatios: new Float32Array(this.txCountBufferSize)
+      }
+
+      getBlockDataWorker.postMessage(sendObj, [
+        sendObj.txValues.buffer,
+        sendObj.txIndexes.buffer,
+        sendObj.txSpentRatios.buffer
+      ])
     })
   }
 
@@ -693,6 +713,9 @@ class App extends mixin(EventEmitter, Component) {
             z: this.blockPositions[height * 2 + 1]
           }
 
+          blockGeoData.scales = data.scales
+          blockGeoData.offsets = data.offsets
+
           this.blockGeoDataObject[height] = blockGeoData
           this.blockGeoDataObject[height].blockData = blockData
 
@@ -701,12 +724,20 @@ class App extends mixin(EventEmitter, Component) {
           resolve(this.blockGeoDataObject[height])
         }
       }
-      getGeometryWorker.postMessage({
+
+      let sendObj = {
         cmd: 'get',
         config: this.config,
         blockData: blockData,
-        planeSize: this.planeSize
-      })
+        planeSize: this.planeSize,
+        scales: new Float32Array(this.txCountBufferSize),
+        offsets: new Float32Array(this.txCountBufferSize * 2)
+      }
+
+      getGeometryWorker.postMessage(sendObj, [
+        sendObj.scales.buffer,
+        sendObj.offsets.buffer
+      ])
     })
   }
 
@@ -897,7 +928,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.emit('sceneReady')
 
-    this.unconfirmedLoop()
+    // this.unconfirmedLoop()
 
     return true
   }
@@ -1155,8 +1186,6 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    // console.log(this.blockGeoDataObject)
-
     this.prevClosestBlock = this.closestBlock
     if (Object.keys(this.blockGeoDataObject).length > 0) {
       let closestDist = Number.MAX_SAFE_INTEGER
@@ -1281,7 +1310,7 @@ class App extends mixin(EventEmitter, Component) {
         ) {
           delete this.blockGeoDataObject[height]
 
-          // console.log('deleted blockdata at: ' + height)
+          console.log('deleted blockdata at: ' + height)
         }
       }
     }
@@ -1291,13 +1320,11 @@ class App extends mixin(EventEmitter, Component) {
         height < this.closestHeight - 25 ||
           height > this.closestHeight + 25
       ) {
-        // console.log('deleted height at: ' + height)
+        console.log('deleted height at: ' + height)
         delete this.loadedHeights[ i ]
       }
     })
 
-    let closestBlocksData = []
-    let closestBlocksGeoData = []
     let nearestBlocks = []
 
     nearestBlocks.push(this.closestHeight)
@@ -1334,21 +1361,39 @@ class App extends mixin(EventEmitter, Component) {
     const nearestBlocksWorker = new NearestBlocksWorker()
     nearestBlocksWorker.onmessage = async ({ data }) => {
       if (typeof data.closestBlocksData !== 'undefined') {
-        closestBlocksData = data.closestBlocksData
-        closestBlocksGeoData = data.closestBlocksGeoData
+        let closestBlocksData = data.closestBlocksData
 
-        Object.keys(closestBlocksGeoData).forEach((key) => {
-          let blockGeoData = closestBlocksGeoData[key]
+        data.blockHeightIndexes.forEach((height, index) => {
+          if (typeof closestBlocksData[height] !== 'undefined') {
+            closestBlocksData[height].txValues = data['txValues' + index]
+            closestBlocksData[height].txIndexes = data['txIndexes' + index]
+            closestBlocksData[height].txSpentRatios = data['txSpentRatios' + index]
+          }
+        })
+
+        let closestBlocksGeoData = {}
+
+        data.geoBlockHeightIndexes.forEach((height, index) => {
+          if (typeof closestBlocksData[height] !== 'undefined') {
+            closestBlocksGeoData[height] = {}
+            closestBlocksGeoData[height].height = height
+            closestBlocksGeoData[height].offsets = data['offsets' + index]
+            closestBlocksGeoData[height].scales = data['scales' + index]
+          }
+        })
+
+        Object.keys(closestBlocksGeoData).forEach((height) => {
+          let blockGeoData = closestBlocksGeoData[height]
 
           if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-            if (typeof closestBlocksData[key] !== 'undefined') {
+            if (typeof closestBlocksData[height] !== 'undefined') {
               if (
                 blockGeoData.height < this.closestHeight - 10 ||
                 blockGeoData.height > this.closestHeight + 10
               ) {
                 console.log('moved too far away from block at height: ' + blockGeoData.height)
               } else {
-                blockGeoData.blockData = closestBlocksData[key]
+                blockGeoData.blockData = closestBlocksData[height]
 
                 blockGeoData.blockData.pos = {}
                 blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
@@ -1447,12 +1492,133 @@ class App extends mixin(EventEmitter, Component) {
         nearestBlocksWorker.terminate()
       }
     }
-    nearestBlocksWorker.postMessage({
+
+    // use transferable objects for large data sets
+    let sendObj = {
       cmd: 'get',
       closestHeight: this.closestHeight,
       config: this.config,
-      maxHeight: this.maxHeight
-    })
+      maxHeight: this.maxHeight,
+      blockHeightIndexes: new Uint32Array(9),
+      geoBlockHeightIndexes: new Uint32Array(9),
+
+      scales0: new Float32Array(this.txCountBufferSize),
+      scales1: new Float32Array(this.txCountBufferSize),
+      scales2: new Float32Array(this.txCountBufferSize),
+      scales3: new Float32Array(this.txCountBufferSize),
+      scales4: new Float32Array(this.txCountBufferSize),
+      scales5: new Float32Array(this.txCountBufferSize),
+      scales6: new Float32Array(this.txCountBufferSize),
+      scales7: new Float32Array(this.txCountBufferSize),
+      scales8: new Float32Array(this.txCountBufferSize),
+      scales9: new Float32Array(this.txCountBufferSize),
+
+      offsets0: new Float32Array(this.txCountBufferSize * 2),
+      offsets1: new Float32Array(this.txCountBufferSize * 2),
+      offsets2: new Float32Array(this.txCountBufferSize * 2),
+      offsets3: new Float32Array(this.txCountBufferSize * 2),
+      offsets4: new Float32Array(this.txCountBufferSize * 2),
+      offsets5: new Float32Array(this.txCountBufferSize * 2),
+      offsets6: new Float32Array(this.txCountBufferSize * 2),
+      offsets7: new Float32Array(this.txCountBufferSize * 2),
+      offsets8: new Float32Array(this.txCountBufferSize * 2),
+      offsets9: new Float32Array(this.txCountBufferSize * 2),
+
+      txValues0: new Float32Array(this.txCountBufferSize),
+      txValues1: new Float32Array(this.txCountBufferSize),
+      txValues2: new Float32Array(this.txCountBufferSize),
+      txValues3: new Float32Array(this.txCountBufferSize),
+      txValues4: new Float32Array(this.txCountBufferSize),
+      txValues5: new Float32Array(this.txCountBufferSize),
+      txValues6: new Float32Array(this.txCountBufferSize),
+      txValues7: new Float32Array(this.txCountBufferSize),
+      txValues8: new Float32Array(this.txCountBufferSize),
+      txValues9: new Float32Array(this.txCountBufferSize),
+
+      txIndexes0: new Uint32Array(this.txCountBufferSize),
+      txIndexes1: new Uint32Array(this.txCountBufferSize),
+      txIndexes2: new Uint32Array(this.txCountBufferSize),
+      txIndexes3: new Uint32Array(this.txCountBufferSize),
+      txIndexes4: new Uint32Array(this.txCountBufferSize),
+      txIndexes5: new Uint32Array(this.txCountBufferSize),
+      txIndexes6: new Uint32Array(this.txCountBufferSize),
+      txIndexes7: new Uint32Array(this.txCountBufferSize),
+      txIndexes8: new Uint32Array(this.txCountBufferSize),
+      txIndexes9: new Uint32Array(this.txCountBufferSize),
+
+      txSpentRatios0: new Float32Array(this.txCountBufferSize),
+      txSpentRatios1: new Float32Array(this.txCountBufferSize),
+      txSpentRatios2: new Float32Array(this.txCountBufferSize),
+      txSpentRatios3: new Float32Array(this.txCountBufferSize),
+      txSpentRatios4: new Float32Array(this.txCountBufferSize),
+      txSpentRatios5: new Float32Array(this.txCountBufferSize),
+      txSpentRatios6: new Float32Array(this.txCountBufferSize),
+      txSpentRatios7: new Float32Array(this.txCountBufferSize),
+      txSpentRatios8: new Float32Array(this.txCountBufferSize),
+      txSpentRatios9: new Float32Array(this.txCountBufferSize)
+    }
+
+    nearestBlocksWorker.postMessage(
+      sendObj,
+      [
+        sendObj.blockHeightIndexes.buffer,
+        sendObj.geoBlockHeightIndexes.buffer,
+
+        sendObj.scales0.buffer,
+        sendObj.scales1.buffer,
+        sendObj.scales2.buffer,
+        sendObj.scales3.buffer,
+        sendObj.scales4.buffer,
+        sendObj.scales5.buffer,
+        sendObj.scales6.buffer,
+        sendObj.scales7.buffer,
+        sendObj.scales8.buffer,
+        sendObj.scales9.buffer,
+
+        sendObj.offsets0.buffer,
+        sendObj.offsets2.buffer,
+        sendObj.offsets3.buffer,
+        sendObj.offsets4.buffer,
+        sendObj.offsets5.buffer,
+        sendObj.offsets6.buffer,
+        sendObj.offsets7.buffer,
+        sendObj.offsets8.buffer,
+        sendObj.offsets9.buffer,
+
+        sendObj.txValues0.buffer,
+        sendObj.txValues1.buffer,
+        sendObj.txValues2.buffer,
+        sendObj.txValues3.buffer,
+        sendObj.txValues4.buffer,
+        sendObj.txValues5.buffer,
+        sendObj.txValues6.buffer,
+        sendObj.txValues7.buffer,
+        sendObj.txValues8.buffer,
+        sendObj.txValues9.buffer,
+
+        sendObj.txIndexes0.buffer,
+        sendObj.txIndexes1.buffer,
+        sendObj.txIndexes2.buffer,
+        sendObj.txIndexes3.buffer,
+        sendObj.txIndexes4.buffer,
+        sendObj.txIndexes5.buffer,
+        sendObj.txIndexes6.buffer,
+        sendObj.txIndexes7.buffer,
+        sendObj.txIndexes8.buffer,
+        sendObj.txIndexes9.buffer,
+
+        sendObj.txSpentRatios0.buffer,
+        sendObj.txSpentRatios1.buffer,
+        sendObj.txSpentRatios2.buffer,
+        sendObj.txSpentRatios3.buffer,
+        sendObj.txSpentRatios4.buffer,
+        sendObj.txSpentRatios5.buffer,
+        sendObj.txSpentRatios6.buffer,
+        sendObj.txSpentRatios7.buffer,
+        sendObj.txSpentRatios8.buffer,
+        sendObj.txSpentRatios9.buffer
+      ]
+    )
   }
 
   toggleTxSearch () {
@@ -1910,7 +2076,13 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.closestBlock) {
       return
     }
+    this.setState({
+      closestBlock: this.closestBlock
+    })
 
+    this.pickerGenerator.updateGeometry(this.closestBlock)
+
+    return
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
 
     this.originOffset = new THREE.Vector2(
@@ -1956,10 +2128,6 @@ class App extends mixin(EventEmitter, Component) {
       this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
     }
 
-    this.setState({
-      closestBlock: this.closestBlock
-    })
-
     this.group.position.x = this.originOffset.x
     this.group.position.z = this.originOffset.y
     this.updateOriginOffsets()
@@ -1993,11 +2161,7 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
-    return
-
     this.updateClosestTrees()
-
-    this.pickerGenerator.updateGeometry(this.closestBlock)
 
     let undersideTexture1 = null
     let undersideTexture2 = null
@@ -2196,7 +2360,7 @@ class App extends mixin(EventEmitter, Component) {
       5000000
     )
 
-    //this.WebVR.VRSupported = true
+    // this.WebVR.VRSupported = true
 
     if (this.WebVR.VRSupported) {
       this.camera = new THREE.PerspectiveCamera()

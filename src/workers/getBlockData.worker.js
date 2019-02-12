@@ -49,11 +49,27 @@ self.addEventListener('message', async function (e) {
         blockData = await blockDataHelper.cacheBlockData(data.hash, docRef)
       }
 
+      blockData.tx.forEach((tx, i) => {
+        data.txValues[i] = tx.value
+        data.txSpentRatios[i] = tx.spentRatio
+        data.txIndexes[i] = tx.index
+      })
+
+      blockData.tx = []
+
       let returnData = {
-        blockData: blockData
+        blockData: blockData,
+        txValues: data.txValues,
+        txSpentRatios: data.txSpentRatios,
+        txIndexes: data.txIndexes
       }
 
-      self.postMessage(returnData)
+      self.postMessage(returnData, [
+        data.txValues.buffer,
+        data.txSpentRatios.buffer,
+        data.txIndexes.buffer
+      ])
+
       break
     case 'stop':
       self.postMessage('WORKER STOPPED')
@@ -62,6 +78,4 @@ self.addEventListener('message', async function (e) {
     default:
       self.postMessage('Unknown command')
   }
-
-  self.postMessage(e.data)
 }, false)

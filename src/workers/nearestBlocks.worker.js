@@ -16,6 +16,9 @@ self.addEventListener('message', async function (e) {
   switch (data.cmd) {
     case 'get':
 
+      let blockHeightIndexes = data.blockHeightIndexes
+      let geoBlockHeightIndexes = data.geoBlockHeightIndexes
+
       firebase.initializeApp(data.config.fireBase)
 
       firebase.firestore()
@@ -33,38 +36,43 @@ self.addEventListener('message', async function (e) {
       })
 
       let closestBlocksData = {}
-      let closestBlocksGeoData = {}
 
       let blockGeoData = docRefGeo
         .where('height', '>', data.closestHeight - 5)
         .where('height', '<', data.closestHeight + 5)
         .orderBy('height', 'asc')
-        .limit(10)
+        .limit(9)
 
       let geoSnapshot = await blockGeoData.get()
 
+      let i = 0
       geoSnapshot.forEach(snapshot => {
-        let data = snapshot.data()
+        let geoData = snapshot.data()
 
-        let offsetJSON = JSON.parse(data.offsets)
+        let offsetJSON = JSON.parse(geoData.offsets)
         let offsetsArray = Object.values(offsetJSON)
 
-        let scalesJSON = JSON.parse(data.scales)
+        let scalesJSON = JSON.parse(geoData.scales)
         let scalesArray = Object.values(scalesJSON)
 
-        let blockData = data
+        geoBlockHeightIndexes[i] = geoData.height
 
-        blockData.offsets = offsetsArray
-        blockData.scales = scalesArray
+        scalesArray.forEach((scale, index) => {
+          data['scales' + i][index] = scale
+        })
 
-        closestBlocksGeoData[data.height] = data
+        offsetsArray.forEach((offset, index) => {
+          data['offsets' + i][index] = offset
+        })
+
+        i++
       })
 
       let blockData = docRef
         .where('height', '>', data.closestHeight - 5)
         .where('height', '<', data.closestHeight + 5)
         .orderBy('height', 'asc')
-        .limit(10)
+        .limit(9)
 
       console.time('nearest')
       let querySnapshot = await blockData.get()
@@ -72,25 +80,156 @@ self.addEventListener('message', async function (e) {
 
       let dataArr = []
       querySnapshot.forEach(async snapshot => {
-        let data = snapshot.data()
-        dataArr.push(data)
+        dataArr.push(snapshot.data())
       })
 
-      await asyncForEach(dataArr, async (data) => {
-        if (moment().valueOf() - data.cacheTime.toMillis() > 86400000) {
-          console.log('Block: ' + data.hash + ' is out of date, re-adding')
-          closestBlocksData[data.height] = await blockDataHelper.cacheBlockData(data.hash, docRef)
-        } else {
-          closestBlocksData[data.height] = data
+      let ii = 0
+      await asyncForEach(dataArr, async (blockDetails) => {
+        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 86400000) {
+          console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
+          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
         }
+
+        if (blockDetails.tx[0].index === 0) {
+          console.log('Block: ' + blockDetails.hash + ' data incomplete, re-adding')
+          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
+        }
+
+        blockHeightIndexes[ii] = blockDetails.height
+
+        blockDetails.tx.forEach((tx, index) => {
+          data['txValues' + ii][index] = tx.value
+          data['txIndexes' + ii][index] = tx.index
+          data['txSpentRatios' + ii][index] = tx.spentRatio
+        })
+
+        blockDetails.tx = []
+
+        closestBlocksData[blockDetails.height] = blockDetails
+
+        ii++
       })
 
       let returnData = {
         closestBlocksData: closestBlocksData,
-        closestBlocksGeoData: closestBlocksGeoData
+
+        blockHeightIndexes: blockHeightIndexes,
+        geoBlockHeightIndexes: geoBlockHeightIndexes,
+
+        scales1: data.scales1,
+        scales2: data.scales2,
+        scales3: data.scales3,
+        scales4: data.scales4,
+        scales5: data.scales5,
+        scales6: data.scales6,
+        scales7: data.scales7,
+        scales8: data.scales8,
+        scales9: data.scales9,
+        scales10: data.scales10,
+
+        offsets1: data.offsets1,
+        offsets2: data.offsets2,
+        offsets3: data.offsets3,
+        offsets4: data.offsets4,
+        offsets5: data.offsets5,
+        offsets6: data.offsets6,
+        offsets7: data.offsets7,
+        offsets8: data.offsets8,
+        offsets9: data.offsets9,
+        offsets10: data.offsets10,
+
+        txValues1: data.txValues1,
+        txValues2: data.txValues2,
+        txValues3: data.txValues3,
+        txValues4: data.txValues4,
+        txValues5: data.txValues5,
+        txValues6: data.txValues6,
+        txValues7: data.txValues7,
+        txValues8: data.txValues8,
+        txValues9: data.txValues9,
+        txValues10: data.txValues10,
+
+        txIndexes1: data.txIndexes1,
+        txIndexes2: data.txIndexes2,
+        txIndexes3: data.txIndexes3,
+        txIndexes4: data.txIndexes4,
+        txIndexes5: data.txIndexes5,
+        txIndexes6: data.txIndexes6,
+        txIndexes7: data.txIndexes7,
+        txIndexes8: data.txIndexes8,
+        txIndexes9: data.txIndexes9,
+        txIndexes10: data.txIndexes10,
+
+        txSpentRatios1: data.txSpentRatios1,
+        txSpentRatios2: data.txSpentRatios2,
+        txSpentRatios3: data.txSpentRatios3,
+        txSpentRatios4: data.txSpentRatios4,
+        txSpentRatios5: data.txSpentRatios5,
+        txSpentRatios6: data.txSpentRatios6,
+        txSpentRatios7: data.txSpentRatios7,
+        txSpentRatios8: data.txSpentRatios8,
+        txSpentRatios9: data.txSpentRatios9,
+        txSpentRatios10: data.txSpentRatios10
       }
 
-      self.postMessage(returnData)
+      self.postMessage(returnData,
+        [
+          data.scales1.buffer,
+          data.scales2.buffer,
+          data.scales3.buffer,
+          data.scales4.buffer,
+          data.scales5.buffer,
+          data.scales6.buffer,
+          data.scales7.buffer,
+          data.scales8.buffer,
+          data.scales9.buffer,
+          data.scales10.buffer,
+
+          data.offsets1.buffer,
+          data.offsets2.buffer,
+          data.offsets3.buffer,
+          data.offsets4.buffer,
+          data.offsets5.buffer,
+          data.offsets6.buffer,
+          data.offsets7.buffer,
+          data.offsets8.buffer,
+          data.offsets9.buffer,
+          data.offsets10.buffer,
+
+          data.txValues1.buffer,
+          data.txValues2.buffer,
+          data.txValues3.buffer,
+          data.txValues4.buffer,
+          data.txValues5.buffer,
+          data.txValues6.buffer,
+          data.txValues7.buffer,
+          data.txValues8.buffer,
+          data.txValues9.buffer,
+          data.txValues10.buffer,
+
+          data.txIndexes1.buffer,
+          data.txIndexes2.buffer,
+          data.txIndexes3.buffer,
+          data.txIndexes4.buffer,
+          data.txIndexes5.buffer,
+          data.txIndexes6.buffer,
+          data.txIndexes7.buffer,
+          data.txIndexes8.buffer,
+          data.txIndexes9.buffer,
+          data.txIndexes10.buffer,
+
+          data.txSpentRatios1.buffer,
+          data.txSpentRatios2.buffer,
+          data.txSpentRatios3.buffer,
+          data.txSpentRatios4.buffer,
+          data.txSpentRatios5.buffer,
+          data.txSpentRatios6.buffer,
+          data.txSpentRatios7.buffer,
+          data.txSpentRatios8.buffer,
+          data.txSpentRatios9.buffer,
+          data.txSpentRatios10.buffer
+        ]
+      )
       break
     case 'stop':
       self.postMessage('WORKER STOPPED')
@@ -100,7 +239,7 @@ self.addEventListener('message', async function (e) {
       self.postMessage('Unknown command')
   }
 
-  self.postMessage(e.data)
+  // self.postMessage(e.data)
 }, false)
 
 const asyncForEach = async function (array, callback) {

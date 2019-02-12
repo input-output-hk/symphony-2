@@ -28,16 +28,17 @@ self.addEventListener('message', async function (e) {
       const firebaseDB = firebase.firestore()
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
-      // firebase.auth().signInAnonymously().catch(function (error) {
-      //   console.log(error.code)
-      //   console.log(error.message)
-      // })
+      firebase.auth().signInAnonymously().catch(function (error) {
+        console.log(error.code)
+        console.log(error.message)
+      })
 
       // check for data in cache
       let blockRefGeo = docRefGeo.doc(blockData.hash)
       let snapshotGeo = await blockRefGeo.get()
 
-      let cacheData = !snapshotGeo.exists
+      // let cacheData = !snapshotGeo.exists
+      let cacheData = true
 
       let blockGeoData
       if (cacheData) {
@@ -58,11 +59,28 @@ self.addEventListener('message', async function (e) {
         }
       }
 
+      blockGeoData.scales.forEach((scale, index) => {
+        data.scales[index] = scale
+      })
+
+      blockGeoData.offsets.forEach((offset, index) => {
+        data.offsets[index] = offset
+      })
+
+      delete blockGeoData.scales
+      delete blockGeoData.offsets
+
       let returnData = {
-        blockGeoData: blockGeoData
+        blockGeoData: blockGeoData,
+        scales: data.scales,
+        offsets: data.offsets
       }
 
-      self.postMessage(returnData)
+      self.postMessage(returnData, [
+        data.scales.buffer,
+        data.offsets.buffer
+      ])
+
       break
     case 'stop':
       self.postMessage('WORKER STOPPED')
@@ -71,8 +89,6 @@ self.addEventListener('message', async function (e) {
     default:
       self.postMessage('Unknown command')
   }
-
-  self.postMessage(e.data)
 }, false)
 
 const save = async function (blockData) {
@@ -146,13 +162,13 @@ const save = async function (blockData) {
     }
   }
 
-  let offsets = new THREE.InstancedBufferAttribute(new Float32Array(blockData.tx.length * 2), 2)
-  let scales = new THREE.InstancedBufferAttribute(new Float32Array(blockData.tx.length), 1)
+  let offsets = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx * 2), 2)
+  let scales = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx), 1)
 
-  for (let i = 0; i < blockData.tx.length; i++) {
-    if (typeof blockData.tx[i] === 'undefined') {
-      continue
-    }
+  for (let i = 0; i < blockData.n_tx; i++) {
+    // if (typeof blockData.tx[i] === 'undefined') {
+    //   continue
+    // }
     let cell = voronoiDiagram.cells[i]
 
     let site = new THREE.Vector2(cell.site.x, cell.site.y)

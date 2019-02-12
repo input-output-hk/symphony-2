@@ -60,7 +60,7 @@ void main() {
 
 	#include <envmap_fragment>
 
-	diffuseColor.a *= min(1.0-smoothstep(0.0, 5000.0, abs(uCamPos.y)), 0.3);
+	diffuseColor.a *= min(1.0-smoothstep(0.0, 5000.0, abs(uCamPos.y)), 0.23);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 
