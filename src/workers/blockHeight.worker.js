@@ -13,7 +13,7 @@ self.addEventListener('message', async function (e) {
       let blockDataJSON = await blockData.json()
 
       let returnData = {
-        blockDataJSON: blockDataJSON
+        hash: blockDataJSON.blocks[0].hash
       }
 
       self.postMessage(returnData)
@@ -25,6 +25,4 @@ self.addEventListener('message', async function (e) {
     default:
       self.postMessage('Unknown command')
   }
-
-  self.postMessage(e.data)
 }, false)

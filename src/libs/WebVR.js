@@ -36,7 +36,7 @@ export default class WebVR {
       }.bind(this), false)
 
       window.addEventListener('vrdisplaydisconnect', function (event) {
-        this.VRNotFound().bind(this)
+        this.VRNotFound.bind(this)
       }, false)
 
       window.addEventListener('vrdisplaypresentchange', function (event) {
@@ -52,11 +52,11 @@ export default class WebVR {
           if (displays.length > 0) {
             this.setMode(displays[0], 'VR')
           } else {
-            this.VRNotFound().bind(this)
+            this.VRNotFound.bind(this)
           }
         }.bind(this)).catch(this.VRNotFound.bind(this))
     } else {
-      this.VRNotFound().bind(this)
+      this.VRNotFound.bind(this)
     }
   }
 
@@ -135,6 +135,6 @@ export default class WebVR {
 
   VRNotFound () {
     this.VRSupported = false
-    this.renderer.vr.setDevice(null)
+    //this.renderer.vr.setDevice(null)
   }
 }

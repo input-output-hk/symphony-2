@@ -116,6 +116,7 @@ self.addEventListener('message', async function (e) {
         blockHeightIndexes: blockHeightIndexes,
         geoBlockHeightIndexes: geoBlockHeightIndexes,
 
+        scales0: data.scales0,
         scales1: data.scales1,
         scales2: data.scales2,
         scales3: data.scales3,
@@ -125,8 +126,8 @@ self.addEventListener('message', async function (e) {
         scales7: data.scales7,
         scales8: data.scales8,
         scales9: data.scales9,
-        scales10: data.scales10,
 
+        offsets0: data.offsets0,
         offsets1: data.offsets1,
         offsets2: data.offsets2,
         offsets3: data.offsets3,
@@ -136,8 +137,8 @@ self.addEventListener('message', async function (e) {
         offsets7: data.offsets7,
         offsets8: data.offsets8,
         offsets9: data.offsets9,
-        offsets10: data.offsets10,
 
+        txValues0: data.txValues0,
         txValues1: data.txValues1,
         txValues2: data.txValues2,
         txValues3: data.txValues3,
@@ -147,9 +148,8 @@ self.addEventListener('message', async function (e) {
         txValues7: data.txValues7,
         txValues8: data.txValues8,
         txValues9: data.txValues9,
-        txValues10: data.txValues10,
 
-        txIndexes1: data.txIndexes1,
+        txIndexes0: data.txIndexes0,
         txIndexes2: data.txIndexes2,
         txIndexes3: data.txIndexes3,
         txIndexes4: data.txIndexes4,
@@ -158,8 +158,8 @@ self.addEventListener('message', async function (e) {
         txIndexes7: data.txIndexes7,
         txIndexes8: data.txIndexes8,
         txIndexes9: data.txIndexes9,
-        txIndexes10: data.txIndexes10,
 
+        txSpentRatios0: data.txSpentRatios0,
         txSpentRatios1: data.txSpentRatios1,
         txSpentRatios2: data.txSpentRatios2,
         txSpentRatios3: data.txSpentRatios3,
@@ -168,12 +168,12 @@ self.addEventListener('message', async function (e) {
         txSpentRatios6: data.txSpentRatios6,
         txSpentRatios7: data.txSpentRatios7,
         txSpentRatios8: data.txSpentRatios8,
-        txSpentRatios9: data.txSpentRatios9,
-        txSpentRatios10: data.txSpentRatios10
+        txSpentRatios9: data.txSpentRatios9
       }
 
       self.postMessage(returnData,
         [
+          data.scales0.buffer,
           data.scales1.buffer,
           data.scales2.buffer,
           data.scales3.buffer,
@@ -183,8 +183,8 @@ self.addEventListener('message', async function (e) {
           data.scales7.buffer,
           data.scales8.buffer,
           data.scales9.buffer,
-          data.scales10.buffer,
 
+          data.offsets0.buffer,
           data.offsets1.buffer,
           data.offsets2.buffer,
           data.offsets3.buffer,
@@ -194,8 +194,8 @@ self.addEventListener('message', async function (e) {
           data.offsets7.buffer,
           data.offsets8.buffer,
           data.offsets9.buffer,
-          data.offsets10.buffer,
 
+          data.txValues0.buffer,
           data.txValues1.buffer,
           data.txValues2.buffer,
           data.txValues3.buffer,
@@ -205,8 +205,8 @@ self.addEventListener('message', async function (e) {
           data.txValues7.buffer,
           data.txValues8.buffer,
           data.txValues9.buffer,
-          data.txValues10.buffer,
 
+          data.txIndexes0.buffer,
           data.txIndexes1.buffer,
           data.txIndexes2.buffer,
           data.txIndexes3.buffer,
@@ -216,8 +216,8 @@ self.addEventListener('message', async function (e) {
           data.txIndexes7.buffer,
           data.txIndexes8.buffer,
           data.txIndexes9.buffer,
-          data.txIndexes10.buffer,
 
+          data.txSpentRatios0.buffer,
           data.txSpentRatios1.buffer,
           data.txSpentRatios2.buffer,
           data.txSpentRatios3.buffer,
@@ -226,8 +226,7 @@ self.addEventListener('message', async function (e) {
           data.txSpentRatios6.buffer,
           data.txSpentRatios7.buffer,
           data.txSpentRatios8.buffer,
-          data.txSpentRatios9.buffer,
-          data.txSpentRatios10.buffer
+          data.txSpentRatios9.buffer
         ]
       )
       break

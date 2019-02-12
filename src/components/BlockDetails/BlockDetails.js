@@ -4,7 +4,7 @@ import moment from 'moment'
 
 import Scope from '../Scope/Scope'
 
-import styles from './BlockDetails.css'
+// import styles from './BlockDetails.css'
 
 export default class BlockDetails extends Component {
   UIUndersideButton () {

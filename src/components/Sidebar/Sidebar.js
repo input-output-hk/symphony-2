@@ -1,7 +1,7 @@
 
 import React, { Component } from 'react'
 
-import styles from './Sidebar.css'
+// import styles from './Sidebar.css'
 
 import iohkLogo from '../../assets/images/iohk-logo.png'
 import txValueKey from '../../assets/images/tx-value-key.png'

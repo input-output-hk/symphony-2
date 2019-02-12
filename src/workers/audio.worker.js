@@ -87,8 +87,6 @@ self.addEventListener('message', async function (e) {
     default:
       self.postMessage('Unknown command')
   }
-
-  self.postMessage(e.data)
 }, false)
 
 const concatenate = function (arrays) {

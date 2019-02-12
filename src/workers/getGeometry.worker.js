@@ -37,8 +37,7 @@ self.addEventListener('message', async function (e) {
       let blockRefGeo = docRefGeo.doc(blockData.hash)
       let snapshotGeo = await blockRefGeo.get()
 
-      // let cacheData = !snapshotGeo.exists
-      let cacheData = true
+      let cacheData = !snapshotGeo.exists
 
       let blockGeoData
       if (cacheData) {

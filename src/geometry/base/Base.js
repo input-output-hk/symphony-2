@@ -46,8 +46,6 @@ export default class Base {
     spentRatiosAttr,
     txTimesAttr
   ) {
-    console.log(blockGeoData)
-
     let blockPosition = blockGeoData.blockData.pos
 
     this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount

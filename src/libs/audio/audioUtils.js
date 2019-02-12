@@ -41,14 +41,14 @@ export default class Audio extends EventEmitter {
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
 
-    if (blockData.tx.length === 1) {
+    if (blockData.n_tx === 1) {
       minOutput = 0
-      maxOutput = blockData.tx[0].value * 2
+      maxOutput = blockData.txValues[0] * 2
     } else {
-      for (let index = 0; index < blockData.tx.length; index++) {
-        const transaction = blockData.tx[index]
-        minOutput = Math.min(transaction.value, minOutput)
-        maxOutput = Math.max(transaction.value, maxOutput)
+      for (let index = 0; index < blockData.n_tx; index++) {
+        const txValue = blockData.txValues[index]
+        minOutput = Math.min(txValue, minOutput)
+        maxOutput = Math.max(txValue, maxOutput)
       }
     }
 
@@ -79,21 +79,23 @@ export default class Audio extends EventEmitter {
     let spent = []
 
     let txTimes = []
-    const txCount = blockData.tx.length > 1500 ? 1500 : blockData.tx.length
+    const txCount = blockData.n_tx > 1500 ? 1500 : blockData.n_tx
 
     for (let i = 0; i < txCount; i++) {
-      const tx = blockData.tx[i]
+      const txValue = blockData.txValues[i]
+
+      const txSpentRatio = blockData.txSpentRatios[i]
 
       let txTime = map(i, 0, txCount, 0, this.soundDuration - 9)
       txTimes.push(txTime)
 
-      let mappedSpentRatio = map((1.0 - (tx.spentCount / tx.outputCount)), 1.0, 0.0, 8.0, 1.0)
+      let mappedSpentRatio = map((1.0 - (txSpentRatio)), 1.0, 0.0, 8.0, 1.0)
 
       spent.push(mappedSpentRatio)
 
       const filteredNoteKeys = Object.keys(filteredNotes)
 
-      let pitchIndex = Math.floor(map(Math.log(tx.value + 1.0), minOutput, maxOutput, filteredNoteKeys.length - 1, 0))
+      let pitchIndex = Math.floor(map(Math.log(txValue + 1.0), minOutput, maxOutput, filteredNoteKeys.length - 1, 0))
 
       let j = 0
       for (const frequency in filteredNotes) {
@@ -173,7 +175,7 @@ export default class Audio extends EventEmitter {
         Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
         Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
-        wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 20.0)), custom_random(i))
+        wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
 
         sum += wave * attack * release
       }

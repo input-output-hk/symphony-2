@@ -188,7 +188,9 @@ export default class Picker extends Base {
         txValue = 0.5
       }
 
-      this.txMap[i] = blockGeoData.blockData.txIndexes[i]
+      if (typeof blockGeoData.blockData.txIndexes !== 'undefined') {
+        this.txMap[i] = blockGeoData.blockData.txIndexes[i]
+      }
 
       this.geometry.attributes.offset.setY(
         i,

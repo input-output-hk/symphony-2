@@ -695,7 +695,7 @@ class App extends mixin(EventEmitter, Component) {
   async getGeometry (hash, blockHeight = null) {
     return new Promise(async (resolve, reject) => {
       if (blockHeight && typeof this.blockGeoDataObject[blockHeight] !== 'undefined') {
-        return
+        resolve(this.blockGeoDataObject[blockHeight])
       }
 
       let blockData = await this.getBlockData(hash)
@@ -1452,8 +1452,8 @@ class App extends mixin(EventEmitter, Component) {
 
               const blockHeightWorker = new BlockHeightWorker()
               blockHeightWorker.onmessage = async ({ data }) => {
-                if (typeof data.blockDataJSON !== 'undefined') {
-                  let blockGeoData = await this.getGeometry(data.blockDataJSON.blocks[0].hash, height)
+                if (typeof data.hash !== 'undefined') {
+                  let blockGeoData = await this.getGeometry(data.hash, height)
 
                   if (
                     height < this.closestHeight - 10 ||
@@ -1482,7 +1482,16 @@ class App extends mixin(EventEmitter, Component) {
                   blockHeightWorker.terminate()
                 }
               }
-              blockHeightWorker.postMessage({ cmd: 'get', config: this.config, height: height })
+
+              let blockHeightWorkerSendObj = {
+                cmd: 'get',
+                config: this.config,
+                height: height
+              }
+
+              blockHeightWorker.postMessage(
+                blockHeightWorkerSendObj
+              )
             }
           }
         })
@@ -1576,6 +1585,7 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.scales9.buffer,
 
         sendObj.offsets0.buffer,
+        sendObj.offsets1.buffer,
         sendObj.offsets2.buffer,
         sendObj.offsets3.buffer,
         sendObj.offsets4.buffer,
@@ -2082,7 +2092,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
-    return
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
 
     this.originOffset = new THREE.Vector2(
@@ -2155,13 +2164,13 @@ class App extends mixin(EventEmitter, Component) {
         this.plane.geometry.attributes.planeOffset.array[indexOffset + 1])
     )
 
+    this.updateClosestTrees()
+
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audioManager.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
-
-    this.updateClosestTrees()
 
     let undersideTexture1 = null
     let undersideTexture2 = null
@@ -2170,7 +2179,7 @@ class App extends mixin(EventEmitter, Component) {
     let prevBlock = this.blockGeoDataObject[this.closestBlock.blockData.height - 1]
     let nextBlock = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
 
-    const nTX1 = Object.keys(this.closestBlock.blockData.tx).length
+    const nTX1 = this.closestBlock.blockData.n_tx
     undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
 
     if (typeof prevBlock !== 'undefined') {
@@ -2180,7 +2189,7 @@ class App extends mixin(EventEmitter, Component) {
         this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
       }
       let block2 = prevBlock
-      const nTX2 = Object.keys(block2.blockData.tx).length
+      const nTX2 = block2.blockData.n_tx
       undersideTexture2 = await this.circuit.draw(nTX2, block2)
     } else {
       this.undersideL.visible = false
@@ -2193,7 +2202,7 @@ class App extends mixin(EventEmitter, Component) {
         this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
       }
       let block3 = nextBlock
-      const nTX3 = Object.keys(block3.blockData.tx).length
+      const nTX3 = block3.blockData.n_tx
       undersideTexture3 = await this.circuit.draw(nTX3, block3)
     } else {
       this.undersideR.visible = false
