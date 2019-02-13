@@ -121,8 +121,8 @@ export default class MerkleTools {
         let scaledOffsetX = closestOffsetPointX * scaleFactor + canvasOffset
         let scaledOffsetZ = closestOffsetPointZ * scaleFactor + canvasOffset
 
-        let scaledMerkleX = merkleX * scaleFactor + canvasOffset
-        let scaledMerkleZ = merkleZ * scaleFactor + canvasOffset
+        let scaledMerkleX = Math.floor(merkleX * scaleFactor + canvasOffset)
+        let scaledMerkleZ = Math.floor(merkleZ * scaleFactor + canvasOffset)
 
         let xEdge = scaledOffsetX - scaledMerkleX
         let zEdge = scaledOffsetZ - scaledMerkleZ
@@ -136,10 +136,7 @@ export default class MerkleTools {
           shortestEdge = 'Z'
         }
 
-        let remove = shortestEdgeLength * 0.5
-
-        context.shadowBlur = 25
-        context.shadowColor = 'white'
+        let remove = Math.floor(shortestEdgeLength * 0.5)
 
         context.beginPath()
         context.moveTo(scaledMerkleX, scaledMerkleZ)
@@ -207,10 +204,10 @@ export default class MerkleTools {
 
     context.translate(canvas.width / 2, canvas.height / 2)
     context.scale(-1, 1)
-    context.font = '12.5pt Calibri'
+    context.font = '7.5pt Calibri'
     context.lineWidth = 0
     context.fillStyle = 'rgba(255,255,255,0.50)'
-    context.fillText('BLOCK #' + closestBlock.blockData.height + '  HASH: ' + closestBlock.blockData.hash, -1000, -990)
+    context.fillText('BLOCK #' + closestBlock.blockData.height + '  HASH: ' + closestBlock.blockData.hash, -495, -495)
     context.scale(-1, 1)
 
     context.rotate(Math.PI / 6)

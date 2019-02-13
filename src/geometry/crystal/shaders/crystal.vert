@@ -20,7 +20,7 @@ attribute float scale;
 attribute float spentRatio;
 attribute vec3 barycentric;
 attribute float topVertex;
-attribute float txValue;
+attribute float centerTopVertex;
 attribute vec4 quaternion;
 attribute float txTime;
 attribute float blockStartTime;
@@ -84,7 +84,7 @@ void main() {
 	float attack = smoothstep(txTime, txTime + 2.0, offsetTime * 0.001);
 	float release = (1.0 - smoothstep(txTime + 2.0, txTime + 4.0, offsetTime * 0.001));
 
-	float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
+	float attackLoad = smoothstep(txTime, txTime + 3.0, loadTime * 0.001);
 
 	float blockActive = (blockStartTime == 0.0) ? 0.0 : 1.0;
 
@@ -93,25 +93,20 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	float scaleVar = scale;
+	
 
-	// vec2 distVec = transformed.xz - uCamPos.xz;
-	// if (uAutoPilot > 0.0) {
-	// 	float camDistSq = max(dot(distVec, distVec), 2.0);
-	// 	transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
-	// 	// scaleVar *= smoothstep(0.0, 20.0, camDistSq);
-	// }
+	// transformed.xz *= ((scale * attackLoad)  * 1.07);
+	transformed.xz *= scale;
 
-	transformed.xz *= ((scaleVar * attackLoad)  * 1.07);
-	// transformed.xz *= scale;
-
-	transformed.y *= ((offset.y+ (3.0 * vEnvelope)) * attackLoad);
+	transformed.y *= max(  ((offset.y + (3.0 * vEnvelope)) * attackLoad) , 0.5 );
 	transformed.y *= 2.0;
 
 	if (uCamPosYPositive != 1.0) {
 		//transformed.y += (offset.y * 0.5) * attackLoad;
 		transformed.y = max(transformed.y, 0.2) * topVertex;
 	}
+
+	
 
 	// transformed.y += (1.0 * isSelected);
 
@@ -131,13 +126,18 @@ void main() {
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
 	}
 
+	float randVal = random(transformed.x);
+
+	transformed.y += (randVal * (offset.y*0.1) ) * centerTopVertex * attackLoad;
+	transformed.y += (randVal * (offset.y*0.01)) * topVertex * attackLoad;
 		
     transformed.xz -= (uOriginOffset.xy);
+
 
 	vTransformed = transformed;
 	vTopVertex = topVertex;
 	vBottomVertex = 1.0 - topVertex;
-	vScale = scaleVar;
+	vScale = scale;
 
 	#include <project_vertex>
 	#include <logdepthbuf_vertex>

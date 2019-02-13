@@ -19,21 +19,22 @@ self.addEventListener('message', async function (e) {
 
       const blockAudio = audioUtils.generateBlockAudio(blockData, modes, notes)
 
-      let parts = 10
+      let parts = 500
 
       const gpu = new GPU()
 
       console.time('sineBank')
 
-      const txCount = blockAudio.frequencies.length > 1500 ? 1500 : blockAudio.frequencies.length
+      const txCount = blockAudio.frequencies.length > 1000 ? 1000 : blockAudio.frequencies.length
 
       let simultaneousFrequencies = txCount / parts
 
-      let audioChunkTime = Math.floor(
+      let audioChunkTime =
         (soundDuration / parts)
-      )
 
-      const sineBank = gpu.createKernel(audioUtils.sineBank, {loopMaxIterations: 1500}).setOutput([
+
+
+      const sineBank = gpu.createKernel(audioUtils.sineBank, {loopMaxIterations: 1000}).setOutput([
         Math.floor(
           sampleRate * audioChunkTime
         )

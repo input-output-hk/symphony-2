@@ -36,12 +36,12 @@ void main() {
 	float loadTime = uAudioTime - blockLoadTime;
 
 	// envelope
-	float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
-	float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
-	float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
+	// float attack = smoothstep(txTime, txTime + 5.0, offsetTime * 0.001);
+	// float release = (1.0 - smoothstep(txTime + 5.0, txTime + 10.0, offsetTime * 0.001));
+	// float attackLoad = smoothstep(txTime, txTime + 5.0, loadTime * 0.001);
 
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
-   	transformed.xz *= ((scale * 2.7) * attackLoad);
+   	transformed.xz *= (scale * 2.7);
 	transformed.xz += (offset.xz - uOriginOffset.xy);
 
 	#include <project_vertex>

@@ -971,7 +971,7 @@ class App extends mixin(EventEmitter, Component) {
     // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
-    this.cubeCamera = new THREE.CubeCamera(1, 1500, 512)
+    this.cubeCamera = new THREE.CubeCamera(1, 1500, 256)
 
     this.cubeCamera.position.copy(pos)
 
@@ -2137,10 +2137,6 @@ class App extends mixin(EventEmitter, Component) {
       this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
     }
 
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-    this.updateOriginOffsets()
-
     for (const height in this.audioManager.audioSources) {
       if (this.audioManager.audioSources.hasOwnProperty(height)) {
         if (
@@ -2219,6 +2215,10 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+    this.updateOriginOffsets()
   }
 
   updateOriginOffsets () {

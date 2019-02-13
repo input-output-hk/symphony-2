@@ -42,22 +42,21 @@ export default class Circuit extends EventEmitter {
 
       // Create a reference from a Google Cloud Storage URI
       existingCanvasRef.getDownloadURL().then(function (url) {
-        console.log(url)
         let texture = new THREE.TextureLoader().load(url)
         resolve(texture)
       }).catch(function () {
         if (this.offscreenMode) {
-          const nearestBlocksWorker = new CircuitWorker()
-          nearestBlocksWorker.onmessage = async ({ data }) => {
+          const circuitWorker = new CircuitWorker()
+          circuitWorker.onmessage = async ({ data }) => {
             if (typeof data.complete !== 'undefined' && data.complete === true) {
               existingCanvasRef.getDownloadURL().then(function (url) {
                 let texture = new THREE.TextureLoader().load(url)
                 resolve(texture)
               })
+              circuitWorker.terminate()
             }
-            nearestBlocksWorker.terminate()
           }
-          nearestBlocksWorker.postMessage({ cmd: 'get', nTX: nTX, closestBlock: closestBlock, config: this.config })
+          circuitWorker.postMessage({ cmd: 'get', nTX: nTX, closestBlock: closestBlock, config: this.config })
         } else {
           this.canvas = document.createElement('canvas')
           this.canvas.setAttribute('id', 'sketchboard')
