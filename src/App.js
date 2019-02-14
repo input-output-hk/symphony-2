@@ -94,6 +94,8 @@ class App extends mixin(EventEmitter, Component) {
     this.clock = new THREE.Clock()
     this.loadedHeights = []
     this.mousePos = new THREE.Vector2() // keep track of mouse position
+    this.camera = null
+    this.cameraMain = null
     this.animatingCamera = false
     this.camPosTo = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camPosToTarget = new THREE.Vector3(0.0, 0.0, 0.0)
@@ -2018,6 +2020,7 @@ class App extends mixin(EventEmitter, Component) {
         // this.switchControls('map')
 
         this.goToLatestBlock()
+        // this.goToRandomBlock()
       }
     })
 
@@ -2361,7 +2364,15 @@ class App extends mixin(EventEmitter, Component) {
   /**
    * Set up camera with defaults
    */
-  initCamera () {
+  initCamera (vrActive = false) {
+    if (this.camera) {
+      this.scene.remove(this.camera)
+    }
+
+    if (this.cameraMain) {
+      this.scene.remove(this.cameraMain)
+    }
+
     this.cameraMain = new THREE.PerspectiveCamera(
       this.config.camera.fov,
       window.innerWidth / window.innerHeight,
@@ -2369,17 +2380,13 @@ class App extends mixin(EventEmitter, Component) {
       5000000
     )
 
-    // this.WebVR.VRSupported = true
-
-    if (this.WebVR.VRSupported) {
+    if (vrActive) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
       this.scene.add(this.camera)
     } else {
       this.camera = this.cameraMain
     }
-
-    window.camera = this.camera
 
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
@@ -2677,6 +2684,7 @@ class App extends mixin(EventEmitter, Component) {
           stopAutoPilot={this.stopAutoPilot.bind(this)}
         />
         <WebVRButton
+          initCamera={this.initCamera.bind(this)}
           startVRSession={this.WebVR.startVRSession.bind(this.WebVR)}
           endVRSession={this.WebVR.endVRSession.bind(this.WebVR)}
           VRSupported={this.WebVR.VRSupported}

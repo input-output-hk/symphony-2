@@ -12,8 +12,10 @@ export default class WebVRButton extends Component {
 
   toggleState () {
     if (this.state.vrActive) {
+      this.props.initCamera(false)
       this.props.endVRSession()
     } else {
+      this.props.initCamera(true)
       this.props.startVRSession()
     }
 

@@ -6,8 +6,8 @@ export default class WebVR {
     this.device = null
     this.cameraDepthFar = 5000000
     this.mode = '' // XR or VR
-    this.setupDevice()
     this.VRSupported = false
+    this.setupDevice()
   }
 
   setRenderer (renderer) {
@@ -98,7 +98,6 @@ export default class WebVR {
   }
 
   startVRSession () {
-
     console.log('startVRSession')
 
     switch (this.mode) {
@@ -135,6 +134,6 @@ export default class WebVR {
 
   VRNotFound () {
     this.VRSupported = false
-    //this.renderer.vr.setDevice(null)
+    // this.renderer.vr.setDevice(null)
   }
 }
