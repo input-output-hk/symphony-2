@@ -17,7 +17,6 @@ import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 import WebVR from './libs/WebVR'
-import TextGeometry from './libs/vendor/TextGeometry/TextGeometry'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -36,8 +35,8 @@ import {
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass
-  // SSAARenderPass
+  SMAAPass,
+  SSAARenderPass
 } from './libs/post/EffectComposer'
 
 // import CopyShader from './libs/post/CopyShader'
@@ -62,6 +61,7 @@ import Glow from './geometry/glow/Glow'
 import Tx from './geometry/tx/Tx'
 import Underside from './geometry/underside/Underside'
 import Particles from './geometry/particles/Particles'
+import Text from './geometry/text/Text'
 
 // CSS
 import './App.css'
@@ -73,8 +73,6 @@ class App extends mixin(EventEmitter, Component) {
   constructor (props) {
     super(props)
 
-    this.loadFont = require('load-bmfont')
-    this.SDFShader = require('./libs/vendor/TextGeometry/shaders/sdf')
     this.config = deepAssign(Config, this.props.config)
     this.planeSize = 500
     this.planeOffsetMultiplier = 1080
@@ -112,6 +110,10 @@ class App extends mixin(EventEmitter, Component) {
     this.originOffset = new THREE.Vector2(0, 0)
     this.WebVR = new WebVR() // WebVR lib
     this.txCountBufferSize = 4000 // buffer size for tx counts
+    this.textMesh = null
+    this.camForwardVector = new THREE.Vector3()
+    this.vrActive = false
+    this.blockHeightTextMesh = null
 
     this.state = {
       loading: true,
@@ -141,6 +143,8 @@ class App extends mixin(EventEmitter, Component) {
 
   async initStage () {
     this.initFirebase()
+
+    this.initRenderer()
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
     this.audioManager = new AudioManager({
@@ -211,7 +215,11 @@ class App extends mixin(EventEmitter, Component) {
 
     this.initGUI()
 
-    this.initRenderer()
+    this.textGenerator = new Text({
+      config: this.config,
+      maxAnisotropy: this.renderer.capabilities.getMaxAnisotropy()
+    })
+
     this.initScene()
     this.initCamera()
 
@@ -569,9 +577,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setPostSettings () {
-    // this.ssaaRenderPass = new SSAARenderPass(this.scene, this.cameraMain)
-    // this.ssaaRenderPass.unbiased = true
-    // this.composer.addPass(this.ssaaRenderPass)
+    this.ssaaRenderPass = new SSAARenderPass(this.scene, this.cameraMain)
+    this.ssaaRenderPass.unbiased = true
+    this.composer.addPass(this.ssaaRenderPass)
 
     this.HueSaturationPass = new ShaderPass(HueSaturation)
     this.composer.addPass(this.HueSaturationPass)
@@ -591,16 +599,16 @@ class App extends mixin(EventEmitter, Component) {
     this.composer.addPass(this.VignettePass)
 
     this.FilmShaderPass = new ShaderPass(FilmShader)
-    // this.FilmShaderPass.renderToScreen = true
+    this.FilmShaderPass.renderToScreen = true
     this.composer.addPass(this.FilmShaderPass)
 
     // this.copyPass = new ShaderPass(CopyShader)
     // this.copyPass.renderToScreen = true
     // this.composer.addPass(this.copyPass)
 
-    this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
-    this.SMAAPass.renderToScreen = true
-    this.composer.addPass(this.SMAAPass)
+    // this.SMAAPass = new SMAAPass(window.innerWidth * this.renderer.getPixelRatio(), window.innerHeight * this.renderer.getPixelRatio())
+    // this.SMAAPass.renderToScreen = true
+    // this.composer.addPass(this.SMAAPass)
   }
 
   initFirebase () {
@@ -786,40 +794,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initGeometry () {
-    this.loadFont('./assets/fonts/DejaVu-sdf.fnt', function (err, font) {
-      if (!err) {
-        var textureLoader = new THREE.TextureLoader()
-        textureLoader.load('./assets/fonts/DejaVu-sdf.png', function (texture) {
-          texture.needsUpdate = true
-          texture.minFilter = THREE.LinearMipMapLinearFilter
-          texture.magFilter = THREE.LinearFilter
-          texture.generateMipmaps = true
-          texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy()
-
-          let geometry = new TextGeometry({
-            width: 100,
-            align: 'right',
-            font: font,
-            flipY: texture.flipY,
-            text: ''
-          })
-
-          let material = new THREE.RawShaderMaterial(this.SDFShader({
-            map: texture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            color: 0xffffff
-          }))
-
-          let mesh = new THREE.Mesh(geometry, material)
-
-          this.group.add(mesh)
-        }.bind(this))
-      } else {
-        console.log(err)
-      }
-    }.bind(this))
-
     if (!this.blockHashToLoad) {
       let url
       if (this.heightToLoad !== null) {
@@ -1903,6 +1877,27 @@ class App extends mixin(EventEmitter, Component) {
     this.getClosestBlock()
 
     if (this.blockReady) {
+      // if (this.textMesh) {
+      //   // if (this.vrActive) {
+      //   //   let VRCam = this.renderer.vr.getCamera(this.cameraMain)
+      //   //   VRCam.getWorldDirection(this.camForwardVector)
+      //   // } else {
+      //   //   this.camera.getWorldDirection(this.camForwardVector)
+      //   // }
+
+      //   // this.camForwardVector.multiplyScalar(1.01)
+
+      //   let textMeshPos = new THREE.Vector3(
+      //     this.camera.position.x,
+      //     this.camera.position.y,
+      //     this.camera.position.z
+      //   ).add(this.camForwardVector)
+
+      //   this.textMesh.position.x = textMeshPos.x
+      //   this.textMesh.position.y = textMeshPos.y
+      //   this.textMesh.position.z = textMeshPos.z
+      // }
+
       if (this.audioManager.analyser && window.oscilloscope) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
@@ -2092,6 +2087,8 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({
       closestBlock: this.closestBlock
     })
+
+    this.addBlockHeightVRText(this.closestBlock.blockData.height)
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
@@ -2365,6 +2362,8 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
+    this.vrActive = vrActive
+
     if (this.camera) {
       this.scene.remove(this.camera)
     }
@@ -2383,10 +2382,11 @@ class App extends mixin(EventEmitter, Component) {
     if (vrActive) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
-      this.scene.add(this.camera)
     } else {
       this.camera = this.cameraMain
     }
+
+    this.scene.add(this.camera)
 
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
@@ -2400,6 +2400,26 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.updateMatrixWorld()
   }
 
+  async addBlockHeightVRText (height) {
+    if (!this.vrActive) {
+      return
+    }
+
+    let blockHeightTextMesh = await this.textGenerator.create({
+      text: '// BLOCK ' + height,
+      position: {
+        x: -5,
+        y: -3,
+        z: -10
+      }
+    })
+    this.camera.remove(this.blockHeightTextMesh)
+
+    this.blockHeightTextMesh = blockHeightTextMesh
+
+    this.camera.add(this.blockHeightTextMesh)
+  }
+
   /**
    * Set up renderer
    */
@@ -2411,6 +2431,8 @@ class App extends mixin(EventEmitter, Component) {
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
+
+    this.renderer.setPixelRatio(window.devicePixelRatio)
 
     this.WebVR.setRenderer(this.renderer)
   }

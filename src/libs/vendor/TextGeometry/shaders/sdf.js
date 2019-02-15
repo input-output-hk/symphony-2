@@ -31,7 +31,9 @@ module.exports = function createSDFShader (opt) {
       'varying float vFragDepth;',
       'void main() {',
       'vUv = uv;',
-      'gl_Position = projectionMatrix * modelViewMatrix * position;',
+      'vec4 flippedPosition = position;',
+      'flippedPosition.y *= -1.0;',
+      'gl_Position = projectionMatrix * modelViewMatrix * flippedPosition;',
       'vFragDepth = 1.0 + gl_Position.w;',
       '}'
     ].join('\n'),

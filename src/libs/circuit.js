@@ -28,13 +28,15 @@ export default class Circuit extends EventEmitter {
 
   async draw (nTX, closestBlock) {
     return new Promise((resolve, reject) => {
-      if (this.canvas && this.canvas.parentNode) {
-        this.canvas.parentNode.removeChild(this.canvas)
-      }
+      if (!this.offscreenMode) {
+        if (this.canvas && this.canvas.parentNode) {
+          this.canvas.parentNode.removeChild(this.canvas)
+        }
 
-      let oldCanvas = document.getElementById('sketchboard')
-      if (oldCanvas) {
-        oldCanvas.remove()
+        let oldCanvas = document.getElementById('sketchboard')
+        if (oldCanvas) {
+          oldCanvas.remove()
+        }
       }
 
       // check storage

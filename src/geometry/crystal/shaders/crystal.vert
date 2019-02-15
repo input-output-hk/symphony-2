@@ -126,7 +126,7 @@ void main() {
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
 	}
 
-	float randVal = random(transformed.x);
+	float randVal = random(offset.x);
 
 	transformed.y += (randVal * (offset.y*0.1) ) * centerTopVertex * attackLoad;
 	transformed.y += (randVal * (offset.y*0.01)) * topVertex * attackLoad;

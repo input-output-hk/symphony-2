@@ -79,7 +79,7 @@ export default class Audio extends EventEmitter {
     let spent = []
 
     let txTimes = []
-    const txCount = blockData.n_tx > 1000 ? 1000 : blockData.n_tx
+    const txCount = blockData.n_tx > 500 ? 500 : blockData.n_tx
 
     for (let i = 0; i < txCount; i++) {
       const txValue = blockData.txValues[i]

@@ -416,7 +416,7 @@ export default class Audio extends EventEmitter {
         soundDuration: this.soundDuration
       })
     } else {
-      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: 1000}).setOutput([this.sampleRate * this.soundDuration])
+      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: 500}).setOutput([this.sampleRate * this.soundDuration])
 
       sineBank.addNativeFunction('custom_smoothstep', this.audioUtils.customSmoothstep)
       sineBank.addNativeFunction('custom_step', this.audioUtils.customStep)
