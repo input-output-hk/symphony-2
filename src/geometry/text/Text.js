@@ -1,13 +1,7 @@
 // libs
 import * as THREE from 'three'
 import TextGeometry from '../../libs/vendor/TextGeometry/TextGeometry'
-
-// shaders
-import fragmentShader from './shaders/text.frag'
-import vertexShader from './shaders/text.vert'
-
 const loadFont = require('load-bmfont')
-// const SDFShader = require('./libs/vendor/TextGeometry/shaders/sdf')
 
 export default class Text {
   constructor (args) {
@@ -68,10 +62,11 @@ export default class Text {
 
     let geometry = new TextGeometry({
       width: args.width,
-      align: 'center',
+      align: args.align,
       font: fontData.font,
       flipY: fontData.texture.flipY,
-      text: args.text
+      text: args.text,
+      lineHeight: args.lineHeight
     })
 
     let material = new THREE.RawShaderMaterial(this.SDFShader({
@@ -83,16 +78,12 @@ export default class Text {
 
     let mesh = new THREE.Mesh(geometry, material)
 
-    mesh.scale.set(0.01, 0.01, 0.01)
+    mesh.scale.set(args.scale, args.scale, args.scale)
     mesh.position.x = args.position.x
     mesh.position.y = args.position.y
     mesh.position.z = args.position.z
     mesh.frustumCulled = false
 
     return mesh
-  }
-
-  update (time) {
-    // this.material.uniforms.uTime.value = time
   }
 }

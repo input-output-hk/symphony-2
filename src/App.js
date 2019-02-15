@@ -2088,7 +2088,8 @@ class App extends mixin(EventEmitter, Component) {
       closestBlock: this.closestBlock
     })
 
-    this.addBlockHeightVRText(this.closestBlock.blockData.height)
+    this.addBlockHeightVRText(this.closestBlock.blockData)
+    this.addBlockDetailsVRText(this.closestBlock.blockData)
 
     this.pickerGenerator.updateGeometry(this.closestBlock)
 
@@ -2400,24 +2401,62 @@ class App extends mixin(EventEmitter, Component) {
     this.camera.updateMatrixWorld()
   }
 
-  async addBlockHeightVRText (height) {
+  async addBlockHeightVRText (blockData) {
     if (!this.vrActive) {
       return
     }
 
     let blockHeightTextMesh = await this.textGenerator.create({
-      text: '// BLOCK ' + height,
+      text: '// BLOCK ' + blockData.height + ' ' + blockData.hash,
       position: {
-        x: -5,
-        y: -3,
+        x: -8,
+        y: -5,
         z: -10
-      }
+      },
+      width: 1400,
+      align: 'left',
+      scale: 0.0075,
+      lineHeight: 48
     })
+
     this.camera.remove(this.blockHeightTextMesh)
-
     this.blockHeightTextMesh = blockHeightTextMesh
-
     this.camera.add(this.blockHeightTextMesh)
+  }
+
+  async addBlockDetailsVRText (blockData) {
+    if (!this.vrActive) {
+      return
+    }
+
+    let blockDetailsTextMesh = await this.textGenerator.create({
+      text: `
+      // BLOCK ${blockData.height}
+      
+      OUTPUT TOTAL: ${(blockData.outputTotal / 100000000).toFixed(2)} BTC
+      FEES: ${(blockData.fee / 100000000).toFixed(2)} BTC
+      DATE: ${moment.unix(blockData.time).format('YYYY-MM-DD HH:mm:ss')}
+      BITS: ${blockData.bits}
+      SIZE: ${blockData.size / 1000} KB
+      HEIGHT: ${blockData.height}
+      MERKLE ROOT: ${blockData.mrkl_root.substring(0, 10)}
+      NONCE: ${blockData.nonce}
+      VERSION: ${blockData.ver}
+      `,
+      position: {
+        x: 7,
+        y: 4,
+        z: -10
+      },
+      width: 600,
+      align: 'left',
+      scale: 0.006,
+      lineHeight: 48
+    })
+
+    this.camera.remove(this.blockDetailsTextMesh)
+    this.blockDetailsTextMesh = blockDetailsTextMesh
+    this.camera.add(this.blockDetailsTextMesh)
   }
 
   /**
