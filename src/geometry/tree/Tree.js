@@ -15,7 +15,7 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 500
+    this.instanceTotal = 100
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
@@ -66,6 +66,24 @@ export default class Tree extends Base {
     this.index = 0
 
     this.loadedModels = {}
+
+    this.loadedMeshes = {}
+
+    this.preLoadMeshes()
+  }
+
+  async preLoadMeshes () {
+    for (let i = 0; i < 3; i++) {
+      this.loadedMeshes[i] = {}
+      for (const nTX in this.merkleMap) {
+        if (this.merkleMap.hasOwnProperty(nTX)) {
+          let blockData = {}
+          blockData.n_tx = nTX
+          blockData.pos = new THREE.Vector3(0, 0, 0)
+          this.loadedMeshes[i][nTX] = await this.build(blockData)
+        }
+      }
+    }
   }
 
   async loadTreeModel (nTX) {
@@ -198,28 +216,7 @@ export default class Tree extends Base {
     this.material.uniforms.uFirstLoop.value = firstLoop
   }
 
-  async removeClosest (blockGeoData, closestIndex, prevClosestIndex) {
-    console.log('remove ', closestIndex)
-
-    this.geometry.attributes.quaternion.array[closestIndex * 4 + 0] = 0
-    this.geometry.attributes.quaternion.array[closestIndex * 4 + 1] = 0
-    this.geometry.attributes.quaternion.array[closestIndex * 4 + 2] = 0
-    this.geometry.attributes.quaternion.array[closestIndex * 4 + 3] = 0
-    this.geometry.attributes.quaternion.needsUpdate = true
-
-    this.geometry.attributes.planeOffset.array[closestIndex * 2 + 0] = 0
-    this.geometry.attributes.planeOffset.array[closestIndex * 2 + 1] = 0
-    this.geometry.attributes.planeOffset.needsUpdate = true
-
-    await this.updateGeometry(blockGeoData, prevClosestIndex)
-  }
-
-  /**
-   * Get a single tree mesh based on block data
-   *
-   * @param {*} blockData
-   */
-  async get (blockData) {
+  async build (blockData) {
     let planeOffsetsArray = new Float32Array(2)
     let quatArray = new Float32Array(4)
 
@@ -244,6 +241,42 @@ export default class Tree extends Base {
       this.loadedModels[this.merkleMap[nTX]] = geometry
     }
 
+    // attributes
+    let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
+    let quaternions = new THREE.InstancedBufferAttribute(quatArray, 4)
+    let display = new THREE.InstancedBufferAttribute(new Float32Array(1).fill(1), 1)
+
+    geometry.addAttribute('planeOffset', planeOffsets)
+    geometry.addAttribute('quaternion', quaternions)
+    geometry.addAttribute('display', display)
+
+    let mesh = new THREE.Mesh(geometry, this.material)
+
+    mesh.frustumCulled = false
+    return mesh
+  }
+
+  /**
+   * Get a single tree mesh based on block data
+   *
+   * @param {*} blockData
+   */
+  async get (blockData, index) {
+    let nTX = blockData.n_tx
+
+    nTX--
+    nTX |= nTX >> 1
+    nTX |= nTX >> 2
+    nTX |= nTX >> 4
+    nTX |= nTX >> 8
+    nTX |= nTX >> 16
+    nTX++
+
+    let treeMesh = this.loadedMeshes[index][nTX]
+
+    let planeOffsetsArray = treeMesh.geometry.attributes.planeOffset.array
+    let quatArray = treeMesh.geometry.attributes.quaternion.array
+
     let blockPosition = blockData.pos
 
     let object = new THREE.Object3D()
@@ -258,19 +291,10 @@ export default class Tree extends Base {
     planeOffsetsArray[0] = blockPosition.x
     planeOffsetsArray[1] = blockPosition.z
 
-    // attributes
-    let planeOffsets = new THREE.InstancedBufferAttribute(planeOffsetsArray, 2)
-    let quaternions = new THREE.InstancedBufferAttribute(quatArray, 4)
-    let display = new THREE.InstancedBufferAttribute(new Float32Array(1).fill(1), 1)
+    treeMesh.geometry.attributes.planeOffset.needsUpdate = true
+    treeMesh.geometry.attributes.quaternion.needsUpdate = true
 
-    geometry.addAttribute('planeOffset', planeOffsets)
-    geometry.addAttribute('quaternion', quaternions)
-    geometry.addAttribute('display', display)
-
-    let mesh = new THREE.Mesh(geometry, this.material)
-
-    mesh.frustumCulled = false
-    return mesh
+    return treeMesh
   }
 }
 

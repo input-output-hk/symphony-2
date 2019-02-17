@@ -2233,7 +2233,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async updateClosestTrees () {
-    let centerTree = await this.treeGenerator.get(this.closestBlock.blockData)
+    let centerTree = await this.treeGenerator.get(this.closestBlock.blockData, 0)
 
     if (this.centerTree) {
       this.group.remove(this.centerTree)
@@ -2244,7 +2244,7 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(centerTree)
 
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
-      let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData)
+      let lTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height - 1].blockData, 1)
       if (this.lTree) {
         this.group.remove(this.lTree)
       }
@@ -2254,19 +2254,19 @@ class App extends mixin(EventEmitter, Component) {
       this.group.add(this.lTree)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
-      let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData)
+      let rTree = await this.treeGenerator.get(this.blockGeoDataObject[this.closestBlock.blockData.height + 1].blockData, 2)
       if (this.rTree) {
-        this.rTree.material = this.treeGenerator.materialR
         this.group.remove(this.rTree)
       }
       this.rTree = rTree
+      this.rTree.material = this.treeGenerator.materialR
       this.rTree.renderOrder = -1
       this.group.add(this.rTree)
     }
 
-    this.trees.geometry.attributes.display.array.forEach((height, i) => {
-      this.trees.geometry.attributes.display.array[i] = 1
-    })
+    for (let index = 0; index < this.trees.geometry.attributes.display.array.length; index++) {
+      this.trees.geometry.attributes.display.array[index] = 1
+    }
 
     let treeHeightIndex = this.treeGenerator.indexHeightMap[this.closestBlock.blockData.height]
 

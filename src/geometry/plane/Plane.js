@@ -17,7 +17,7 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 500
+    this.instanceTotal = 100
 
     this.blockHeightIndex = {}
 
