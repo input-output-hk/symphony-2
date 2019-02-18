@@ -93,6 +93,7 @@ class App extends mixin(EventEmitter, Component) {
     this.clock = new THREE.Clock()
     this.loadedHeights = []
     this.mousePos = new THREE.Vector2() // keep track of mouse position
+    this.lastMousePos = new THREE.Vector2()
     this.camera = null
     this.cameraMain = null
     this.animatingCamera = false
@@ -414,7 +415,7 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  async selectTX (index, TXHash) {
+  async selectTX (index, TXHash, animateCam) {
     this.emit('txSelect', {
       txData: TXHash,
       mousePos: this.mousePos
@@ -479,26 +480,28 @@ class App extends mixin(EventEmitter, Component) {
         toTarget
       )
 
-      let that = this
-      new TWEEN.Tween(this.camera.position)
-        .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
-        .onUpdate(function () {
-          that.camera.position.set(this.x, this.y, this.z)
-        })
-        .onComplete(() => {
-          that.toggleMapControls(false)
-          this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
-          this.camera.position.x = to.x
-          this.camera.position.z = to.z
+      if (animateCam) {
+        let that = this
+        new TWEEN.Tween(this.camera.position)
+          .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
+          .onUpdate(function () {
+            that.camera.position.set(this.x, this.y, this.z)
+          })
+          .onComplete(() => {
+            that.toggleMapControls(false)
+            this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
+            this.camera.position.x = to.x
+            this.camera.position.z = to.z
 
-          this.setState({searchTXHash: ''})
+            this.setState({searchTXHash: ''})
 
-          this.animatingCamera = false
-        })
-        .easing(this.defaultCamEasing)
-        .start()
+            this.animatingCamera = false
+          })
+          .easing(this.defaultCamEasing)
+          .start()
 
-      this.animateCamRotation(2000)
+        this.animateCamRotation(2000)
+      }
 
       selectedArray[index + txIndexOffset] = 1.0
     }
@@ -1980,10 +1983,6 @@ class App extends mixin(EventEmitter, Component) {
         // this.composer.render()
       }
     }
-
-    if (this.vrActive && this.controllerCam) {
-      this.controllerCamRenderer.render(this.scene, this.controllerCam)
-    }
   }
 
   startIntro () {
@@ -2371,6 +2370,23 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.background = this.cubeMap
   }
 
+  onVRControllerSelectStart (event) {
+    // clicking on the same tx twice deselects
+    if (this.lastSelectedID === this.lastHoveredID) {
+      this.deselectTx()
+    } else {
+      if (this.txIsHovered) {
+        this.lastSelectedID = this.lastHoveredID
+        if (typeof this.pickerGenerator.txMap[this.lastHoveredID] !== 'undefined') {
+          this.selectedTXHash = this.pickerGenerator.txMap[this.lastHoveredID]
+          this.selectTX(this.lastSelectedID, this.selectedTXHash)
+        }
+      } else {
+        this.deselectTx()
+      }
+    }
+  }
+
   setupGamepads () {
     this.camera.remove(this.controller1)
     this.camera.remove(this.controller2)
@@ -2378,6 +2394,8 @@ class App extends mixin(EventEmitter, Component) {
     this.controller1 = this.renderer.vr.getController(0)
     this.controller1.userData.id = 0
     this.camera.add(this.controller1)
+    this.controller1.addEventListener('selectstart', this.onVRControllerSelectStart.bind(this))
+    this.controller1.addEventListener('selectend', this.onVRControllerSelectEnd.bind(this))
 
     this.controller2 = this.renderer.vr.getController(1)
     this.controller2.userData.id = 1
@@ -2391,6 +2409,8 @@ class App extends mixin(EventEmitter, Component) {
       controller.material.specularMap = this.TextureLoader.load('onepointfive_spec.png')
 
       this.controller1.add(controller.clone())
+      this.controller2.add(controller.clone())
+
       this.controllerCam = new THREE.PerspectiveCamera(
         this.config.camera.fov,
         window.innerWidth / window.innerHeight,
@@ -2398,14 +2418,19 @@ class App extends mixin(EventEmitter, Component) {
         5000000
       )
 
-      // this.controllerCam.rotateX(-(Math.PI / 2) )
-      this.controllerCam.updateProjectionMatrix()
-      this.controllerCam.updateMatrix()
-      this.controllerCam.updateMatrixWorld()
+      let lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)
+      ])
+
+      let lineMat = new THREE.LineBasicMaterial({
+        color: 0x6ad16a
+      })
+
+      let line = new THREE.Line(lineGeo, lineMat)
+      line.scale.z = 5
 
       this.controller1.add(this.controllerCam)
-
-      this.controller2.add(controller.clone())
+      this.controller1.add(line)
     }.bind(this))
   }
 
@@ -2529,11 +2554,6 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer.setPixelRatio(window.devicePixelRatio)
 
     this.WebVR.setRenderer(this.renderer)
-
-    this.controllerCamRenderer = new THREE.WebGLRenderer({
-      antialias: false,
-      logarithmicDepthBuffer: true
-    })
 
 
   }
