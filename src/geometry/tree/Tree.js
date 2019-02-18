@@ -109,6 +109,7 @@ export default class Tree extends Base {
           let tubeGeo = new THREE.CylinderGeometry(6, 6, 600, 6)
           let tubeMesh = new THREE.Mesh(tubeGeo)
           tubeMesh.rotateZ(Math.PI / 2)
+          tubeMesh.translateY(-295)
 
           let singleGeometry = new THREE.Geometry()
           tubeMesh.updateMatrix()

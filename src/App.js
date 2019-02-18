@@ -17,6 +17,7 @@ import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 import WebVR from './libs/WebVR'
+import OBJLoader from './libs/OBJLoader'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -114,6 +115,14 @@ class App extends mixin(EventEmitter, Component) {
     this.camForwardVector = new THREE.Vector3()
     this.vrActive = false
     this.blockHeightTextMesh = null
+
+    // VR controllers
+    this.controller1 = null
+    this.controllerCam = null
+    this.controller2 = null
+
+    this.OBJLoader = new OBJLoader()
+    this.TextureLoader = new THREE.TextureLoader()
 
     this.state = {
       loading: true,
@@ -335,20 +344,40 @@ class App extends mixin(EventEmitter, Component) {
     if (this.WebVR.VRSupported) {
       this.renderer.vr.enabled = true
     }
-    this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
+
+    if (this.renderer.vr.enabled) {
+      this.renderer.vr.enabled = false
+    }
+
+    if (this.vrActive && this.controllerCam) {
+      this.renderer.render(this.pickingScene, this.controllerCam, this.pickingTexture)
+    } else {
+      this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
+    }
 
     let pixelBuffer = new Uint8Array(4)
 
     let canvasOffset = this.renderer.domElement.getBoundingClientRect()
 
-    this.renderer.readRenderTargetPixels(
-      this.pickingTexture,
-      this.mousePos.x - canvasOffset.left,
-      this.pickingTexture.height - (this.mousePos.y - canvasOffset.top),
-      1,
-      1,
-      pixelBuffer
-    )
+    if (this.vrActive) {
+      this.renderer.readRenderTargetPixels(
+        this.pickingTexture,
+        this.pickingTexture.width / 2,
+        this.pickingTexture.height / 2,
+        1,
+        1,
+        pixelBuffer
+      )
+    } else {
+      this.renderer.readRenderTargetPixels(
+        this.pickingTexture,
+        this.mousePos.x - canvasOffset.left,
+        this.pickingTexture.height - (this.mousePos.y - canvasOffset.top),
+        1,
+        1,
+        pixelBuffer
+      )
+    }
 
     let id = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2] - 1)
 
@@ -1877,27 +1906,6 @@ class App extends mixin(EventEmitter, Component) {
     this.getClosestBlock()
 
     if (this.blockReady) {
-      // if (this.textMesh) {
-      //   // if (this.vrActive) {
-      //   //   let VRCam = this.renderer.vr.getCamera(this.cameraMain)
-      //   //   VRCam.getWorldDirection(this.camForwardVector)
-      //   // } else {
-      //   //   this.camera.getWorldDirection(this.camForwardVector)
-      //   // }
-
-      //   // this.camForwardVector.multiplyScalar(1.01)
-
-      //   let textMeshPos = new THREE.Vector3(
-      //     this.camera.position.x,
-      //     this.camera.position.y,
-      //     this.camera.position.z
-      //   ).add(this.camForwardVector)
-
-      //   this.textMesh.position.x = textMeshPos.x
-      //   this.textMesh.position.y = textMeshPos.y
-      //   this.textMesh.position.z = textMeshPos.z
-      // }
-
       if (this.audioManager.analyser && window.oscilloscope) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
@@ -1972,6 +1980,10 @@ class App extends mixin(EventEmitter, Component) {
         // this.composer.render()
       }
     }
+
+    if (this.vrActive && this.controllerCam) {
+      this.controllerCamRenderer.render(this.scene, this.controllerCam)
+    }
   }
 
   startIntro () {
@@ -2014,8 +2026,8 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         // this.switchControls('map')
 
-        this.goToLatestBlock()
-        // this.goToRandomBlock()
+        // this.goToLatestBlock()
+        this.goToRandomBlock()
       }
     })
 
@@ -2359,6 +2371,44 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.background = this.cubeMap
   }
 
+  setupGamepads () {
+    this.camera.remove(this.controller1)
+    this.camera.remove(this.controller2)
+
+    this.controller1 = this.renderer.vr.getController(0)
+    this.controller1.userData.id = 0
+    this.camera.add(this.controller1)
+
+    this.controller2 = this.renderer.vr.getController(1)
+    this.controller2.userData.id = 1
+    this.camera.add(this.controller2)
+
+    this.OBJLoader.setPath('assets/models/obj/vive-controller/')
+    this.OBJLoader.load('vr_controller_vive_1_5.obj', function (object) {
+      this.TextureLoader.setPath('assets/models/obj/vive-controller/')
+      let controller = object.children[0]
+      controller.material.map = this.TextureLoader.load('onepointfive_texture.png')
+      controller.material.specularMap = this.TextureLoader.load('onepointfive_spec.png')
+
+      this.controller1.add(controller.clone())
+      this.controllerCam = new THREE.PerspectiveCamera(
+        this.config.camera.fov,
+        window.innerWidth / window.innerHeight,
+        1.0,
+        5000000
+      )
+
+      // this.controllerCam.rotateX(-(Math.PI / 2) )
+      this.controllerCam.updateProjectionMatrix()
+      this.controllerCam.updateMatrix()
+      this.controllerCam.updateMatrixWorld()
+
+      this.controller1.add(this.controllerCam)
+
+      this.controller2.add(controller.clone())
+    }.bind(this))
+  }
+
   /**
    * Set up camera with defaults
    */
@@ -2383,8 +2433,13 @@ class App extends mixin(EventEmitter, Component) {
     if (vrActive) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
+
+      this.setupGamepads()
     } else {
       this.camera = this.cameraMain
+
+      this.camera.remove(this.controller1)
+      this.camera.remove(this.controller2)
     }
 
     this.scene.add(this.camera)
@@ -2474,6 +2529,13 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer.setPixelRatio(window.devicePixelRatio)
 
     this.WebVR.setRenderer(this.renderer)
+
+    this.controllerCamRenderer = new THREE.WebGLRenderer({
+      antialias: false,
+      logarithmicDepthBuffer: true
+    })
+
+
   }
 
   /**
@@ -2494,6 +2556,11 @@ class App extends mixin(EventEmitter, Component) {
     this.cameraMain.aspect = this.width / this.height
     this.cameraMain.updateProjectionMatrix()
     this.renderer.setSize(this.width, this.height, false)
+
+    if (this.controllerCam) {
+      this.controllerCam.aspect = this.width / this.height
+      this.controllerCam.updateProjectionMatrix()
+    }
 
     this.composer.setSize(this.width, this.height)
 

@@ -76,7 +76,7 @@ export default class WebVR {
       this.device.requestSession({
         immersive: true,
         exclusive: true
-      }).then(this.onSessionStarted.bind(this))
+      }).then(this.onXRSessionStarted.bind(this))
     } else {
       if (this.currentSession) {
         this.currentSession.end()
@@ -84,7 +84,7 @@ export default class WebVR {
     }
   }
 
-  onSessionStarted (session) {
+  onXRSessionStarted (session) {
     session.addEventListener('end', this.onSessionEnded.bind(this))
     this.renderer.vr.setSession(session)
     this.currentSession = session
