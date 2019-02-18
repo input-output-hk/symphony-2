@@ -18,6 +18,7 @@ import * as dat from 'dat.gui'
 import TWEEN from 'tween.js'
 import WebVR from './libs/WebVR'
 import OBJLoader from './libs/OBJLoader'
+import ViveController from './libs/ViveController'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -121,6 +122,8 @@ class App extends mixin(EventEmitter, Component) {
     this.controller1 = null
     this.controllerCam = null
     this.controller2 = null
+    this.ViveController1 = new ViveController(0)
+    this.ViveController2 = new ViveController(1)
 
     this.OBJLoader = new OBJLoader()
     this.TextureLoader = new THREE.TextureLoader()
@@ -421,7 +424,7 @@ class App extends mixin(EventEmitter, Component) {
       mousePos: this.mousePos
     })
 
-    this.audioManager.playNote(this.closestBlock.blockData, index + 1)
+    // this.audioManager.playNote(this.closestBlock.blockData, index + 1)
 
     // get tx data
     let txData = await window.fetch('https://blockchain.info/rawtx/' + TXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
@@ -472,15 +475,15 @@ class App extends mixin(EventEmitter, Component) {
       this.selectedLight.position.x = selectedPosX
       this.selectedLight.position.z = selectedPosZ
 
-      let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
-      let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
-
-      this.prepareCamAnim(
-        to,
-        toTarget
-      )
-
       if (animateCam) {
+        let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
+        let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
+
+        this.prepareCamAnim(
+          to,
+          toTarget
+        )
+
         let that = this
         new TWEEN.Tween(this.camera.position)
           .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
@@ -1960,6 +1963,9 @@ class App extends mixin(EventEmitter, Component) {
       this.treeGenerator.update(window.performance.now())
     }
 
+    this.ViveController1.update()
+    this.ViveController2.update()
+
     // this.setState({
     //   posX: this.camera.position.x.toFixed(3),
     //   posY: this.camera.position.y.toFixed(3),
@@ -2370,7 +2376,9 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.background = this.cubeMap
   }
 
-  onVRControllerSelectStart (event) {
+  onVRControllerSelect (ev) {
+ 
+
     // clicking on the same tx twice deselects
     if (this.lastSelectedID === this.lastHoveredID) {
       this.deselectTx()
@@ -2388,14 +2396,61 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setupGamepads () {
+    this.ViveController1.addEventListener('thumbpaddown', function (e) {
+      // left dpad
+      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+        if (this.closestBlock) {
+          this.toggleAutoPilotDirection('backward')
+        }
+      }
+
+      // right dpad
+      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+        if (this.closestBlock) {
+          this.toggleAutoPilotDirection('forward')
+        }
+      }
+
+      // top dpad
+      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.toggleTopView()
+      }
+
+      // bottom dpad
+      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.toggleUndersideView()
+      }
+    }.bind(this))
+
+    this.ViveController2.addEventListener('thumbpaddown', function (e) {
+      // left dpad
+      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+      }
+
+      // right dpad
+      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+      }
+
+      // top dpad
+      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.goToLatestBlock()
+      }
+
+      // bottom dpad
+      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.goToRandomBlock()
+      }
+    }.bind(this))
+
     this.camera.remove(this.controller1)
     this.camera.remove(this.controller2)
 
     this.controller1 = this.renderer.vr.getController(0)
     this.controller1.userData.id = 0
     this.camera.add(this.controller1)
-    this.controller1.addEventListener('selectstart', this.onVRControllerSelectStart.bind(this))
-    this.controller1.addEventListener('selectend', this.onVRControllerSelectEnd.bind(this))
+    this.controller1.addEventListener('select', this.onVRControllerSelect.bind(this))
 
     this.controller2 = this.renderer.vr.getController(1)
     this.controller2.userData.id = 1
