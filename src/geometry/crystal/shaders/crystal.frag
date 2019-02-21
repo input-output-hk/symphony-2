@@ -16,6 +16,7 @@ varying float vIsSelected;
 varying float vIsHovered;
 varying vec3 vBarycentric;
 varying vec3 vTransformed;
+varying vec3 vOffset;
 varying float vScale;
 varying float vTopVertex;
 varying float vBottomVertex;
@@ -231,11 +232,11 @@ void main() {
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
 	// float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
-	float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 8.0), uTime * 0.00025)) * 0.1;
+	float noiseAmount = noise(vec4(vOffset.xyz / (vScale * 8.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += noiseAmount * 0.5;
 
-	vec2 st = (vec2((vUv.x * vScale * 5.0), vTransformed.y) * 0.5);
+	vec2 st = (vec2((vUv.x * vScale * 5.0), vOffset.y) * 0.5);
 	vec2 ipos = floor(st);  // integer
 	vec2 fpos = fract(st);  // fraction
 

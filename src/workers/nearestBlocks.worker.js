@@ -75,9 +75,7 @@ self.addEventListener('message', async function (e) {
         .orderBy('height', 'asc')
         .limit(9)
 
-      console.time('nearest')
       let querySnapshot = await blockData.get()
-      console.timeEnd('nearest')
 
       let dataArr = []
       querySnapshot.forEach(async snapshot => {

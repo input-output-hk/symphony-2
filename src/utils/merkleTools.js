@@ -74,7 +74,7 @@ export default class MerkleTools {
     }
   }
 
-  drawMerkleCanvas (canvas, closestBlock, nTX, canvasSize) {
+  drawMerkleCanvas (canvas, closestBlock, nTX, canvasSize, closestBlockOffsets) {
     let context = canvas.getContext('2d')
 
     const merkleData = this.getMerklePositions(nTX)
@@ -83,7 +83,7 @@ export default class MerkleTools {
     let canvasOffset = canvasSize * 0.5
     let scaleFactor = 2.0075
 
-    let offsetStack = Array.from(closestBlock.offsets)
+    let offsetStack = Array.from(closestBlockOffsets)
 
     for (let index = 0; index < nTX * 2; index += 2) {
       const merkleX = merklePositions[index + 0]

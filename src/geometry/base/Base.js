@@ -42,9 +42,10 @@ export default class Base {
     offsetsAttr,
     quaternionsAttr,
     scalesAttr,
-    txValuesAttr,
+    txValuesArray,
     spentRatiosAttr,
-    txTimesAttr
+    txTimesAttr,
+    offsetsArray2D
   ) {
     let blockPosition = blockGeoData.blockData.pos
 
@@ -54,6 +55,11 @@ export default class Base {
 
     for (let i = 0; i < blockTxCount; i++) {
       const txIndexOffset = this.txCount + i
+
+      if (offsetsArray2D) {
+        offsetsArray2D[txIndexOffset * 2 + 0] = blockGeoData.offsets[i * 2 + 0]
+        offsetsArray2D[txIndexOffset * 2 + 1] = blockGeoData.offsets[i * 2 + 1]
+      }
 
       let x = blockGeoData.offsets[i * 2 + 0]
       let y = 0
@@ -74,6 +80,7 @@ export default class Base {
       quaternionsAttr.array[txIndexOffset * 4 + 1] = object.quaternion.y
       quaternionsAttr.array[txIndexOffset * 4 + 2] = object.quaternion.z
       quaternionsAttr.array[txIndexOffset * 4 + 3] = object.quaternion.w
+      quaternionsAttr.needsUpdate = true
 
       let scale = blockGeoData.scales[i]
       if (scale > 20) {
@@ -84,6 +91,11 @@ export default class Base {
         txIndexOffset,
         scale
       )
+      scalesAttr.needsUpdate = true
+
+      if (txValuesArray) {
+        txValuesArray[txIndexOffset] = blockGeoData.blockData.txValues[i]
+      }
 
       let txValue = blockGeoData.blockData.txValues[i] * 0.00000001
       if (txValue > 2000) {
@@ -93,36 +105,30 @@ export default class Base {
         txValue = 0.5
       }
 
-      txValuesAttr.setX(
-        txIndexOffset,
-        txValue
-      )
-
       offsetsAttr.setY(
         txIndexOffset,
         txValue
       )
 
-      let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
+      offsetsAttr.needsUpdate = true
 
-      txTimesAttr.setX(
-        txIndexOffset,
-        txTime
-      )
+      if (txTimesAttr) {
+        let txTime = map(i, 0, blockTxCount, 0, this.config.audio.soundDuration - 9)
+        txTimesAttr.setX(
+          txIndexOffset,
+          txTime
+        )
+        txTimesAttr.needsUpdate = true
+      }
 
-      let spentRatio = blockGeoData.blockData.txSpentRatios[i]
-
-      spentRatiosAttr.setX(
-        txIndexOffset,
-        spentRatio
-      )
+      if (spentRatiosAttr) {
+        let spentRatio = blockGeoData.blockData.txSpentRatios[i]
+        spentRatiosAttr.setX(
+          txIndexOffset,
+          spentRatio
+        )
+        spentRatiosAttr.needsUpdate = true
+      }
     }
-
-    spentRatiosAttr.needsUpdate = true
-    txValuesAttr.needsUpdate = true
-    scalesAttr.needsUpdate = true
-    offsetsAttr.needsUpdate = true
-    quaternionsAttr.needsUpdate = true
-    txTimesAttr.needsUpdate = true
   }
 }

@@ -27,7 +27,8 @@ const Config = {
   audio: {
     sampleRate: 22050,
     soundDuration: 30, // (seconds)
-    noteDuration: 5 // (seconds)
+    noteDuration: 10, // (seconds)
+    maxSineBankLoops: 1000
   },
   blockchainInfo: {
     apiCode: '0a52b97c-0d8e-4033-a87d-abfda8bfe940'

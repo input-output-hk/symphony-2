@@ -20,11 +20,12 @@ self.addEventListener('message', async function (e) {
 
       const nTX = data.nTX
       const closestBlock = data.closestBlock
+      const closestBlockOffsets = data.closestBlockOffsets
 
       let canvasSize = 1024
       let canvas = new OffscreenCanvas(canvasSize, canvasSize)
 
-      merkleTools.drawMerkleCanvas(canvas, closestBlock, nTX, canvasSize)
+      merkleTools.drawMerkleCanvas(canvas, closestBlock, nTX, canvasSize, closestBlockOffsets)
 
       let blob = null
       if (typeof canvas.convertToBlob !== 'undefined') {

@@ -15,7 +15,7 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    this.instanceTotal = 10 * 4000
+    this.instanceTotal = 10 * 3000
     this.txCount = 0
     this.txIndexOffsets = {}
 
@@ -32,13 +32,13 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 0.95,
+      opacity: 1.0,
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 1.0,
       roughness: 0.2,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.01, 0.01),
@@ -51,7 +51,8 @@ export default class Crystal extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    // this.offsetsArray.fill(9999999, 0, this.instanceTotal * 3)
+    this.offsetsArray2D = new Float32Array(this.instanceTotal * 2)
+    this.txValuesArray = new Float32Array(this.instanceTotal)
 
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
@@ -73,7 +74,7 @@ export default class Crystal extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
 
     // attributes
-    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
+    // let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
@@ -94,13 +95,14 @@ export default class Crystal extends Base {
       offsets,
       quaternions,
       scales,
-      txValues,
+      this.txValuesArray,
       spentRatios,
-      txTimes
+      txTimes,
+      this.offsetsArray2D
     )
 
     this.geometry.addAttribute('offset', offsets)
-    this.geometry.addAttribute('txValue', txValues)
+    // this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('quaternion', quaternions)
@@ -317,9 +319,10 @@ export default class Crystal extends Base {
       this.geometry.attributes.offset,
       this.geometry.attributes.quaternion,
       this.geometry.attributes.scale,
-      this.geometry.attributes.txValue,
+      this.txValuesArray,
       this.geometry.attributes.spentRatio,
-      this.geometry.attributes.txTime
+      this.geometry.attributes.txTime,
+      this.offsetsArray2D
     )
 
     this.txCount += blockGeoData.blockData.n_tx

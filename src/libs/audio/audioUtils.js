@@ -13,6 +13,7 @@ export default class Audio extends EventEmitter {
     this.sampleRate = args.sampleRate
     this.soundDuration = args.soundDuration
     this.noteDuration = args.noteDuration
+    this.config = args.config
 
     this.customSmoothstep = `highp float custom_smoothstep(float edge0, float edge1, float x) {
       return smoothstep(edge0, edge1, x);
@@ -25,7 +26,7 @@ export default class Audio extends EventEmitter {
          }`
   }
 
-  generateBlockAudio (blockData, modes, notes) {
+  generateBlockAudio (blockData, modes, notes, TXValues, spentRatios) {
     // compute number from hash
     let total = 0
     for (let i = 0; i < blockData.hash.length; i++) {
@@ -43,10 +44,10 @@ export default class Audio extends EventEmitter {
 
     if (blockData.n_tx === 1) {
       minOutput = 0
-      maxOutput = blockData.txValues[0] * 2
+      maxOutput = TXValues[0] * 2
     } else {
       for (let index = 0; index < blockData.n_tx; index++) {
-        const txValue = blockData.txValues[index]
+        const txValue = TXValues[index]
         minOutput = Math.min(txValue, minOutput)
         maxOutput = Math.max(txValue, maxOutput)
       }
@@ -79,12 +80,12 @@ export default class Audio extends EventEmitter {
     let spent = []
 
     let txTimes = []
-    const txCount = blockData.n_tx > 500 ? 500 : blockData.n_tx
+    const txCount = blockData.n_tx > this.config.audio.maxSineBankLoops ? this.config.audio.maxSineBankLoops : blockData.n_tx
 
     for (let i = 0; i < txCount; i++) {
-      const txValue = blockData.txValues[i]
+      const txValue = TXValues[i]
 
-      const txSpentRatio = blockData.txSpentRatios[i]
+      const txSpentRatio = spentRatios[i]
 
       let txTime = map(i, 0, txCount, 0, this.soundDuration - 9)
       txTimes.push(txTime)
@@ -117,9 +118,7 @@ export default class Audio extends EventEmitter {
     }
   }
 
-  fillBuffer (sineArray, vol = 1.0, soundDuration = this.soundDuration) {
-    let lArray = new Float32Array(this.sampleRate * soundDuration)
-    let rArray = new Float32Array(this.sampleRate * soundDuration)
+  fillBuffer (sineArray, vol = 1.0, lArray, rArray) {
     let min = Number.MAX_SAFE_INTEGER
     let max = 0
     for (let index = 0; index < sineArray.length; index++) {
@@ -135,13 +134,22 @@ export default class Audio extends EventEmitter {
       }
     }
 
-    return {
-      lArray: lArray,
-      rArray: rArray
-    }
+    // return {
+    //   lArray: lArray,
+    //   rArray: rArray
+    // }
   }
 
-  sineBank (frequencies, times, spent, health, length, sampleRate, timeOffset, chunkIndex) {
+  sineBank (
+    frequencies,
+    times,
+    spent,
+    health,
+    length,
+    sampleRate,
+    timeOffset,
+    chunkIndex
+  ) {
     let sum = 0
     let twoPI = 6.28318530718
     let currentTime = (this.thread.x / sampleRate) + timeOffset
@@ -164,7 +172,7 @@ export default class Audio extends EventEmitter {
         let spent5 = 0.2 + custom_step(5.0, spentRatio) * 0.7
         let spent6 = 0.2 + custom_step(6.0, spentRatio) * 0.6
         let spent7 = 0.2 + custom_step(7.0, spentRatio) * 0.5
-        let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
+        // let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
 
         let wave = Math.sin(currentAngle) * spent1 +
         Math.sin(currentAngle * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
@@ -172,8 +180,9 @@ export default class Audio extends EventEmitter {
         Math.sin(currentAngle * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
         Math.sin(currentAngle * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
         Math.sin(currentAngle * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
-        Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
-        Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
+        Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7
+
+        // Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
         wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
 
@@ -206,7 +215,7 @@ export default class Audio extends EventEmitter {
     let spent5 = 0.2 + custom_step(5.0, spentRatio) * 0.7
     let spent6 = 0.2 + custom_step(6.0, spentRatio) * 0.6
     let spent7 = 0.2 + custom_step(7.0, spentRatio) * 0.5
-    let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
+    // let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
 
     let wave = Math.sin(currentAngle) * spent1 +
     Math.sin(currentAngle * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
@@ -214,8 +223,8 @@ export default class Audio extends EventEmitter {
     Math.sin(currentAngle * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
     Math.sin(currentAngle * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
     Math.sin(currentAngle * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
-    Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
-    Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
+    Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7
+    // Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
     wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 20.0)), 0.23)
 

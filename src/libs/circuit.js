@@ -26,7 +26,7 @@ export default class Circuit extends EventEmitter {
     this.canvas = null
   }
 
-  async draw (nTX, closestBlock) {
+  async draw (nTX, closestBlock, closestBlockOffsets) {
     return new Promise((resolve, reject) => {
       if (!this.offscreenMode) {
         if (this.canvas && this.canvas.parentNode) {
@@ -53,12 +53,12 @@ export default class Circuit extends EventEmitter {
             if (typeof data.complete !== 'undefined' && data.complete === true) {
               existingCanvasRef.getDownloadURL().then(function (url) {
                 let texture = new THREE.TextureLoader().load(url)
+                circuitWorker.terminate()
                 resolve(texture)
               })
-              circuitWorker.terminate()
             }
           }
-          circuitWorker.postMessage({ cmd: 'get', nTX: nTX, closestBlock: closestBlock, config: this.config })
+          circuitWorker.postMessage({ cmd: 'get', nTX: nTX, closestBlock: closestBlock, config: this.config, closestBlockOffsets: closestBlockOffsets })
         } else {
           this.canvas = document.createElement('canvas')
           this.canvas.setAttribute('id', 'sketchboard')
@@ -68,7 +68,7 @@ export default class Circuit extends EventEmitter {
           this.canvas.width = canvasSize
           this.canvas.height = canvasSize
 
-          this.merkleTools.drawMerkleCanvas(this.canvas, closestBlock, nTX, canvasSize)
+          this.merkleTools.drawMerkleCanvas(this.canvas, closestBlock, nTX, canvasSize, closestBlockOffsets)
 
           this.canvas.toBlob((blob) => {
             let canvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
@@ -83,7 +83,7 @@ export default class Circuit extends EventEmitter {
             }
           })
         }
-      })
+      }.bind(this))
     })
   }
 }

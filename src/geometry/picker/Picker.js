@@ -127,8 +127,7 @@ export default class Picker extends Base {
   async updateGeometry (
     blockGeoData,
     closestBlockOffsets,
-    closestBlockScales,
-    closestBlockTXValues
+    closestBlockScales
   ) {
     let blockPosition = blockGeoData.blockData.pos
 
@@ -154,7 +153,6 @@ export default class Picker extends Base {
       let y = closestBlockOffsets[i * 3 + 1]
       let z = closestBlockOffsets[i * 3 + 2]
 
-
       this.geometry.attributes.offset.array[i * 3 + 0] = x
       this.geometry.attributes.offset.array[i * 3 + 1] = y
       this.geometry.attributes.offset.array[i * 3 + 2] = z
@@ -176,14 +174,6 @@ export default class Picker extends Base {
         i,
         scale
       )
-
-      let txValue = closestBlockTXValues[i] * 0.00000001
-      if (txValue > 2000) {
-        txValue = 2000
-      }
-      if (txValue < 0.5) {
-        txValue = 0.5
-      }
 
       if (typeof blockGeoData.blockData.txIndexes !== 'undefined') {
         this.txMap[i] = blockGeoData.blockData.txIndexes[i]

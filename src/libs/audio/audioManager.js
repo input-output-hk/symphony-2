@@ -12,11 +12,13 @@ export default class Audio extends EventEmitter {
     this.sampleRate = args.sampleRate
     this.soundDuration = args.soundDuration
     this.noteDuration = args.noteDuration
+    this.config = args.config
 
     this.audioUtils = new AudioUtils({
       sampleRate: this.sampleRate,
       soundDuration: this.soundDuration,
-      noteDuration: this.noteDuration
+      noteDuration: this.noteDuration,
+      config: this.config
     })
 
     this.gpu = new GPU()
@@ -345,16 +347,16 @@ export default class Audio extends EventEmitter {
       //   'C'
       // ]
     }
-    this.buffers = []
-    this.noteBuffers = []
-    this.gainNodes = []
-    this.audioSources = []
-    this.noteSources = []
+    this.buffers = {}
+    this.noteBuffers = {}
+    this.gainNodes = {}
+    this.audioSources = {}
+    this.noteSources = {}
     this.loops = {}
 
     this.blockAudioData = {}
 
-    this.times = []
+    // this.times = []
 
     // use OffscreenCanvas if available
     if (typeof window.OffscreenCanvas !== 'undefined') {
@@ -363,12 +365,8 @@ export default class Audio extends EventEmitter {
   }
 
   startAudio (blockData, arrayBuffers) {
-    let lArray = this.buffers[blockData.height].getChannelData(0)
-    let rArray = this.buffers[blockData.height].getChannelData(1)
-    for (let index = 0; index < arrayBuffers.lArray.length; index++) {
-      lArray[index] = arrayBuffers.lArray[index]
-      rArray[index] = arrayBuffers.rArray[index]
-    }
+    this.buffers[blockData.height].copyToChannel(arrayBuffers.lArray, 0)
+    this.buffers[blockData.height].copyToChannel(arrayBuffers.rArray, 1)
 
     this.audioSources[blockData.height] = this.audioContext.createBufferSource()
     this.audioSources[blockData.height].buffer = this.buffers[blockData.height]
@@ -393,7 +391,7 @@ export default class Audio extends EventEmitter {
     this.audioSources[blockData.height].start()
   }
 
-  generate (blockData) {
+  generate (blockData, TXValues, spentRatios) {
     this.buffers[blockData.height] = this.audioContext.createBuffer(2, this.sampleRate * this.soundDuration, this.sampleRate)
 
     if (this.offscreenMode) {
@@ -407,22 +405,34 @@ export default class Audio extends EventEmitter {
         }
       }
 
-      audioWorker.postMessage({
+      let sendObj = {
         cmd: 'get',
         blockData: blockData,
+        config: this.config,
         modes: this.modes,
         notes: this.notes,
         sampleRate: this.sampleRate,
-        soundDuration: this.soundDuration
-      })
+        soundDuration: this.soundDuration,
+        TXValues: TXValues,
+        spentRatios: spentRatios,
+        lArray: new Float32Array(this.sampleRate * this.soundDuration),
+        rArray: new Float32Array(this.sampleRate * this.soundDuration)
+      }
+
+      audioWorker.postMessage(sendObj, [
+        sendObj.TXValues.buffer,
+        sendObj.spentRatios.buffer,
+        sendObj.lArray.buffer,
+        sendObj.rArray.buffer
+      ])
     } else {
-      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: 500}).setOutput([this.sampleRate * this.soundDuration])
+      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: this.config.audio.maxSineBankLoops}).setOutput([this.sampleRate * this.soundDuration])
 
       sineBank.addNativeFunction('custom_smoothstep', this.audioUtils.customSmoothstep)
       sineBank.addNativeFunction('custom_step', this.audioUtils.customStep)
       sineBank.addNativeFunction('custom_random', this.audioUtils.customRandom)
 
-      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.modes, this.notes)
+      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.modes, this.notes, TXValues, spentRatios)
 
       console.time('sineBank')
       let sineArray = sineBank(blockAudio.frequencies, blockAudio.txTimes, blockAudio.spent, blockAudio.health, blockAudio.frequencies.length, this.sampleRate)
@@ -443,9 +453,9 @@ export default class Audio extends EventEmitter {
       const noteWorker = new NoteWorker()
       noteWorker.onmessage = async ({ data }) => {
         if (typeof data.lArray !== 'undefined') {
+          noteWorker.terminate()
           return this.startNote(blockData, data)
         }
-        noteWorker.terminate()
       }
 
       noteWorker.postMessage({
@@ -462,8 +472,8 @@ export default class Audio extends EventEmitter {
   stopNotes () {
     this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 3)
 
-    this.noteSources.forEach((source) => {
-      source.stop()
+    Object.keys(this.noteSources).forEach((i) => {
+      this.noteSources[i].stop()
     })
 
     this.noteSources = []

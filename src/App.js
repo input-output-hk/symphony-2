@@ -164,7 +164,8 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager = new AudioManager({
       sampleRate: this.config.audio.sampleRate,
       soundDuration: this.config.audio.soundDuration,
-      noteDuration: this.config.audio.noteDuration
+      noteDuration: this.config.audio.noteDuration,
+      config: this.config
     })
 
     this.crystalGenerator = new Crystal({
@@ -262,15 +263,15 @@ class App extends mixin(EventEmitter, Component) {
     this.particles.renderOrder = -1
 
     if (this.camera.position.y > 0) {
-      // if (this.centerTree) {
-      //   this.centerTree.material.depthWrite = false
-      // }
-      // if (this.lTree) {
-      //   this.lTree.material.depthWrite = true
-      // }
-      // if (this.rTree) {
-      //   this.rTree.material.depthWrite = true
-      // }
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = false
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
 
       this.occlusion.renderOrder = 0
 
@@ -288,15 +289,15 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideL.renderOrder = 2
       this.undersideR.renderOrder = 2
     } else {
-      // if (this.centerTree) {
-      //   this.centerTree.material.depthWrite = true
-      // }
-      // if (this.lTree) {
-      //   this.lTree.material.depthWrite = true
-      // }
-      // if (this.rTree) {
-      //   this.rTree.material.depthWrite = true
-      // }
+      if (this.centerTree) {
+        this.centerTree.material.depthWrite = true
+      }
+      if (this.lTree) {
+        this.lTree.material.depthWrite = true
+      }
+      if (this.rTree) {
+        this.rTree.material.depthWrite = true
+      }
 
       this.occlusion.renderOrder = 10
 
@@ -1939,15 +1940,15 @@ class App extends mixin(EventEmitter, Component) {
       this.updatePicker()
     }
 
-    // this.getClosestBlock()
+    this.getClosestBlock()
 
     if (this.blockReady) {
       if (this.audioManager.analyser && window.oscilloscope) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
 
-      if (this.frame % 120 === 0) {
-        // this.loadNearestBlocks()
+      if (this.frame % 500 === 0) {
+        this.loadNearestBlocks()
       }
 
       this.setRenderOrder()
@@ -2061,8 +2062,8 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         // this.switchControls('map')
 
-        // this.goToLatestBlock()
-        this.goToRandomBlock()
+        this.goToLatestBlock()
+        // this.goToRandomBlock()
       }
     })
 
@@ -2163,10 +2164,10 @@ class App extends mixin(EventEmitter, Component) {
       }
     }.bind(this))
 
-    setInterval(() => {
-      this.loadNearestBlocks()
-      this.getClosestBlock()
-    }, 1000)
+    // setInterval(() => {
+    //   this.loadNearestBlocks()
+    //   this.getClosestBlock()
+    // }, 1000)
   }
 
   sendWsMessage (message) {
@@ -2210,6 +2211,7 @@ class App extends mixin(EventEmitter, Component) {
     )
 
     this.closestBlockOffsets = new Float32Array(this.closestBlock.blockData.n_tx * 3)
+    this.closestBlockOffsets2D = new Float32Array(this.closestBlock.blockData.n_tx * 2)
     this.closestBlockScales = new Float32Array(this.closestBlock.blockData.n_tx)
     this.closestBlockTXValues = new Float32Array(this.closestBlock.blockData.n_tx)
     this.closestBlockSpentRatios = new Float32Array(this.closestBlock.blockData.n_tx)
@@ -2218,10 +2220,13 @@ class App extends mixin(EventEmitter, Component) {
       this.closestBlockOffsets[index * 3 + 0] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 0)]
       this.closestBlockOffsets[index * 3 + 1] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 1)]
       this.closestBlockOffsets[index * 3 + 2] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 2)]
+
+      this.closestBlockOffsets2D[index * 2 + 0] = this.crystalGenerator.offsetsArray2D[(txIndexOffset * 2) + (index * 2 + 0)]
+      this.closestBlockOffsets2D[index * 2 + 1] = this.crystalGenerator.offsetsArray2D[(txIndexOffset * 2) + (index * 2 + 1)]
     }
 
     for (let index = 0; index < this.closestBlock.blockData.n_tx; index++) {
-      this.closestBlockTXValues[index] = this.crystal.geometry.attributes.txValue.array[txIndexOffset + index]
+      this.closestBlockTXValues[index] = this.crystalGenerator.txValuesArray[txIndexOffset + index]
       this.closestBlockScales[index] = this.crystal.geometry.attributes.scale.array[txIndexOffset + index]
       this.closestBlockSpentRatios[index] = this.crystal.geometry.attributes.spentRatio.array[txIndexOffset + index]
     }
@@ -2229,8 +2234,7 @@ class App extends mixin(EventEmitter, Component) {
     this.pickerGenerator.updateGeometry(
       this.closestBlock,
       this.closestBlockOffsets,
-      this.closestBlockScales,
-      this.closestBlockTXValues
+      this.closestBlockScales
     )
 
     this.boundingBoxObj.rotation.x = 0
@@ -2287,7 +2291,9 @@ class App extends mixin(EventEmitter, Component) {
     this.updateClosestTrees()
 
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      // this.audioManager.generate(this.closestBlock.blockData)
+      setTimeout(() => {
+        this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
+      }, 500)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
@@ -2300,7 +2306,7 @@ class App extends mixin(EventEmitter, Component) {
     let nextBlock = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
 
     const nTX1 = this.closestBlock.blockData.n_tx
-    // undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
+    undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock, this.closestBlockOffsets2D)
 
     if (typeof prevBlock !== 'undefined') {
       if (typeof this.audioManager.buffers[prevBlock.blockData.height] === 'undefined') {

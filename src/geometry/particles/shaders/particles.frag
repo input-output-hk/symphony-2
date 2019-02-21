@@ -27,11 +27,11 @@ void main() {
 	#include <alphatest_fragment>
 
 	// round particles
-	// vec2 uv = (  vec3( gl_PointCoord.x, 1.0 - gl_PointCoord.y, 1 ) ).xy;
-	// vec2 toCenter = (uv - 0.5) * 2.0;
-	// if (length(toCenter) > 1.0) {
-	// 	discard;
-	// }
+	vec2 uv = (  vec3( gl_PointCoord.x, 1.0 - gl_PointCoord.y, 1 ) ).xy;
+	vec2 toCenter = (uv - 0.5) * 2.0;
+	if (length(toCenter) > 1.0) {
+		discard;
+	}
 
 	outgoingLight = vec3(112./255., 158./255., 236./255.);
 	diffuseColor.a = (vLife / uParticleLifeMax);

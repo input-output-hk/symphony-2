@@ -7,10 +7,8 @@ uniform vec2 uOriginOffset;
 
 attribute vec3 offset;
 attribute float scale;
-attribute float spentRatio;
-attribute float txValue;
 attribute vec4 quaternion;
-attribute float txTime;
+// attribute float txTime;
 attribute float blockStartTime;
 attribute float blockLoadTime;
 

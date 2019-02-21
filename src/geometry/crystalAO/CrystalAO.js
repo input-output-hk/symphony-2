@@ -14,7 +14,6 @@ export default class CrystalAO extends Base {
 
     this.material = new CrystalAOMaterial({
       flatShading: true,
-      // color: 0xffffff,
       transparent: true,
       side: THREE.DoubleSide,
       map: this.map,
@@ -30,7 +29,6 @@ export default class CrystalAO extends Base {
 
   async init (blockGeoData) {
     this.offsetsArray = new Float32Array(this.instanceTotal * 3)
-    // this.offsetsArray.fill(9999999, 0, this.instanceTotal * 3)
 
     this.scalesArray = new Float32Array(this.instanceTotal)
     this.quatArray = new Float32Array(this.instanceTotal * 4)
@@ -44,9 +42,6 @@ export default class CrystalAO extends Base {
     this.geometry.rotateX(Math.PI / 2)
 
     // attributes
-    let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
-    let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
-    let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
     let scales = new THREE.InstancedBufferAttribute(this.scalesArray, 1)
     let quaternions = new THREE.InstancedBufferAttribute(this.quatArray, 4)
@@ -62,18 +57,12 @@ export default class CrystalAO extends Base {
       blockGeoData,
       offsets,
       quaternions,
-      scales,
-      txValues,
-      spentRatios,
-      txTimes
+      scales
     )
 
     this.geometry.addAttribute('offset', offsets)
-    this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('scale', scales)
-    this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('quaternion', quaternions)
-    this.geometry.addAttribute('txTime', txTimes)
     this.geometry.addAttribute('blockStartTime', blockStartTimes)
     this.geometry.addAttribute('blockLoadTime', blockLoadTimes)
 
@@ -130,10 +119,7 @@ export default class CrystalAO extends Base {
       blockGeoData,
       this.geometry.attributes.offset,
       this.geometry.attributes.quaternion,
-      this.geometry.attributes.scale,
-      this.geometry.attributes.txValue,
-      this.geometry.attributes.spentRatio,
-      this.geometry.attributes.txTime
+      this.geometry.attributes.scale
     )
 
     this.txCount += blockGeoData.blockData.n_tx

@@ -30,6 +30,7 @@ varying float vIsHovered;
 varying float vIsSelected;
 varying vec3 vViewPosition;
 varying vec3 vTransformed;
+varying vec3 vOffset;
 varying float vScale;
 varying float vSpentRatio;
 varying vec3 vBarycentric;
@@ -126,15 +127,17 @@ void main() {
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
 	}
 
-	float randVal = random(offset.x);
+	//float randVal = random(offset.x);
+	// float randVal = 1.0;
 
-	transformed.y += (randVal * (offset.y*0.1) ) * centerTopVertex * attackLoad;
-	transformed.y += (randVal * (offset.y*0.01)) * topVertex * attackLoad;
+	// transformed.y += (randVal * (offset.y*0.1) ) * centerTopVertex * attackLoad;
+	// transformed.y += (randVal * (offset.y*0.01)) * topVertex * attackLoad;
 		
-    transformed.xz -= (uOriginOffset.xy);
+	vOffset = transformed;
 
-
+    transformed.xz -= uOriginOffset.xy;
 	vTransformed = transformed;
+	
 	vTopVertex = topVertex;
 	vBottomVertex = 1.0 - topVertex;
 	vScale = scale;
