@@ -391,6 +391,8 @@ const OBJLoader = (function () {
                 parseFloat(data[ 2 ])
               )
               break
+            default:
+              break
           }
         } else if (lineFirstChar === 'f') {
           let lineData = line.substr(1).trim()

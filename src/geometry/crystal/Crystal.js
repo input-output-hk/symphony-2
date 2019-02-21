@@ -11,8 +11,7 @@ import vertexShader from './shaders/crystal.vert'
 export default class Crystal extends Base {
   constructor (args) {
     super(args)
-    this.firebaseDB = args.firebaseDB
-    this.docRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
+
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
@@ -33,13 +32,13 @@ export default class Crystal extends Base {
 
     this.material = new CrystalMaterial({
       flatShading: true,
-      opacity: 1,
+      opacity: 0.95,
       color: 0xffffff,
       emissive: 0x000000,
       metalness: 1.0,
       roughness: 0.2,
       transparent: true,
-      side: THREE.FrontSide,
+      side: THREE.DoubleSide,
       envMap: this.cubeMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.01, 0.01),

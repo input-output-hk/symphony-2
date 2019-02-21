@@ -1,7 +1,8 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-import 'firebase/auth'
+// import 'firebase/auth'
 // import 'firebase/storage'
+import * as ArrayUtils from '../utils/array'
 
 import moment from 'moment'
 
@@ -26,10 +27,10 @@ self.addEventListener('message', async function (e) {
       docRef = firebaseDB.collection('bitcoin_blocks')
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
-      firebase.auth().signInAnonymously().catch(function (error) {
-        console.log(error.code)
-        console.log(error.message)
-      })
+      // firebase.auth().signInAnonymously().catch(function (error) {
+      //   console.log(error.code)
+      //   console.log(error.message)
+      // })
 
       let blockDataHelper = new BlockDataHelper({
         config: data.config
@@ -84,7 +85,7 @@ self.addEventListener('message', async function (e) {
       })
 
       let ii = 0
-      await asyncForEach(dataArr, async (blockDetails) => {
+      await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
         if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 86400000) {
           console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
           blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
@@ -125,7 +126,6 @@ self.addEventListener('message', async function (e) {
         scales6: data.scales6,
         scales7: data.scales7,
         scales8: data.scales8,
-        scales9: data.scales9,
 
         offsets0: data.offsets0,
         offsets1: data.offsets1,
@@ -136,7 +136,6 @@ self.addEventListener('message', async function (e) {
         offsets6: data.offsets6,
         offsets7: data.offsets7,
         offsets8: data.offsets8,
-        offsets9: data.offsets9,
 
         txValues0: data.txValues0,
         txValues1: data.txValues1,
@@ -147,9 +146,9 @@ self.addEventListener('message', async function (e) {
         txValues6: data.txValues6,
         txValues7: data.txValues7,
         txValues8: data.txValues8,
-        txValues9: data.txValues9,
 
         txIndexes0: data.txIndexes0,
+        txIndexes1: data.txIndexes1,
         txIndexes2: data.txIndexes2,
         txIndexes3: data.txIndexes3,
         txIndexes4: data.txIndexes4,
@@ -157,7 +156,6 @@ self.addEventListener('message', async function (e) {
         txIndexes6: data.txIndexes6,
         txIndexes7: data.txIndexes7,
         txIndexes8: data.txIndexes8,
-        txIndexes9: data.txIndexes9,
 
         txSpentRatios0: data.txSpentRatios0,
         txSpentRatios1: data.txSpentRatios1,
@@ -167,8 +165,7 @@ self.addEventListener('message', async function (e) {
         txSpentRatios5: data.txSpentRatios5,
         txSpentRatios6: data.txSpentRatios6,
         txSpentRatios7: data.txSpentRatios7,
-        txSpentRatios8: data.txSpentRatios8,
-        txSpentRatios9: data.txSpentRatios9
+        txSpentRatios8: data.txSpentRatios8
       }
 
       self.postMessage(returnData,
@@ -182,7 +179,6 @@ self.addEventListener('message', async function (e) {
           data.scales6.buffer,
           data.scales7.buffer,
           data.scales8.buffer,
-          data.scales9.buffer,
 
           data.offsets0.buffer,
           data.offsets1.buffer,
@@ -193,7 +189,6 @@ self.addEventListener('message', async function (e) {
           data.offsets6.buffer,
           data.offsets7.buffer,
           data.offsets8.buffer,
-          data.offsets9.buffer,
 
           data.txValues0.buffer,
           data.txValues1.buffer,
@@ -204,7 +199,6 @@ self.addEventListener('message', async function (e) {
           data.txValues6.buffer,
           data.txValues7.buffer,
           data.txValues8.buffer,
-          data.txValues9.buffer,
 
           data.txIndexes0.buffer,
           data.txIndexes1.buffer,
@@ -215,7 +209,6 @@ self.addEventListener('message', async function (e) {
           data.txIndexes6.buffer,
           data.txIndexes7.buffer,
           data.txIndexes8.buffer,
-          data.txIndexes9.buffer,
 
           data.txSpentRatios0.buffer,
           data.txSpentRatios1.buffer,
@@ -225,8 +218,7 @@ self.addEventListener('message', async function (e) {
           data.txSpentRatios5.buffer,
           data.txSpentRatios6.buffer,
           data.txSpentRatios7.buffer,
-          data.txSpentRatios8.buffer,
-          data.txSpentRatios9.buffer
+          data.txSpentRatios8.buffer
         ]
       )
       break
@@ -240,9 +232,3 @@ self.addEventListener('message', async function (e) {
 
   // self.postMessage(e.data)
 }, false)
-
-const asyncForEach = async function (array, callback) {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array)
-  }
-}

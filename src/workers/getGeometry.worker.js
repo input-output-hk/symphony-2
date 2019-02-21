@@ -1,6 +1,6 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-import 'firebase/auth'
+// import 'firebase/auth'
 import 'firebase/storage'
 import SimplexNoise from 'simplex-noise'
 import { map } from '../utils/math'
@@ -28,10 +28,10 @@ self.addEventListener('message', async function (e) {
       const firebaseDB = firebase.firestore()
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 
-      firebase.auth().signInAnonymously().catch(function (error) {
-        console.log(error.code)
-        console.log(error.message)
-      })
+      // firebase.auth().signInAnonymously().catch(function (error) {
+      //   console.log(error.code)
+      //   console.log(error.message)
+      // })
 
       // check for data in cache
       let blockRefGeo = docRefGeo.doc(blockData.hash)

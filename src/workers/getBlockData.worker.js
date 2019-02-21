@@ -1,6 +1,6 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-import 'firebase/auth'
+// import 'firebase/auth'
 // import 'firebase/storage'
 import moment from 'moment'
 
@@ -79,3 +79,21 @@ self.addEventListener('message', async function (e) {
       self.postMessage('Unknown command')
   }
 }, false)
+
+// function find_duplicate_in_array (arra1) {
+//   var object = {}
+//   var result = []
+
+//   arra1.forEach(function (item) {
+//     if (!object[item]) { object[item] = 0 }
+//     object[item] += 1
+//   })
+
+//   for (var prop in object) {
+//     if (object[prop] >= 2) {
+//       result.push(prop)
+//     }
+//   }
+
+//   return result
+// }

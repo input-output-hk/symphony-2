@@ -5,8 +5,8 @@ import * as THREE from 'three'
 import Base from '../base/Base'
 
 // shaders
-import pickFragmentShader from './shaders/pick.frag'
-import pickVertexShader from './shaders/pick.vert'
+import fragmentShader from './shaders/pick.frag'
+import vertexShader from './shaders/pick.vert'
 
 export default class Picker extends Base {
   constructor (args) {
@@ -16,11 +16,9 @@ export default class Picker extends Base {
 
     this.uTime = 0
 
-    this.material = new THREE.ShaderMaterial({
+    this.material = new PickerMaterial({
       depthTest: true,
-      transparent: false,
-      vertexShader: pickVertexShader,
-      fragmentShader: pickFragmentShader
+      transparent: false
     })
 
     this.txMap = []
@@ -126,7 +124,12 @@ export default class Picker extends Base {
     return this.mesh
   }
 
-  async updateGeometry (blockGeoData) {
+  async updateGeometry (
+    blockGeoData,
+    closestBlockOffsets,
+    closestBlockScales,
+    closestBlockTXValues
+  ) {
     let blockPosition = blockGeoData.blockData.pos
 
     let object = new THREE.Object3D()
@@ -147,20 +150,14 @@ export default class Picker extends Base {
       this.geometry.attributes.pickerColor.array[i * 3 + 1] = pickColor.g
       this.geometry.attributes.pickerColor.array[i * 3 + 2] = pickColor.b
 
-      let x = blockGeoData.offsets[i * 2 + 0]
-      let y = 0
-      let z = blockGeoData.offsets[i * 2 + 1]
+      let x = closestBlockOffsets[i * 3 + 0]
+      let y = closestBlockOffsets[i * 3 + 1]
+      let z = closestBlockOffsets[i * 3 + 2]
 
-      let vector = new THREE.Vector3(x, y, z)
 
-      vector.applyQuaternion(object.quaternion)
-
-      vector.x += blockPosition.x
-      vector.z += blockPosition.z
-
-      this.geometry.attributes.offset.array[i * 3 + 0] = vector.x
-      this.geometry.attributes.offset.array[i * 3 + 1] = vector.y
-      this.geometry.attributes.offset.array[i * 3 + 2] = vector.z
+      this.geometry.attributes.offset.array[i * 3 + 0] = x
+      this.geometry.attributes.offset.array[i * 3 + 1] = y
+      this.geometry.attributes.offset.array[i * 3 + 2] = z
 
       this.geometry.attributes.planeOffset.array[i * 2 + 0] = blockPosition.x
       this.geometry.attributes.planeOffset.array[i * 2 + 1] = blockPosition.z
@@ -170,7 +167,7 @@ export default class Picker extends Base {
       this.geometry.attributes.quaternion.array[i * 4 + 2] = object.quaternion.z
       this.geometry.attributes.quaternion.array[i * 4 + 3] = object.quaternion.w
 
-      let scale = blockGeoData.scales[i]
+      let scale = closestBlockScales[i]
       if (scale > 20) {
         scale = 20
       }
@@ -180,7 +177,7 @@ export default class Picker extends Base {
         scale
       )
 
-      let txValue = blockGeoData.blockData.txValues[i] * 0.00000001
+      let txValue = closestBlockTXValues[i] * 0.00000001
       if (txValue > 2000) {
         txValue = 2000
       }
@@ -191,11 +188,6 @@ export default class Picker extends Base {
       if (typeof blockGeoData.blockData.txIndexes !== 'undefined') {
         this.txMap[i] = blockGeoData.blockData.txIndexes[i]
       }
-
-      this.geometry.attributes.offset.setY(
-        i,
-        txValue
-      )
     }
 
     this.geometry.attributes.quaternion.needsUpdate = true
@@ -203,5 +195,20 @@ export default class Picker extends Base {
     this.geometry.attributes.offset.needsUpdate = true
     this.geometry.attributes.scale.needsUpdate = true
     this.geometry.attributes.pickerColor.needsUpdate = true
+  }
+}
+
+class PickerMaterial extends THREE.ShaderMaterial {
+  constructor (cfg) {
+    super(cfg)
+    this.type = 'ShaderMaterial'
+
+    this.uniforms.uOriginOffset = {
+      type: 'v2',
+      value: new THREE.Vector2(0.0, 0.0)
+    }
+
+    this.vertexShader = vertexShader
+    this.fragmentShader = fragmentShader
   }
 }

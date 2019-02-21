@@ -6,7 +6,7 @@ import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-import 'firebase/auth'
+// import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
 import { map } from './utils/math'
@@ -19,6 +19,7 @@ import TWEEN from 'tween.js'
 import WebVR from './libs/WebVR'
 import OBJLoader from './libs/OBJLoader'
 import ViveController from './libs/ViveController'
+import * as ArrayUtils from './utils/array'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -92,7 +93,7 @@ class App extends mixin(EventEmitter, Component) {
     this.underside = null
     this.closestBlockReadyForUpdate = false
     this.clock = new THREE.Clock()
-    this.loadedHeights = []
+    this.loadedBaseGeoHeights = []
     this.mousePos = new THREE.Vector2() // keep track of mouse position
     this.lastMousePos = new THREE.Vector2()
     this.camera = null
@@ -167,7 +168,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.crystalGenerator = new Crystal({
-      firebaseDB: this.firebaseDB,
       planeSize: this.planeSize,
       config: this.config
     })
@@ -178,7 +178,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.crystalAOGenerator = new CrystalAO({
-      firebaseDB: this.firebaseDB,
       planeSize: this.planeSize,
       config: this.config
     })
@@ -243,6 +242,7 @@ class App extends mixin(EventEmitter, Component) {
     this.initEnvironment()
     this.initGeometry()
     this.addEvents()
+
     // this.animate()
 
     this.renderer.setAnimationLoop(function () {
@@ -262,15 +262,15 @@ class App extends mixin(EventEmitter, Component) {
     this.particles.renderOrder = -1
 
     if (this.camera.position.y > 0) {
-      if (this.centerTree) {
-        this.centerTree.material.depthWrite = false
-      }
-      if (this.lTree) {
-        this.lTree.material.depthWrite = true
-      }
-      if (this.rTree) {
-        this.rTree.material.depthWrite = true
-      }
+      // if (this.centerTree) {
+      //   this.centerTree.material.depthWrite = false
+      // }
+      // if (this.lTree) {
+      //   this.lTree.material.depthWrite = true
+      // }
+      // if (this.rTree) {
+      //   this.rTree.material.depthWrite = true
+      // }
 
       this.occlusion.renderOrder = 0
 
@@ -288,15 +288,15 @@ class App extends mixin(EventEmitter, Component) {
       this.undersideL.renderOrder = 2
       this.undersideR.renderOrder = 2
     } else {
-      if (this.centerTree) {
-        this.centerTree.material.depthWrite = true
-      }
-      if (this.lTree) {
-        this.lTree.material.depthWrite = true
-      }
-      if (this.rTree) {
-        this.rTree.material.depthWrite = true
-      }
+      // if (this.centerTree) {
+      //   this.centerTree.material.depthWrite = true
+      // }
+      // if (this.lTree) {
+      //   this.lTree.material.depthWrite = true
+      // }
+      // if (this.rTree) {
+      //   this.rTree.material.depthWrite = true
+      // }
 
       this.occlusion.renderOrder = 10
 
@@ -663,8 +663,6 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.firebaseDB = firebase.firestore()
-    this.docRef = this.firebaseDB.collection('bitcoin_blocks')
-    this.docRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
 
     // this.anonymousSignin()
 
@@ -692,15 +690,15 @@ class App extends mixin(EventEmitter, Component) {
   async getBlockData (hash) {
     return new Promise(async (resolve, reject) => {
       const getBlockDataWorker = new GetBlockDataWorker()
-      getBlockDataWorker.onmessage = async ({ data }) => {
+      getBlockDataWorker.onmessage = ({ data }) => {
         if (data.blockData) {
           data.blockData.txValues = data.txValues
           data.blockData.txSpentRatios = data.txSpentRatios
           data.blockData.txIndexes = data.txIndexes
 
+          getBlockDataWorker.terminate()
           resolve(data.blockData)
         }
-        getBlockDataWorker.terminate()
       }
 
       let sendObj = {
@@ -709,21 +707,22 @@ class App extends mixin(EventEmitter, Component) {
         config: this.config,
         maxHeight: this.maxHeight,
         txValues: new Float32Array(this.txCountBufferSize),
-        txIndexes: new Uint32Array(this.txCountBufferSize),
-        txSpentRatios: new Float32Array(this.txCountBufferSize)
+        txSpentRatios: new Float32Array(this.txCountBufferSize),
+        txIndexes: new Uint32Array(this.txCountBufferSize)
       }
 
       getBlockDataWorker.postMessage(sendObj, [
         sendObj.txValues.buffer,
-        sendObj.txIndexes.buffer,
-        sendObj.txSpentRatios.buffer
+        sendObj.txSpentRatios.buffer,
+        sendObj.txIndexes.buffer
       ])
     })
   }
 
   initLights () {
-    this.sunLight = new THREE.DirectionalLight(0xffffff, 2.0)
-    this.sunLight.position.set(0, 10000000, 20000000)
+    // this.sunLight = new THREE.DirectionalLight(0xffffff, 1.0)
+    this.sunLight = new THREE.PointLight(0xffffff, 2.0)
+    this.sunLight.position.set(0, 5000, 0)
     this.scene.add(this.sunLight)
 
     this.selectedLight = new THREE.PointLight(0xffffff, 0.1, 500.0)
@@ -731,18 +730,8 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.selectedLight)
   }
 
-  async asyncForEach (array, callback) {
-    for (let index = 0; index < array.length; index++) {
-      await callback(array[index], index, array)
-    }
-  }
-
-  async getGeometry (hash, blockHeight = null) {
+  async getGeometry (hash) {
     return new Promise(async (resolve, reject) => {
-      if (blockHeight && typeof this.blockGeoDataObject[blockHeight] !== 'undefined') {
-        resolve(this.blockGeoDataObject[blockHeight])
-      }
-
       let blockData = await this.getBlockData(hash)
 
       const getGeometryWorker = new GetGeometryWorker()
@@ -760,13 +749,35 @@ class App extends mixin(EventEmitter, Component) {
 
           blockGeoData.scales = data.scales
           blockGeoData.offsets = data.offsets
+          blockGeoData.blockData = blockData
 
-          this.blockGeoDataObject[height] = blockGeoData
-          this.blockGeoDataObject[height].blockData = blockData
+          this.blockGeoDataObject[height] = {}
+          this.blockGeoDataObject[height].blockData = {
+            bits: blockGeoData.blockData.bits,
+            block_index: blockGeoData.blockData.block_index,
+            fee: blockGeoData.blockData.fee,
+            hash: blockGeoData.blockData.hash,
+            healthRatio: blockGeoData.blockData.healthRatio,
+            height: blockGeoData.blockData.height,
+            main_chain: blockGeoData.blockData.main_chain,
+            mrkl_root: blockGeoData.blockData.mrkl_root,
+            n_tx: blockGeoData.blockData.n_tx,
+            next_block: blockGeoData.blockData.next_block,
+            nonce: blockGeoData.blockData.nonce,
+            outputTotal: blockGeoData.blockData.outputTotal,
+            pos: blockGeoData.blockData.pos,
+            prev_block: blockGeoData.blockData.prev_block,
+            received_time: blockGeoData.blockData.received_time,
+            relayed_by: blockGeoData.blockData.relayed_by,
+            size: blockGeoData.blockData.size,
+            time: blockGeoData.blockData.time,
+            ver: blockGeoData.blockData.ver,
+            txIndexes: blockGeoData.blockData.txIndexes
+          }
 
           getGeometryWorker.terminate()
 
-          resolve(this.blockGeoDataObject[height])
+          resolve(blockGeoData)
         }
       }
 
@@ -956,8 +967,8 @@ class App extends mixin(EventEmitter, Component) {
         let txDataJSON = await txData.json()
 
         let txHeights = []
-        await this.asyncForEach(txDataJSON.txs, async (tx) => {
-          await this.asyncForEach(tx.inputs, (input) => {
+        await ArrayUtils.asyncForEach(txDataJSON.txs, async (tx) => {
+          await ArrayUtils.asyncForEach(tx.inputs, (input) => {
             return new Promise(async (resolve, reject) => {
               let inputData = await window.fetch('https://blockchain.info/rawtx/' + input.prev_out.tx_index + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
               let inputDataJSON = await inputData.json()
@@ -1118,7 +1129,12 @@ class App extends mixin(EventEmitter, Component) {
     // set final position and grab final rotation
     this.camera.position.set(this.camPosTo.x, this.camPosTo.y, this.camPosTo.z)
 
-    this.camera.lookAt(this.camPosTarget)
+    if (toTarget) {
+      this.camera.lookAt(this.camPosTarget)
+    } else {
+      this.camera.lookAt(new THREE.Vector3(0, 0, 0))
+      this.camera.rotateX(-(Math.PI / 2))
+    }
     this.camToRotation = new THREE.Euler().copy(this.camera.rotation)
 
     // reset original position and rotation
@@ -1326,13 +1342,13 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    this.loadedHeights.forEach((height, i) => {
+    this.loadedBaseGeoHeights.forEach((height, i) => {
       if (
-        height < this.closestHeight - 25 ||
-          height > this.closestHeight + 25
+        height < this.closestHeight - 100 ||
+          height > this.closestHeight + 100
       ) {
-        console.log('deleted height at: ' + height)
-        delete this.loadedHeights[ i ]
+        console.log('deleted base geo at: ' + height)
+        delete this.loadedBaseGeoHeights[ i ]
       }
     })
 
@@ -1353,8 +1369,8 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     nearestBlocks.forEach((height) => {
-      if (this.loadedHeights.indexOf(height) === -1) {
-        this.loadedHeights.push(height)
+      if (this.loadedBaseGeoHeights.indexOf(height) === -1) {
+        this.loadedBaseGeoHeights.push(height)
 
         let blockGeoDataTemp = {}
         blockGeoDataTemp.blockData = {}
@@ -1412,7 +1428,29 @@ class App extends mixin(EventEmitter, Component) {
 
                 blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
 
-                this.blockGeoDataObject[blockGeoData.height] = blockGeoData
+                this.blockGeoDataObject[blockGeoData.height] = {}
+                this.blockGeoDataObject[blockGeoData.height].blockData = {
+                  bits: blockGeoData.blockData.bits,
+                  block_index: blockGeoData.blockData.block_index,
+                  fee: blockGeoData.blockData.fee,
+                  hash: blockGeoData.blockData.hash,
+                  healthRatio: blockGeoData.blockData.healthRatio,
+                  height: blockGeoData.blockData.height,
+                  main_chain: blockGeoData.blockData.main_chain,
+                  mrkl_root: blockGeoData.blockData.mrkl_root,
+                  n_tx: blockGeoData.blockData.n_tx,
+                  next_block: blockGeoData.blockData.next_block,
+                  nonce: blockGeoData.blockData.nonce,
+                  outputTotal: blockGeoData.blockData.outputTotal,
+                  pos: blockGeoData.blockData.pos,
+                  prev_block: blockGeoData.blockData.prev_block,
+                  received_time: blockGeoData.blockData.received_time,
+                  relayed_by: blockGeoData.blockData.relayed_by,
+                  size: blockGeoData.blockData.size,
+                  time: blockGeoData.blockData.time,
+                  ver: blockGeoData.blockData.ver,
+                  txIndexes: blockGeoData.blockData.txIndexes
+                }
 
                 this.crystalGenerator.updateGeometry(blockGeoData)
                 this.crystalAOGenerator.updateGeometry(blockGeoData)
@@ -1491,6 +1529,9 @@ class App extends mixin(EventEmitter, Component) {
                   }
 
                   blockHeightWorker.terminate()
+                } else if (data.error !== 'undefined') {
+                  console.log(data.error)
+                  blockHeightWorker.terminate()
                 }
               }
 
@@ -1531,7 +1572,6 @@ class App extends mixin(EventEmitter, Component) {
       scales6: new Float32Array(this.txCountBufferSize),
       scales7: new Float32Array(this.txCountBufferSize),
       scales8: new Float32Array(this.txCountBufferSize),
-      scales9: new Float32Array(this.txCountBufferSize),
 
       offsets0: new Float32Array(this.txCountBufferSize * 2),
       offsets1: new Float32Array(this.txCountBufferSize * 2),
@@ -1542,7 +1582,6 @@ class App extends mixin(EventEmitter, Component) {
       offsets6: new Float32Array(this.txCountBufferSize * 2),
       offsets7: new Float32Array(this.txCountBufferSize * 2),
       offsets8: new Float32Array(this.txCountBufferSize * 2),
-      offsets9: new Float32Array(this.txCountBufferSize * 2),
 
       txValues0: new Float32Array(this.txCountBufferSize),
       txValues1: new Float32Array(this.txCountBufferSize),
@@ -1553,7 +1592,6 @@ class App extends mixin(EventEmitter, Component) {
       txValues6: new Float32Array(this.txCountBufferSize),
       txValues7: new Float32Array(this.txCountBufferSize),
       txValues8: new Float32Array(this.txCountBufferSize),
-      txValues9: new Float32Array(this.txCountBufferSize),
 
       txIndexes0: new Uint32Array(this.txCountBufferSize),
       txIndexes1: new Uint32Array(this.txCountBufferSize),
@@ -1564,7 +1602,6 @@ class App extends mixin(EventEmitter, Component) {
       txIndexes6: new Uint32Array(this.txCountBufferSize),
       txIndexes7: new Uint32Array(this.txCountBufferSize),
       txIndexes8: new Uint32Array(this.txCountBufferSize),
-      txIndexes9: new Uint32Array(this.txCountBufferSize),
 
       txSpentRatios0: new Float32Array(this.txCountBufferSize),
       txSpentRatios1: new Float32Array(this.txCountBufferSize),
@@ -1574,8 +1611,7 @@ class App extends mixin(EventEmitter, Component) {
       txSpentRatios5: new Float32Array(this.txCountBufferSize),
       txSpentRatios6: new Float32Array(this.txCountBufferSize),
       txSpentRatios7: new Float32Array(this.txCountBufferSize),
-      txSpentRatios8: new Float32Array(this.txCountBufferSize),
-      txSpentRatios9: new Float32Array(this.txCountBufferSize)
+      txSpentRatios8: new Float32Array(this.txCountBufferSize)
     }
 
     nearestBlocksWorker.postMessage(
@@ -1593,7 +1629,6 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.scales6.buffer,
         sendObj.scales7.buffer,
         sendObj.scales8.buffer,
-        sendObj.scales9.buffer,
 
         sendObj.offsets0.buffer,
         sendObj.offsets1.buffer,
@@ -1604,7 +1639,6 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.offsets6.buffer,
         sendObj.offsets7.buffer,
         sendObj.offsets8.buffer,
-        sendObj.offsets9.buffer,
 
         sendObj.txValues0.buffer,
         sendObj.txValues1.buffer,
@@ -1615,7 +1649,6 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.txValues6.buffer,
         sendObj.txValues7.buffer,
         sendObj.txValues8.buffer,
-        sendObj.txValues9.buffer,
 
         sendObj.txIndexes0.buffer,
         sendObj.txIndexes1.buffer,
@@ -1626,7 +1659,6 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.txIndexes6.buffer,
         sendObj.txIndexes7.buffer,
         sendObj.txIndexes8.buffer,
-        sendObj.txIndexes9.buffer,
 
         sendObj.txSpentRatios0.buffer,
         sendObj.txSpentRatios1.buffer,
@@ -1636,8 +1668,7 @@ class App extends mixin(EventEmitter, Component) {
         sendObj.txSpentRatios5.buffer,
         sendObj.txSpentRatios6.buffer,
         sendObj.txSpentRatios7.buffer,
-        sendObj.txSpentRatios8.buffer,
-        sendObj.txSpentRatios9.buffer
+        sendObj.txSpentRatios8.buffer
       ]
     )
   }
@@ -1680,8 +1711,7 @@ class App extends mixin(EventEmitter, Component) {
   goToRandomBlock () {
     this.audioManager.stopNotes()
 
-    this.autoPilotDirection = false
-    this.autoPilot = false
+    this.exitAutoPilot()
 
     this.hideMerkleDetail()
 
@@ -1697,9 +1727,8 @@ class App extends mixin(EventEmitter, Component) {
     let posZ = this.blockPositions[randomHeight * 2 + 1]
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
-    let toTarget = new THREE.Vector3(posX, 0, posZ)
 
-    this.prepareCamAnim(to, toTarget)
+    this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
 
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
@@ -1718,12 +1747,11 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 500, to.z), 10000)
+              .to(new THREE.Vector3(to.x, 400, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
-                this.toggleMapControls(true, toTarget)
                 this.animatingCamera = false
               })
               .easing(this.defaultCamEasing)
@@ -1745,8 +1773,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.audioManager.stopNotes()
 
-    this.autoPilotDirection = false
-    this.autoPilot = false
+    this.exitAutoPilot()
 
     this.hideMerkleDetail()
 
@@ -1762,33 +1789,31 @@ class App extends mixin(EventEmitter, Component) {
     let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
-    let toTarget = new THREE.Vector3(posX, 0, posZ)
 
-    this.prepareCamAnim(to, toTarget)
+    this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
 
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 2000)
+      .to(aboveStart, 5000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
         new TWEEN.Tween(that.camera.position)
-          .to(to, 2000)
+          .to(to, 5000)
           .onUpdate(function () {
             that.camera.position.set(this.x, this.y, this.z)
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 2000)
+              .to(new THREE.Vector3(to.x, 400, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
-                this.toggleMapControls(true, toTarget)
                 this.animatingCamera = false
               })
               .easing(this.defaultCamEasing)
@@ -1801,6 +1826,11 @@ class App extends mixin(EventEmitter, Component) {
       .start()
 
     this.animateCamRotation(10000)
+  }
+
+  exitAutoPilot () {
+    this.autoPilotDirection = false
+    this.autoPilot = false
   }
 
   stopAutoPilot () {
@@ -1909,7 +1939,7 @@ class App extends mixin(EventEmitter, Component) {
       this.updatePicker()
     }
 
-    this.getClosestBlock()
+    // this.getClosestBlock()
 
     if (this.blockReady) {
       if (this.audioManager.analyser && window.oscilloscope) {
@@ -1917,7 +1947,7 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       if (this.frame % 120 === 0) {
-        this.loadNearestBlocks()
+        // this.loadNearestBlocks()
       }
 
       this.setRenderOrder()
@@ -2084,6 +2114,59 @@ class App extends mixin(EventEmitter, Component) {
         }
       }
     })
+
+    this.ViveController1.addEventListener('thumbpaddown', function (e) {
+      // left dpad
+      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+        if (this.closestBlock) {
+          this.toggleAutoPilotDirection('backward')
+        }
+      }
+
+      // right dpad
+      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+        if (this.closestBlock) {
+          this.toggleAutoPilotDirection('forward')
+        }
+      }
+
+      // top dpad
+      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.toggleTopView()
+      }
+
+      // bottom dpad
+      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.toggleUndersideView()
+      }
+    }.bind(this))
+
+    this.ViveController2.addEventListener('thumbpaddown', function (e) {
+      // left dpad
+      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+      }
+
+      // right dpad
+      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+      }
+
+      // top dpad
+      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.goToLatestBlock()
+      }
+
+      // bottom dpad
+      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+        this.goToRandomBlock()
+      }
+    }.bind(this))
+
+    setInterval(() => {
+      this.loadNearestBlocks()
+      this.getClosestBlock()
+    }, 1000)
   }
 
   sendWsMessage (message) {
@@ -2101,14 +2184,13 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.closestBlock) {
       return
     }
+
     this.setState({
       closestBlock: this.closestBlock
     })
 
     this.addBlockHeightVRText(this.closestBlock.blockData)
     this.addBlockDetailsVRText(this.closestBlock.blockData)
-
-    this.pickerGenerator.updateGeometry(this.closestBlock)
 
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
 
@@ -2125,6 +2207,30 @@ class App extends mixin(EventEmitter, Component) {
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 1],
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 2],
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 3]
+    )
+
+    this.closestBlockOffsets = new Float32Array(this.closestBlock.blockData.n_tx * 3)
+    this.closestBlockScales = new Float32Array(this.closestBlock.blockData.n_tx)
+    this.closestBlockTXValues = new Float32Array(this.closestBlock.blockData.n_tx)
+    this.closestBlockSpentRatios = new Float32Array(this.closestBlock.blockData.n_tx)
+
+    for (let index = 0; index < this.closestBlock.blockData.n_tx; index++) {
+      this.closestBlockOffsets[index * 3 + 0] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 0)]
+      this.closestBlockOffsets[index * 3 + 1] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 1)]
+      this.closestBlockOffsets[index * 3 + 2] = this.crystal.geometry.attributes.offset.array[(txIndexOffset * 3) + (index * 3 + 2)]
+    }
+
+    for (let index = 0; index < this.closestBlock.blockData.n_tx; index++) {
+      this.closestBlockTXValues[index] = this.crystal.geometry.attributes.txValue.array[txIndexOffset + index]
+      this.closestBlockScales[index] = this.crystal.geometry.attributes.scale.array[txIndexOffset + index]
+      this.closestBlockSpentRatios[index] = this.crystal.geometry.attributes.spentRatio.array[txIndexOffset + index]
+    }
+
+    this.pickerGenerator.updateGeometry(
+      this.closestBlock,
+      this.closestBlockOffsets,
+      this.closestBlockScales,
+      this.closestBlockTXValues
     )
 
     this.boundingBoxObj.rotation.x = 0
@@ -2181,7 +2287,7 @@ class App extends mixin(EventEmitter, Component) {
     this.updateClosestTrees()
 
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      this.audioManager.generate(this.closestBlock.blockData)
+      // this.audioManager.generate(this.closestBlock.blockData)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
@@ -2194,30 +2300,30 @@ class App extends mixin(EventEmitter, Component) {
     let nextBlock = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
 
     const nTX1 = this.closestBlock.blockData.n_tx
-    undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
+    // undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock)
 
     if (typeof prevBlock !== 'undefined') {
       if (typeof this.audioManager.buffers[prevBlock.blockData.height] === 'undefined') {
-        this.audioManager.generate(prevBlock.blockData)
+        // this.audioManager.generate(prevBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(prevBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
       }
       let block2 = prevBlock
       const nTX2 = block2.blockData.n_tx
-      undersideTexture2 = await this.circuit.draw(nTX2, block2)
+      // undersideTexture2 = await this.circuit.draw(nTX2, block2)
     } else {
       this.undersideL.visible = false
     }
 
     if (typeof nextBlock !== 'undefined') {
       if (typeof this.audioManager.buffers[nextBlock.blockData.height] === 'undefined') {
-        this.audioManager.generate(nextBlock.blockData)
+        // this.audioManager.generate(nextBlock.blockData)
         this.crystalGenerator.updateBlockStartTimes(nextBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
       }
       let block3 = nextBlock
       const nTX3 = block3.blockData.n_tx
-      undersideTexture3 = await this.circuit.draw(nTX3, block3)
+      // undersideTexture3 = await this.circuit.draw(nTX3, block3)
     } else {
       this.undersideR.visible = false
     }
@@ -2376,9 +2482,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.background = this.cubeMap
   }
 
-  onVRControllerSelect (ev) {
- 
-
+  onVRControllerSelect () {
     // clicking on the same tx twice deselects
     if (this.lastSelectedID === this.lastHoveredID) {
       this.deselectTx()
@@ -2396,54 +2500,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   setupGamepads () {
-    this.ViveController1.addEventListener('thumbpaddown', function (e) {
-      // left dpad
-      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-        if (this.closestBlock) {
-          this.toggleAutoPilotDirection('backward')
-        }
-      }
-
-      // right dpad
-      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-        if (this.closestBlock) {
-          this.toggleAutoPilotDirection('forward')
-        }
-      }
-
-      // top dpad
-      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.toggleTopView()
-      }
-
-      // bottom dpad
-      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.toggleUndersideView()
-      }
-    }.bind(this))
-
-    this.ViveController2.addEventListener('thumbpaddown', function (e) {
-      // left dpad
-      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-
-      }
-
-      // right dpad
-      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-
-      }
-
-      // top dpad
-      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.goToLatestBlock()
-      }
-
-      // bottom dpad
-      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.goToRandomBlock()
-      }
-    }.bind(this))
-
     this.camera.remove(this.controller1)
     this.camera.remove(this.controller2)
 
@@ -2609,8 +2665,6 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer.setPixelRatio(window.devicePixelRatio)
 
     this.WebVR.setRenderer(this.renderer)
-
-
   }
 
   /**

@@ -10,8 +10,6 @@ import vertexShader from './shaders/crystalAO.vert'
 export default class CrystalAO extends Base {
   constructor (args) {
     super(args)
-    this.firebaseDB = args.firebaseDB
-    this.docRefGeo = this.firebaseDB.collection('blocks_geometry')
     this.map = new THREE.TextureLoader().load('assets/images/textures/ao-hexagon.png')
 
     this.material = new CrystalAOMaterial({

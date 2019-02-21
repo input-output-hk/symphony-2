@@ -83,7 +83,7 @@ export default class Circuit extends EventEmitter {
             }
           })
         }
-      }.bind(this))
+      })
     })
   }
 }

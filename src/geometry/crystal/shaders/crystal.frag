@@ -175,7 +175,7 @@ void main() {
 	//vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
 	vec3 diffuseVar = vec3( 0.0 );
 
-	diffuseVar += 1.0-vSpentRatio;
+	diffuseVar += 1.0-(vSpentRatio * 0.7);
 	
 	vec4 diffuseColor = vec4( diffuseVar + sideEdgeAmount, opacity);
 
@@ -203,8 +203,8 @@ void main() {
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.3;
-//	vec3 totalEmissiveRadiance = vec3(0.0);
+	 vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.1;
+	// vec3 totalEmissiveRadiance = vec3(0.0);
 	//totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
 
 
@@ -260,7 +260,8 @@ void main() {
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
 	float absNoise = abs(noiseAmount) * 30.0;
-	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (1.0-vSpentRatio);
+	// float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (1.0-vSpentRatio);
+	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (0.5 + vEnvelope);
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
