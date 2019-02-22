@@ -283,8 +283,8 @@ void main() {
 	
 
 
-	outgoingLight += vIsHovered * (sideEdgeAmount * 1.0);
-	outgoingLight += vIsSelected * (sideEdgeAmount * 1.0);
+	outgoingLight += vIsHovered * (edgeAmount * 1.0);
+	outgoingLight += vIsSelected * (edgeAmount * 1.0);
 	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
 	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
 

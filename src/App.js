@@ -476,6 +476,15 @@ class App extends mixin(EventEmitter, Component) {
       this.selectedLight.position.x = selectedPosX
       this.selectedLight.position.z = selectedPosZ
 
+      this.addTXDetailsVRText(
+        txDataJSON,
+        new THREE.Vector3(
+          this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0],
+          selectedPosY,
+          this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2]
+        )
+      )
+
       if (animateCam) {
         let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
         let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
@@ -519,6 +528,8 @@ class App extends mixin(EventEmitter, Component) {
     this.emit('txDeselect', {})
 
     this.audioManager.stopNotes()
+
+    this.cameraMain.remove(this.txDetailsTextMesh)
 
     this.setState({
       txSelected: null
@@ -651,7 +662,7 @@ class App extends mixin(EventEmitter, Component) {
     try {
       firebase.initializeApp(this.config.fireBase)
 
-      firebase.firestore()
+      firebase.firestore().enablePersistence()
       this.FBStorage = firebase.storage()
       this.FBStorageRef = this.FBStorage.ref()
 
@@ -811,9 +822,14 @@ class App extends mixin(EventEmitter, Component) {
 
   async initPositions () {
     let timestampToLoad = moment().valueOf() // default to today's date
-    let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-    let latestBlockDataJSON = await latestBlockData.json()
-    this.maxHeight = latestBlockDataJSON.blocks[0].height
+
+    try {
+      let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      let latestBlockDataJSON = await latestBlockData.json()
+      this.maxHeight = latestBlockDataJSON.blocks[0].height
+    } catch (error) {
+      console.log(error)
+    }
 
     this.blockPositions = new Float32Array((this.maxHeight * 2) + 2)
 
@@ -849,9 +865,14 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         url = 'https://blockchain.info/blocks/' + this.timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode
       }
-      let blockData = await window.fetch(url)
-      let blockDataJSON = await blockData.json()
-      this.blockHashToLoad = blockDataJSON.blocks[0].hash
+
+      try {
+        let blockData = await window.fetch(url)
+        let blockDataJSON = await blockData.json()
+        this.blockHashToLoad = blockDataJSON.blocks[0].hash
+      } catch (error) {
+        console.log(error)
+      }
     }
 
     let blockGeoData = await this.getGeometry(this.blockHashToLoad)
@@ -1134,8 +1155,11 @@ class App extends mixin(EventEmitter, Component) {
       this.camera.lookAt(this.camPosTarget)
     } else {
       this.camera.lookAt(new THREE.Vector3(0, 0, 0))
-      this.camera.rotateX(-(Math.PI / 2))
+      if (!this.vrActive) { // point camera down at block if not in VR
+        this.camera.rotateX(-(Math.PI / 2))
+      }
     }
+
     this.camToRotation = new THREE.Euler().copy(this.camera.rotation)
 
     // reset original position and rotation
@@ -1157,7 +1181,7 @@ class App extends mixin(EventEmitter, Component) {
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(this.camPosTo, 2000)
+      .to(this.camPosTo, 6000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
@@ -1168,7 +1192,7 @@ class App extends mixin(EventEmitter, Component) {
       .easing(this.defaultCamEasing)
       .start()
 
-    this.animateCamRotation(2000)
+    // this.animateCamRotation(5000)
   }
 
   async toggleUndersideView () {
@@ -1184,7 +1208,7 @@ class App extends mixin(EventEmitter, Component) {
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(this.camPosTo, 5000)
+      .to(this.camPosTo, 6000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
@@ -1195,7 +1219,7 @@ class App extends mixin(EventEmitter, Component) {
       .easing(this.defaultCamEasing)
       .start()
 
-    this.animateCamRotation(5000)
+    // this.animateCamRotation(5000)
   }
 
   setConfig (newConfig) {
@@ -1716,6 +1740,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.hideMerkleDetail()
 
+    this.hideVRText()
+
     const randomHeight = Math.round(Math.random() * this.maxHeight)
 
     this.closestHeight = randomHeight
@@ -1734,6 +1760,8 @@ class App extends mixin(EventEmitter, Component) {
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
 
+    let blockYDist = this.vrActive ? 20 : 400
+
     let that = this
     new TWEEN.Tween(this.camera.position)
       .to(aboveStart, 5000)
@@ -1748,7 +1776,7 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 400, to.z), 10000)
+              .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
@@ -1778,6 +1806,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.hideMerkleDetail()
 
+    this.hideVRText()
+
     if (this.closestHeight === null) {
       this.closestHeight = this.maxHeight
     }
@@ -1796,6 +1826,8 @@ class App extends mixin(EventEmitter, Component) {
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
 
+    let blockYDist = this.vrActive ? 20 : 400
+
     let that = this
     new TWEEN.Tween(this.camera.position)
       .to(aboveStart, 5000)
@@ -1810,7 +1842,7 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 400, to.z), 10000)
+              .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
@@ -2555,7 +2587,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = vrActive
+    this.vrActive = true
 
     if (this.camera) {
       this.scene.remove(this.camera)
@@ -2586,6 +2618,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.scene.add(this.camera)
 
+    window.camera = this.camera
+
     this.camera.position.x = this.config.camera.initPos.x
     this.camera.position.y = this.config.camera.initPos.y
     this.camera.position.z = this.config.camera.initPos.z
@@ -2606,15 +2640,17 @@ class App extends mixin(EventEmitter, Component) {
     let blockHeightTextMesh = await this.textGenerator.create({
       text: '// BLOCK ' + blockData.height + ' ' + blockData.hash,
       position: {
-        x: -8,
+        x: -10,
         y: -5,
         z: -10
       },
       width: 1400,
       align: 'left',
-      scale: 0.0075,
+      scale: 0.0095,
       lineHeight: 48
     })
+
+    blockHeightTextMesh.renderOrder = -1
 
     this.camera.remove(this.blockHeightTextMesh)
     this.blockHeightTextMesh = blockHeightTextMesh
@@ -2636,7 +2672,7 @@ class App extends mixin(EventEmitter, Component) {
       BITS: ${blockData.bits}
       SIZE: ${blockData.size / 1000} KB
       HEIGHT: ${blockData.height}
-      MERKLE ROOT: ${blockData.mrkl_root.substring(0, 10)}
+      MERKLE ROOT: ${blockData.mrkl_root.substring(0, 10)}...
       NONCE: ${blockData.nonce}
       VERSION: ${blockData.ver}
       `,
@@ -2647,13 +2683,52 @@ class App extends mixin(EventEmitter, Component) {
       },
       width: 600,
       align: 'left',
-      scale: 0.006,
+      scale: 0.008,
       lineHeight: 48
     })
+
+    blockDetailsTextMesh.renderOrder = -1
 
     this.camera.remove(this.blockDetailsTextMesh)
     this.blockDetailsTextMesh = blockDetailsTextMesh
     this.camera.add(this.blockDetailsTextMesh)
+  }
+
+  async addTXDetailsVRText (txData, pos) {
+    if (!this.vrActive) {
+      return
+    }
+
+    let txDetailsTextMesh = await this.textGenerator.create({
+      text: `
+      TX-${txData.hash.substring(0, 12)}...
+      ${moment.unix(txData.time).format('YYYY-MM-DD HH:mm:ss')}
+      ${txData.size} BYTES
+      RELAYED BY: ${txData.relayed_by}
+      FEE: ${txData.fee} BTC
+      `,
+      position: {
+        x: -2.5,
+        y: -2,
+        z: -9
+      },
+      width: 1400,
+      align: 'left',
+      scale: 0.0085,
+      lineHeight: 48
+    })
+
+    txDetailsTextMesh.renderOrder = -1
+
+    this.cameraMain.remove(this.txDetailsTextMesh)
+    this.txDetailsTextMesh = txDetailsTextMesh
+    this.cameraMain.add(this.txDetailsTextMesh)
+  }
+
+  hideVRText () {
+    this.camera.remove(this.blockHeightTextMesh)
+    this.camera.remove(this.blockDetailsTextMesh)
+    this.cameraMain.remove(this.txDetailsTextMesh)
   }
 
   /**
@@ -2668,7 +2743,7 @@ class App extends mixin(EventEmitter, Component) {
       canvas: this.canvas
     })
 
-    this.renderer.setPixelRatio(window.devicePixelRatio)
+    // this.renderer.setPixelRatio(window.devicePixelRatio)
 
     this.WebVR.setRenderer(this.renderer)
   }
