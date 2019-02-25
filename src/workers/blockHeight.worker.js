@@ -14,7 +14,7 @@ self.addEventListener('message', async function (e) {
 
       let returnData
 
-      if (blockDataJSON === null) {
+      if (blockDataJSON === null || typeof blockDataJSON === 'undefined') {
         self.postMessage({error: 'Failed to get blockdata from API'})
 
         returnData = {

@@ -120,11 +120,11 @@ class App extends mixin(EventEmitter, Component) {
     this.blockHeightTextMesh = null
 
     // VR controllers
-    this.controller1 = null
+    this.viveController1 = null
     this.controllerCam = null
-    this.controller2 = null
-    this.ViveController1 = new ViveController(0)
-    this.ViveController2 = new ViveController(1)
+    this.viveController2 = null
+    this.viveController1Buttons = new ViveController(0)
+    this.viveController2Buttons = new ViveController(1)
 
     this.OBJLoader = new OBJLoader()
     this.TextureLoader = new THREE.TextureLoader()
@@ -733,7 +733,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initLights () {
     // this.sunLight = new THREE.DirectionalLight(0xffffff, 1.0)
-    this.sunLight = new THREE.PointLight(0xffffff, 2.0)
+    this.sunLight = new THREE.PointLight(0xb1cdff, 2.0)
     this.sunLight.position.set(0, 5000, 0)
     this.scene.add(this.sunLight)
 
@@ -1776,12 +1776,21 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+              .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
-                this.animatingCamera = false
+                new TWEEN.Tween(this.camera.position)
+                  .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                  .onUpdate(function () {
+                    that.camera.position.set(this.x, this.y, this.z)
+                  })
+                  .onComplete(() => {
+                    this.animatingCamera = false
+                  })
+                  .easing(TWEEN.Easing.Quadratic.Out)
+                  .start()
               })
               .easing(this.defaultCamEasing)
               .start()
@@ -1842,12 +1851,21 @@ class App extends mixin(EventEmitter, Component) {
           })
           .onComplete(() => {
             new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+              .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
-                this.animatingCamera = false
+                new TWEEN.Tween(this.camera.position)
+                  .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                  .onUpdate(function () {
+                    that.camera.position.set(this.x, this.y, this.z)
+                  })
+                  .onComplete(() => {
+                    this.animatingCamera = false
+                  })
+                  .easing(TWEEN.Easing.Quadratic.Out)
+                  .start()
               })
               .easing(this.defaultCamEasing)
               .start()
@@ -1972,6 +1990,10 @@ class App extends mixin(EventEmitter, Component) {
       this.updatePicker()
     }
 
+    if (this.bg) {
+      this.bg.rotation.y += this.frame * 0.0001
+    }
+
     this.getClosestBlock()
 
     if (this.blockReady) {
@@ -2026,8 +2048,8 @@ class App extends mixin(EventEmitter, Component) {
       this.treeGenerator.update(window.performance.now())
     }
 
-    this.ViveController1.update()
-    this.ViveController2.update()
+    this.viveController1Buttons.update()
+    this.viveController2Buttons.update()
 
     // this.setState({
     //   posX: this.camera.position.x.toFixed(3),
@@ -2148,58 +2170,73 @@ class App extends mixin(EventEmitter, Component) {
       }
     })
 
-    this.ViveController1.addEventListener('thumbpaddown', function (e) {
-      // left dpad
-      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-        if (this.closestBlock) {
-          this.toggleAutoPilotDirection('backward')
-        }
-      }
-
-      // right dpad
-      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-        if (this.closestBlock) {
-          this.toggleAutoPilotDirection('forward')
-        }
-      }
-
-      // top dpad
-      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.toggleTopView()
-      }
-
-      // bottom dpad
-      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.toggleUndersideView()
-      }
+    this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
+      this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+        this.viveControllerLeftButtonEvents(e)
+      }, this.config.VR.interactionTimeout)
     }.bind(this))
 
-    this.ViveController2.addEventListener('thumbpaddown', function (e) {
-      // left dpad
-      if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-
-      }
-
-      // right dpad
-      if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
-
-      }
-
-      // top dpad
-      if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.goToLatestBlock()
-      }
-
-      // bottom dpad
-      if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-        this.goToRandomBlock()
-      }
+    this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+      clearTimeout(this.viveController1Buttons.interactionTimeout)
     }.bind(this))
 
-    // setInterval(() => {
-    //   this.loadNearestBlocks()
-    //   this.getClosestBlock()
-    // }, 1000)
+    this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
+      this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+        this.viveControllerRightButtonEvents(e)
+      }, this.config.VR.interactionTimeout)
+    }.bind(this))
+
+    this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+      clearTimeout(this.viveController2Buttons.interactionTimeout)
+    }.bind(this))
+  }
+
+  viveControllerRightButtonEvents (e) {
+    // left dpad
+    if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+      if (this.closestBlock) {
+        this.toggleAutoPilotDirection('backward')
+      }
+    }
+
+    // right dpad
+    if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+      if (this.closestBlock) {
+        this.toggleAutoPilotDirection('forward')
+      }
+    }
+
+    // top dpad
+    if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.toggleTopView()
+    }
+
+    // bottom dpad
+    if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.toggleUndersideView()
+    }
+  }
+
+  viveControllerLeftButtonEvents (e) {
+    // left dpad
+    if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+    }
+
+    // right dpad
+    if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+
+    }
+
+    // top dpad
+    if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.goToLatestBlock()
+    }
+
+    // bottom dpad
+    if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.goToRandomBlock()
+    }
   }
 
   sendWsMessage (message) {
@@ -2537,18 +2574,18 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  setupGamepads () {
-    this.camera.remove(this.controller1)
-    this.camera.remove(this.controller2)
+  setupViveModels () {
+    this.camera.remove(this.viveController1)
+    this.camera.remove(this.viveController2)
 
-    this.controller1 = this.renderer.vr.getController(0)
-    this.controller1.userData.id = 0
-    this.camera.add(this.controller1)
-    this.controller1.addEventListener('select', this.onVRControllerSelect.bind(this))
+    this.viveController1 = this.renderer.vr.getController(0)
+    this.viveController1.userData.id = 0
+    this.viveController1.addEventListener('select', this.onVRControllerSelect.bind(this))
+    this.camera.add(this.viveController1)
 
-    this.controller2 = this.renderer.vr.getController(1)
-    this.controller2.userData.id = 1
-    this.camera.add(this.controller2)
+    this.viveController2 = this.renderer.vr.getController(1)
+    this.viveController2.userData.id = 1
+    this.camera.add(this.viveController2)
 
     this.OBJLoader.setPath('assets/models/obj/vive-controller/')
     this.OBJLoader.load('vr_controller_vive_1_5.obj', function (object) {
@@ -2557,8 +2594,8 @@ class App extends mixin(EventEmitter, Component) {
       controller.material.map = this.TextureLoader.load('onepointfive_texture.png')
       controller.material.specularMap = this.TextureLoader.load('onepointfive_spec.png')
 
-      this.controller1.add(controller.clone())
-      this.controller2.add(controller.clone())
+      this.viveController1.add(controller.clone())
+      this.viveController2.add(controller.clone())
 
       this.controllerCam = new THREE.PerspectiveCamera(
         this.config.camera.fov,
@@ -2578,8 +2615,8 @@ class App extends mixin(EventEmitter, Component) {
       let line = new THREE.Line(lineGeo, lineMat)
       line.scale.z = 5
 
-      this.controller1.add(this.controllerCam)
-      this.controller1.add(line)
+      this.viveController1.add(this.controllerCam)
+      this.viveController1.add(line)
     }.bind(this))
   }
 
@@ -2607,13 +2644,12 @@ class App extends mixin(EventEmitter, Component) {
     if (vrActive) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
-
-      this.setupGamepads()
+      this.setupViveModels()
     } else {
       this.camera = this.cameraMain
 
-      this.camera.remove(this.controller1)
-      this.camera.remove(this.controller2)
+      this.camera.remove(this.viveController1)
+      this.camera.remove(this.viveController2)
     }
 
     this.scene.add(this.camera)

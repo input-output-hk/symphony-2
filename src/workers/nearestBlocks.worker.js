@@ -84,7 +84,7 @@ self.addEventListener('message', async function (e) {
 
       let ii = 0
       await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
-        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 86400000) {
+        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
           console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
           blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
         }

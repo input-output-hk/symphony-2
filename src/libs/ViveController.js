@@ -36,7 +36,7 @@ export default class ViveController extends THREE.Object3D {
   update () {
     this.gamepad = this.findGamepad(this.index)
 
-    if (this.gamepad !== undefined) {
+    if (this.gamepad && typeof this.gamepad.buttons !== 'undefined' && this.gamepad.buttons.length > 1) {
       //  Thumbpad and Buttons.
       if (this.axes[ 0 ] !== this.gamepad.axes[ 0 ] || this.axes[ 1 ] !== this.gamepad.axes[ 1 ]) {
         this.axes[ 0 ] = this.gamepad.axes[ 0 ] //  X axis: -1 = Left, +1 = Right.

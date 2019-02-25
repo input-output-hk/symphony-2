@@ -36,8 +36,8 @@ self.addEventListener('message', async function (e) {
         shouldCache = true
       } else {
         blockData = snapshot.data()
-        // check if block was cached more than a day ago
-        if (moment().valueOf() - blockData.cacheTime.toMillis() > 86400000) {
+        // check if block was cached more than a week ago
+        if (moment().valueOf() - blockData.cacheTime.toMillis() > 604800000) {
           console.log('Block: ' + data.hash + ' is out of date, re-adding')
           shouldCache = true
         }
@@ -49,13 +49,21 @@ self.addEventListener('message', async function (e) {
         blockData = await blockDataHelper.cacheBlockData(data.hash, docRef)
       }
 
-      blockData.tx.forEach((tx, i) => {
-        data.txValues[i] = tx.value
-        data.txSpentRatios[i] = tx.spentRatio
-        data.txIndexes[i] = tx.index
-      })
+      if (typeof blockData === 'undefined') {
+        let returnData = {
+          error: 'Failed to get blockdata from API'
+        }
 
-      blockData.tx = []
+        self.postMessage(returnData)
+      } else {
+        blockData.tx.forEach((tx, i) => {
+          data.txValues[i] = tx.value
+          data.txSpentRatios[i] = tx.spentRatio
+          data.txIndexes[i] = tx.index
+        })
+
+        blockData.tx = []
+      }
 
       let returnData = {
         blockData: blockData,
@@ -79,21 +87,3 @@ self.addEventListener('message', async function (e) {
       self.postMessage('Unknown command')
   }
 }, false)
-
-// function find_duplicate_in_array (arra1) {
-//   var object = {}
-//   var result = []
-
-//   arra1.forEach(function (item) {
-//     if (!object[item]) { object[item] = 0 }
-//     object[item] += 1
-//   })
-
-//   for (var prop in object) {
-//     if (object[prop] >= 2) {
-//       result.push(prop)
-//     }
-//   }
-
-//   return result
-// }

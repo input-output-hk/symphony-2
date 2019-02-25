@@ -62,7 +62,7 @@ varying float vSpentRatio;
 
 	vec3 getLightProbeIndirectIrradiance( /*const in SpecularLightProbe specularLightProbe,*/ const in GeometricContext geometry, const in int maxMIPLevel ) {
 
-		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio+0.4);
+		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio);
 
 		vec3 worldNormal = inverseTransformDirection( geometry.normal, viewMatrix );
 
@@ -109,7 +109,7 @@ varying float vSpentRatio;
 
 	vec3 getLightProbeIndirectRadiance( /*const in SpecularLightProbe specularLightProbe,*/ const in GeometricContext geometry, const in float blinnShininessExponent, const in int maxMIPLevel ) {
 
-		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio+0.4);
+		float envMapIntensityVar = envMapIntensity * (1.0-vSpentRatio);
 
 		#ifdef ENVMAP_MODE_REFLECTION
 
@@ -142,7 +142,7 @@ varying float vSpentRatio;
 		envMapColor.rgb = envMapTexelToLinear( envMapColor ).rgb;
 
 
-		return envMapColor.rgb * envMapIntensityVar;
+		return envMapColor.rgb * clamp(envMapIntensityVar, 0.2, 1.0);
 
 	}
 
