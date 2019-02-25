@@ -204,8 +204,8 @@ void main() {
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	 vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.1;
-	// vec3 totalEmissiveRadiance = vec3(0.0);
+	//  vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.1;
+	vec3 totalEmissiveRadiance = vec3(0.0);
 	//totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
 
 
@@ -262,7 +262,7 @@ void main() {
 
 	float absNoise = abs(noiseAmount) * 30.0;
 	// float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (1.0-vSpentRatio);
-	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (0.5 + vEnvelope);
+	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (0.1 + (vEnvelope * 3.0));
 
 	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 

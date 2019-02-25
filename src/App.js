@@ -118,6 +118,7 @@ class App extends mixin(EventEmitter, Component) {
     this.camForwardVector = new THREE.Vector3()
     this.vrActive = false
     this.blockHeightTextMesh = null
+    this.autoPilotYPos = 20
 
     // VR controllers
     this.viveController1 = null
@@ -125,6 +126,8 @@ class App extends mixin(EventEmitter, Component) {
     this.viveController2 = null
     this.viveController1Buttons = new ViveController(0)
     this.viveController2Buttons = new ViveController(1)
+    this.viveTriggerPressed1 = false
+    this.viveTriggerPressed2 = false
 
     this.OBJLoader = new OBJLoader()
     this.TextureLoader = new THREE.TextureLoader()
@@ -259,8 +262,9 @@ class App extends mixin(EventEmitter, Component) {
    * Switch renderOrder of elements based on camera position
    */
   setRenderOrder () {
-    this.txs.renderOrder = -1
-    this.particles.renderOrder = -1
+    this.txs.renderOrder = 0
+    this.particles.renderOrder = 0
+    this.glow.renderOrder = 0
 
     if (this.camera.position.y > 0) {
       if (this.centerTree) {
@@ -273,21 +277,21 @@ class App extends mixin(EventEmitter, Component) {
         this.rTree.material.depthWrite = true
       }
 
-      this.occlusion.renderOrder = 0
+      this.occlusion.renderOrder = 1
 
-      this.crystal.renderOrder = 1
-      this.trees.renderOrder = 0
-      this.disk.renderOrder = 2
-      this.plane.renderOrder = 3
-      this.crystalAO.renderOrder = 6
+      this.crystal.renderOrder = 2
+      this.trees.renderOrder = 1
+      this.disk.renderOrder = 3
+      this.plane.renderOrder = 4
+      this.crystalAO.renderOrder = 7
 
       this.underside.position.y = -3.1
       this.undersideL.position.y = -3.1
       this.undersideR.position.y = -3.1
 
-      this.underside.renderOrder = 2
-      this.undersideL.renderOrder = 2
-      this.undersideR.renderOrder = 2
+      this.underside.renderOrder = 3
+      this.undersideL.renderOrder = 3
+      this.undersideR.renderOrder = 3
     } else {
       if (this.centerTree) {
         this.centerTree.material.depthWrite = true
@@ -299,23 +303,23 @@ class App extends mixin(EventEmitter, Component) {
         this.rTree.material.depthWrite = true
       }
 
-      this.occlusion.renderOrder = 10
+      this.occlusion.renderOrder = 11
 
       this.underside.position.y = -3.1
       this.undersideL.position.y = -3.1
       this.undersideR.position.y = -3.1
 
-      this.crystal.renderOrder = 1
-      this.crystalAO.renderOrder = 2
-      this.plane.renderOrder = 3
-      this.underside.renderOrder = 4
-      this.undersideL.renderOrder = 4
-      this.undersideR.renderOrder = 4
-      this.trees.renderOrder = 5
-      this.disk.renderOrder = 6
+      this.crystal.renderOrder = 2
+      this.crystalAO.renderOrder = 3
+      this.plane.renderOrder = 4
+      this.underside.renderOrder = 5
+      this.undersideL.renderOrder = 5
+      this.undersideR.renderOrder = 5
+      this.trees.renderOrder = 6
+      this.disk.renderOrder = 7
     }
 
-    this.bg.renderOrder = -1
+    this.bg.renderOrder = 0
   }
 
   initGUI () {
@@ -476,14 +480,7 @@ class App extends mixin(EventEmitter, Component) {
       this.selectedLight.position.x = selectedPosX
       this.selectedLight.position.z = selectedPosZ
 
-      this.addTXDetailsVRText(
-        txDataJSON,
-        new THREE.Vector3(
-          this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0],
-          selectedPosY,
-          this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2]
-        )
-      )
+      this.addTXDetailsVRText(txDataJSON)
 
       if (animateCam) {
         let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
@@ -1763,33 +1760,43 @@ class App extends mixin(EventEmitter, Component) {
     let blockYDist = this.vrActive ? 20 : 400
 
     let that = this
+
     new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 5000)
+      .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        new TWEEN.Tween(that.camera.position)
-          .to(to, 5000)
+        new TWEEN.Tween(this.camera.position)
+          .to(aboveStart, 5000)
           .onUpdate(function () {
             that.camera.position.set(this.x, this.y, this.z)
           })
           .onComplete(() => {
-            new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
+            new TWEEN.Tween(that.camera.position)
+              .to(to, 5000)
               .onUpdate(function () {
                 that.camera.position.set(this.x, this.y, this.z)
               })
               .onComplete(() => {
                 new TWEEN.Tween(this.camera.position)
-                  .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                  .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
                   .onUpdate(function () {
                     that.camera.position.set(this.x, this.y, this.z)
                   })
                   .onComplete(() => {
-                    this.animatingCamera = false
+                    new TWEEN.Tween(this.camera.position)
+                      .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                      .onUpdate(function () {
+                        that.camera.position.set(this.x, this.y, this.z)
+                      })
+                      .onComplete(() => {
+                        this.animatingCamera = false
+                      })
+                      .easing(TWEEN.Easing.Quadratic.Out)
+                      .start()
                   })
-                  .easing(TWEEN.Easing.Quadratic.Out)
+                  .easing(this.defaultCamEasing)
                   .start()
               })
               .easing(this.defaultCamEasing)
@@ -1801,7 +1808,7 @@ class App extends mixin(EventEmitter, Component) {
       .easing(this.defaultCamEasing)
       .start()
 
-    this.animateCamRotation(10000)
+    this.animateCamRotation(20000)
   }
 
   goToLatestBlock () {
@@ -1939,18 +1946,18 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    let toBlockVec = new THREE.Vector3(posX, 20, posZ).sub(new THREE.Vector3(
+    let toBlockVec = new THREE.Vector3(posX, this.autoPilotYPos, posZ).sub(new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      20,
+      this.autoPilotYPos,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     )).normalize().multiplyScalar(500)
 
     let to = new THREE.Vector3(
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
-      20,
+      this.autoPilotYPos,
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     ).add(toBlockVec)
-    let toTarget = new THREE.Vector3(posX, 40, posZ)
+    let toTarget = new THREE.Vector3(posX, this.autoPilotYPos + 20, posZ)
 
     this.prepareCamAnim(to, toTarget)
 
@@ -1972,7 +1979,9 @@ class App extends mixin(EventEmitter, Component) {
       })
       .start()
 
-    this.animateCamRotation(5000)
+    if (!this.vrActive) {
+      this.animateCamRotation(5000)
+    }
   }
 
   renderFrame () {
@@ -1990,14 +1999,10 @@ class App extends mixin(EventEmitter, Component) {
       this.updatePicker()
     }
 
-    if (this.bg) {
-      this.bg.rotation.y += this.frame * 0.0001
-    }
-
     this.getClosestBlock()
 
     if (this.blockReady) {
-      if (this.audioManager.analyser && window.oscilloscope) {
+      if (!this.vrActive && this.audioManager.analyser && window.oscilloscope) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
 
@@ -2050,6 +2055,10 @@ class App extends mixin(EventEmitter, Component) {
 
     this.viveController1Buttons.update()
     this.viveController2Buttons.update()
+
+    if (this.viveTriggerPressed1 && this.viveTriggerPressed2) {
+      this.camera.position.y += 0.3
+    }
 
     // this.setState({
     //   posX: this.camera.position.x.toFixed(3),
@@ -2169,6 +2178,22 @@ class App extends mixin(EventEmitter, Component) {
         }
       }
     })
+
+    this.viveController1Buttons.addEventListener('triggerdown', function (e) {
+      this.viveTriggerPressed1 = true
+    }.bind(this))
+
+    this.viveController2Buttons.addEventListener('triggerdown', function (e) {
+      this.viveTriggerPressed2 = true
+    }.bind(this))
+
+    this.viveController1Buttons.addEventListener('triggerup', function (e) {
+      this.viveTriggerPressed1 = false
+    }.bind(this))
+
+    this.viveController2Buttons.addEventListener('triggerup', function (e) {
+      this.viveTriggerPressed2 = false
+    }.bind(this))
 
     this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
       this.viveController1Buttons.interactionTimeout = setTimeout(() => {
@@ -2438,7 +2463,7 @@ class App extends mixin(EventEmitter, Component) {
     }
     this.centerTree = centerTree
     this.centerTree.material = this.treeGenerator.materialC
-    this.centerTree.renderOrder = -1
+    this.centerTree.renderOrder = 0
     this.group.add(centerTree)
 
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height - 1] !== 'undefined') {
@@ -2448,7 +2473,7 @@ class App extends mixin(EventEmitter, Component) {
       }
       this.lTree = lTree
       this.lTree.material = this.treeGenerator.materialL
-      this.lTree.renderOrder = -1
+      this.lTree.renderOrder = 0
       this.group.add(this.lTree)
     }
     if (typeof this.blockGeoDataObject[this.closestBlock.blockData.height + 1] !== 'undefined') {
@@ -2458,7 +2483,7 @@ class App extends mixin(EventEmitter, Component) {
       }
       this.rTree = rTree
       this.rTree.material = this.treeGenerator.materialR
-      this.rTree.renderOrder = -1
+      this.rTree.renderOrder = 0
       this.group.add(this.rTree)
     }
 
@@ -2581,10 +2606,14 @@ class App extends mixin(EventEmitter, Component) {
     this.viveController1 = this.renderer.vr.getController(0)
     this.viveController1.userData.id = 0
     this.viveController1.addEventListener('select', this.onVRControllerSelect.bind(this))
+    this.viveController1.frustumCulled = false
+    this.viveController1.renderOrder = -1
     this.camera.add(this.viveController1)
 
     this.viveController2 = this.renderer.vr.getController(1)
     this.viveController2.userData.id = 1
+    this.viveController2.frustumCulled = false
+    this.viveController2.renderOrder = -1
     this.camera.add(this.viveController2)
 
     this.OBJLoader.setPath('assets/models/obj/vive-controller/')
@@ -2614,6 +2643,8 @@ class App extends mixin(EventEmitter, Component) {
 
       let line = new THREE.Line(lineGeo, lineMat)
       line.scale.z = 5
+
+      controller.frustumCulled = false
 
       this.viveController1.add(this.controllerCam)
       this.viveController1.add(line)
@@ -2686,7 +2717,7 @@ class App extends mixin(EventEmitter, Component) {
       lineHeight: 48
     })
 
-    blockHeightTextMesh.renderOrder = -1
+    blockHeightTextMesh.renderOrder = 0
 
     this.camera.remove(this.blockHeightTextMesh)
     this.blockHeightTextMesh = blockHeightTextMesh
@@ -2698,10 +2729,15 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    const health = blockData.healthRatio > 1.0 ? 1.0 : blockData.healthRatio
+    const healthInv = (1.0 - health).toFixed(1)
+
     let blockDetailsTextMesh = await this.textGenerator.create({
       text: `
       // BLOCK ${blockData.height}
       
+      HEALTH: ${healthInv} / 1.0
+      NO. OF TX: ${blockData.n_tx}
       OUTPUT TOTAL: ${(blockData.outputTotal / 100000000).toFixed(2)} BTC
       FEES: ${(blockData.fee / 100000000).toFixed(2)} BTC
       DATE: ${moment.unix(blockData.time).format('YYYY-MM-DD HH:mm:ss')}
@@ -2723,25 +2759,26 @@ class App extends mixin(EventEmitter, Component) {
       lineHeight: 48
     })
 
-    blockDetailsTextMesh.renderOrder = -1
+    blockDetailsTextMesh.renderOrder = 0
 
     this.camera.remove(this.blockDetailsTextMesh)
     this.blockDetailsTextMesh = blockDetailsTextMesh
     this.camera.add(this.blockDetailsTextMesh)
   }
 
-  async addTXDetailsVRText (txData, pos) {
+  async addTXDetailsVRText (txData) {
     if (!this.vrActive) {
       return
     }
 
     let txDetailsTextMesh = await this.textGenerator.create({
       text: `
-      TX-${txData.hash.substring(0, 12)}...
+      TX-${txData.hash.substring(0, 24)}...
       ${moment.unix(txData.time).format('YYYY-MM-DD HH:mm:ss')}
       ${txData.size} BYTES
       RELAYED BY: ${txData.relayed_by}
       FEE: ${txData.fee} BTC
+      OUTPUT TOTAL: ${(txData.outTotal).toFixed(2)} BTC
       `,
       position: {
         x: -2.5,
@@ -2754,7 +2791,7 @@ class App extends mixin(EventEmitter, Component) {
       lineHeight: 48
     })
 
-    txDetailsTextMesh.renderOrder = -1
+    txDetailsTextMesh.renderOrder = 0
 
     this.cameraMain.remove(this.txDetailsTextMesh)
     this.txDetailsTextMesh = txDetailsTextMesh

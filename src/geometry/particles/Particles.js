@@ -31,8 +31,8 @@ export default class Particles extends Base {
       opacity: 1.0,
       fog: false,
       blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      depthTest: false
+      depthWrite: false
+      // depthTest: false
     })
 
     this.textureHeight = this.textureHelper.textureHeight

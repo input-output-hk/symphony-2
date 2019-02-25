@@ -16,17 +16,6 @@ export default class Bg extends Base {
     this.uOffset = 0.880
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/saturn/')
-      .load([
-        '_RT.png', // right
-        '_LF.png', // left
-        '_UP.png', // top
-        '_DN.png', // bottom
-        '_FT.png', // front
-        '_BK.png' // back
-      ])
-
-    this.cubeMapGround = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa/')
       .load([
         '0004.jpg',
@@ -39,10 +28,10 @@ export default class Bg extends Base {
 
     this.material = new BgMaterial({
       color: 0xffffff,
-      side: THREE.DoubleSide,
+      side: THREE.BackSide,
       transparent: true,
       opacity: 1.0,
-      envMap: this.cubeMapGround,
+      envMap: this.cubeMap,
       fog: false
     })
   }

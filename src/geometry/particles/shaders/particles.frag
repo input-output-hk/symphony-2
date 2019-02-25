@@ -1,18 +1,19 @@
-varying float vLife;
+
 
 uniform vec3 diffuse;
 uniform float opacity;
 uniform float uTime;
 uniform float uFrame;
 uniform float uParticleLifeMax;
+
+varying float vLife;
 varying float vLifeAttr;
 
 #include <common>
 #include <color_pars_fragment>
-#include <map_particle_pars_fragment>
-#include <fog_pars_fragment>
+// #include <map_particle_pars_fragment>
+// #include <fog_pars_fragment>
 #include <logdepthbuf_pars_fragment>
-// #include <clipping_planes_pars_fragment>
 
 void main() {
 
@@ -22,7 +23,7 @@ void main() {
 	vec4 diffuseColor = vec4( diffuse, opacity );
 
 	#include <logdepthbuf_fragment>
-	#include <map_particle_fragment>
+	// #include <map_particle_fragment>
 	#include <color_fragment>
 	#include <alphatest_fragment>
 
@@ -39,9 +40,8 @@ void main() {
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 
-	// #include <premultiplied_alpha_fragment>
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>
-	#include <fog_fragment>
+	//#include <fog_fragment>
 
 }
