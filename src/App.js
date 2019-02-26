@@ -1171,8 +1171,14 @@ class App extends mixin(EventEmitter, Component) {
 
   toggleTopView () {
     this.stopAutoPilotAnimation()
+
+    let yPos = this.mapControlsYPos
+    if (this.vrActive) {
+      yPos = 20
+    }
+
     this.prepareCamAnim(
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, this.mapControlsYPos, this.closestBlock.blockData.pos.z),
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, yPos, this.closestBlock.blockData.pos.z),
       new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
     )
 
@@ -1183,8 +1189,10 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.toggleMapControls()
-        this.controls.target = this.camPosTarget
+        if (!this.vrActive) {
+          this.toggleMapControls()
+          this.controls.target = this.camPosTarget
+        }
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1915,7 +1923,12 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager.stopNotes()
 
     this.setAutoPilotState()
-    this.autoPilotAnimLoop()
+
+    if (this.vrActive) {
+      this.autoPilotAnimLoopVR()
+    } else {
+      this.autoPilotAnimLoop()
+    }
   }
 
   setAutoPilotState () {
@@ -1961,14 +1974,17 @@ class App extends mixin(EventEmitter, Component) {
 
     this.prepareCamAnim(to, toTarget)
 
-    this.autoPilotTween = new TWEEN.Tween(this.camera.position)
+    let that = this
+    let camPos = {x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z}
+
+    this.autoPilotTween = new TWEEN.Tween(camPos)
       .to(to, 20000)
       .onUpdate(function () {
-        if (!this.autoPilot) {
+        if (!that.autoPilot) {
           return
         }
 
-        this.camera.position.set(this.x, this.y, this.z)
+        that.camera.position.set(camPos.x, camPos.y, camPos.z)
       })
       .onComplete(() => {
         setTimeout(() => {
@@ -1979,9 +1995,60 @@ class App extends mixin(EventEmitter, Component) {
       })
       .start()
 
-    if (!this.vrActive) {
-      this.animateCamRotation(5000)
+    this.animateCamRotation(5000)
+  }
+
+  autoPilotAnimLoopVR () {
+    if (!this.autoPilot) {
+      return
     }
+
+    let posX
+    let posZ
+    if (this.autoPilotDirection === 'backward') {
+      posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
+      posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
+    } else {
+      posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
+      posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
+    }
+
+    if (typeof posX === 'undefined') {
+      return
+    }
+
+    let toBlockVec = new THREE.Vector2(posX, posZ).sub(new THREE.Vector2(
+      this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
+      this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
+    )).normalize().multiplyScalar(500)
+
+    let to = new THREE.Vector2(
+      this.blockPositions[(this.closestBlock.blockData.height) * 2 + 0],
+      this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
+    ).add(toBlockVec)
+
+    let camPos = {x: this.camera.position.x, y: this.camera.position.z}
+
+    let that = this
+
+    this.autoPilotTween = new TWEEN.Tween(camPos)
+      .to(to, 20000)
+      .onUpdate(function () {
+        if (!that.autoPilot) {
+          return
+        }
+
+        that.camera.position.x = camPos.x
+        that.camera.position.z = camPos.y
+      })
+      .onComplete(() => {
+        setTimeout(() => {
+          if (this.autoPilot) {
+            this.autoPilotAnimLoopVR()
+          }
+        }, 10)
+      })
+      .start()
   }
 
   renderFrame () {
@@ -2057,7 +2124,13 @@ class App extends mixin(EventEmitter, Component) {
     this.viveController2Buttons.update()
 
     if (this.viveTriggerPressed1 && this.viveTriggerPressed2) {
-      this.camera.position.y += 0.3
+      if (this.camera.position.y < 2000) {
+        this.camera.position.y += 0.25
+      }
+    } else {
+      if (this.camera.position.y > 20) {
+        this.camera.position.y -= 0.1
+      }
     }
 
     // this.setState({
@@ -2588,6 +2661,10 @@ class App extends mixin(EventEmitter, Component) {
       this.deselectTx()
     } else {
       if (this.txIsHovered) {
+        if (this.viveTriggerPressed1 && this.viveTriggerPressed2) {
+          return
+        }
+
         this.lastSelectedID = this.lastHoveredID
         if (typeof this.pickerGenerator.txMap[this.lastHoveredID] !== 'undefined') {
           this.selectedTXHash = this.pickerGenerator.txMap[this.lastHoveredID]
