@@ -91,7 +91,7 @@ self.addEventListener('message', async function (e) {
 }, false)
 
 const save = async function (blockData) {
-  console.log('Block geo data: ' + blockData.hash + ' does not exist in the db, adding...')
+  // console.log('Block geo data: ' + blockData.hash + ' does not exist in the db, adding...')
   let pointCount = Math.max(blockData.n_tx, 4)
 
   const simplex = new SimplexNoise(blockData.height)

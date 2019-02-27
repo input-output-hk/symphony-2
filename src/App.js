@@ -130,7 +130,7 @@ class App extends mixin(EventEmitter, Component) {
     this.viveTriggerPressed2 = false
 
     this.OBJLoader = new OBJLoader()
-    this.TextureLoader = new THREE.TextureLoader()
+    this.textureLoader = new THREE.TextureLoader()
 
     this.state = {
       loading: true,
@@ -1367,7 +1367,7 @@ class App extends mixin(EventEmitter, Component) {
         ) {
           delete this.blockGeoDataObject[height]
 
-          console.log('deleted blockdata at: ' + height)
+          // console.log('deleted blockdata at: ' + height)
         }
       }
     }
@@ -1377,7 +1377,7 @@ class App extends mixin(EventEmitter, Component) {
         height < this.closestHeight - 100 ||
           height > this.closestHeight + 100
       ) {
-        console.log('deleted base geo at: ' + height)
+        // console.log('deleted base geo at: ' + height)
         delete this.loadedBaseGeoHeights[ i ]
       }
     })
@@ -1529,6 +1529,8 @@ class App extends mixin(EventEmitter, Component) {
                 return
               }
 
+              let retryCount = 0
+
               const blockHeightWorker = new BlockHeightWorker()
               blockHeightWorker.onmessage = async ({ data }) => {
                 if (typeof data.hash !== 'undefined') {
@@ -1560,8 +1562,18 @@ class App extends mixin(EventEmitter, Component) {
 
                   blockHeightWorker.terminate()
                 } else if (data.error !== 'undefined') {
-                  console.log(data.error)
-                  blockHeightWorker.terminate()
+                  console.error(data.error)
+
+                  // try again
+                  retryCount++
+                  if (retryCount < 3) {
+                    setTimeout(() => {
+                      console.log('Retrying BlockHeightWorker for height: ' + height + 'again')
+                      blockHeightWorker.postMessage(
+                        blockHeightWorkerSendObj
+                      )
+                    }, 2000)
+                  }
                 }
               }
 
@@ -1978,7 +1990,7 @@ class App extends mixin(EventEmitter, Component) {
     let camPos = {x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z}
 
     this.autoPilotTween = new TWEEN.Tween(camPos)
-      .to(to, 20000)
+      .to(to, 1000)
       .onUpdate(function () {
         if (!that.autoPilot) {
           return
@@ -1995,7 +2007,7 @@ class App extends mixin(EventEmitter, Component) {
       })
       .start()
 
-    this.animateCamRotation(5000)
+    this.animateCamRotation(500)
   }
 
   autoPilotAnimLoopVR () {
@@ -2074,6 +2086,10 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       if (this.frame % 500 === 0) {
+        if (this.vrActive) {
+          this.bindVRGamepadEvents()
+        }
+
         this.loadNearestBlocks()
       }
 
@@ -2251,42 +2267,223 @@ class App extends mixin(EventEmitter, Component) {
         }
       }
     })
+  }
 
-    this.viveController1Buttons.addEventListener('triggerdown', function (e) {
-      this.viveTriggerPressed1 = true
-    }.bind(this))
+  setupViveControllers () {
+    if (this.viveController1 && !this.VRController1EventsBound) {
+      if (typeof this.viveController1.userData.inputSource !== 'undefined') {
+        if (this.viveController1.userData.inputSource.handedness === 'right') {
+          this.setupRightViveController(this.viveController1)
+        }
 
-    this.viveController2Buttons.addEventListener('triggerdown', function (e) {
-      this.viveTriggerPressed2 = true
-    }.bind(this))
+        if (this.viveController1.userData.inputSource.handedness === 'left') {
+          this.setupLeftViveController(this.viveController1)
+        }
 
-    this.viveController1Buttons.addEventListener('triggerup', function (e) {
-      this.viveTriggerPressed1 = false
-    }.bind(this))
+        console.log('vive 1 setup')
+        this.VRController1EventsBound = true
+      }
+    }
 
-    this.viveController2Buttons.addEventListener('triggerup', function (e) {
-      this.viveTriggerPressed2 = false
-    }.bind(this))
+    if (this.viveController2 && !this.VRController2EventsBound) {
+      if (typeof this.viveController2.userData.inputSource !== 'undefined') {
+        if (this.viveController2.userData.inputSource.handedness === 'right') {
+          this.setupRightViveController(this.viveController2)
+        }
 
-    this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
-      this.viveController1Buttons.interactionTimeout = setTimeout(() => {
-        this.viveControllerLeftButtonEvents(e)
-      }, this.config.VR.interactionTimeout)
-    }.bind(this))
+        if (this.viveController2.userData.inputSource.handedness === 'left') {
+          this.setupLeftViveController(this.viveController2)
+        }
 
-    this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
-      clearTimeout(this.viveController1Buttons.interactionTimeout)
-    }.bind(this))
+        console.log('vive 2 setup')
+        this.VRController2EventsBound = true
+      }
+    }
+  }
 
-    this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
-      this.viveController2Buttons.interactionTimeout = setTimeout(() => {
-        this.viveControllerRightButtonEvents(e)
-      }, this.config.VR.interactionTimeout)
-    }.bind(this))
+  setupRightViveController (viveController) {
+    viveController.addEventListener('select', this.onVRControllerSelect.bind(this))
 
-    this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
-      clearTimeout(this.viveController2Buttons.interactionTimeout)
-    }.bind(this))
+    this.controllerCam = new THREE.PerspectiveCamera(
+      this.config.camera.fov,
+      window.innerWidth / window.innerHeight,
+      1.0,
+      5000000
+    )
+    viveController.add(this.controllerCam)
+
+    let lineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)
+    ])
+
+    let lineMat = new THREE.LineBasicMaterial({
+      color: 0x6ad16a
+    })
+
+    let line = new THREE.Line(lineGeo, lineMat)
+    line.scale.z = 5
+
+    viveController.add(line)
+
+    // add buttons
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.015, 0.015, 1)
+    buttonGeo.rotateX(-(Math.PI / 2))
+
+    this.textureLoader.setPath('assets/images/textures/vr-ui/')
+    let buttonPrevMap = this.textureLoader.load('prev.png')
+
+    // prev button
+    let buttonPrevMat = new THREE.MeshBasicMaterial({
+      map: buttonPrevMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonPrevMesh = new THREE.Mesh(buttonGeo, buttonPrevMat)
+    buttonPrevMesh.position.x = -0.015
+    buttonPrevMesh.position.y = 0.009
+    buttonPrevMesh.position.z = 0.05
+    viveController.add(buttonPrevMesh)
+
+    // next button
+    let buttonNextMap = this.textureLoader.load('next.png')
+    let buttonNextMat = new THREE.MeshBasicMaterial({
+      map: buttonNextMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonNextMesh = new THREE.Mesh(buttonGeo, buttonNextMat)
+    buttonNextMesh.position.x = 0.015
+    buttonNextMesh.position.y = 0.009
+    buttonNextMesh.position.z = 0.05
+    viveController.add(buttonNextMesh)
+
+    // up button
+    let buttonUpMap = this.textureLoader.load('up.png')
+    let buttonUpMat = new THREE.MeshBasicMaterial({
+      map: buttonUpMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
+    buttonUpMesh.position.y = 0.009
+    buttonUpMesh.position.z = 0.035
+    viveController.add(buttonUpMesh)
+
+    // down button
+    let buttonDownMap = this.textureLoader.load('down.png')
+    let buttonDownMat = new THREE.MeshBasicMaterial({
+      map: buttonDownMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonDownMesh = new THREE.Mesh(buttonGeo, buttonDownMat)
+    buttonDownMesh.position.y = 0.009
+    buttonDownMesh.position.z = 0.065
+    viveController.add(buttonDownMesh)
+  }
+
+  setupLeftViveController (viveController) {
+    // add buttons
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.015, 0.015, 1)
+    buttonGeo.rotateX(-(Math.PI / 2))
+
+    this.textureLoader.setPath('assets/images/textures/vr-ui/')
+
+    // random button
+    let buttonRandomMap = this.textureLoader.load('random.png')
+    let buttonRandomMat = new THREE.MeshBasicMaterial({
+      map: buttonRandomMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonRandomMesh = new THREE.Mesh(buttonGeo, buttonRandomMat)
+    buttonRandomMesh.position.y = 0.009
+    buttonRandomMesh.position.z = 0.065
+    viveController.add(buttonRandomMesh)
+
+    // latest button
+    let buttonLatestMap = this.textureLoader.load('latest.png')
+    let buttonLatestMat = new THREE.MeshBasicMaterial({
+      map: buttonLatestMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+    let buttonLatestMesh = new THREE.Mesh(buttonGeo, buttonLatestMat)
+    buttonLatestMesh.position.y = 0.009
+    buttonLatestMesh.position.z = 0.035
+    viveController.add(buttonLatestMesh)
+  }
+
+  bindVRGamepadEvents () {
+    this.setupViveControllers()
+
+    if (!this.VRGamepad1EventsBound) {
+      if (this.viveController1Buttons.gamepad) {
+        this.viveController1Buttons.addEventListener('triggerdown', function (e) {
+          this.viveTriggerPressed1 = true
+        }.bind(this))
+
+        this.viveController1Buttons.addEventListener('triggerup', function (e) {
+          this.viveTriggerPressed1 = false
+        }.bind(this))
+
+        this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
+          this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+            switch (this.viveController1Buttons.gamepad.hand) {
+              case 'right':
+                this.viveControllerRightButtonEvents(e)
+                break
+              case 'left':
+                this.viveControllerLeftButtonEvents(e)
+                break
+
+              default:
+                break
+            }
+          }, this.config.VR.interactionTimeout)
+        }.bind(this))
+
+        this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+          clearTimeout(this.viveController1Buttons.interactionTimeout)
+        }.bind(this))
+
+        this.VRGamepad1EventsBound = true
+      }
+    }
+
+    if (!this.VRGamepad2EventsBound) {
+      if (this.viveController2Buttons.gamepad) {
+        this.viveController2Buttons.addEventListener('triggerdown', function (e) {
+          this.viveTriggerPressed2 = true
+        }.bind(this))
+
+        this.viveController2Buttons.addEventListener('triggerup', function (e) {
+          this.viveTriggerPressed2 = false
+        }.bind(this))
+
+        this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
+          this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+            switch (this.viveController2Buttons.gamepad.hand) {
+              case 'right':
+                this.viveControllerRightButtonEvents(e)
+                break
+              case 'left':
+                this.viveControllerLeftButtonEvents(e)
+                break
+
+              default:
+                break
+            }
+          }, this.config.VR.interactionTimeout)
+        }.bind(this))
+
+        this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+          clearTimeout(this.viveController2Buttons.interactionTimeout)
+        }.bind(this))
+
+        this.VRGamepad2EventsBound = true
+      }
+    }
   }
 
   viveControllerRightButtonEvents (e) {
@@ -2442,7 +2639,7 @@ class App extends mixin(EventEmitter, Component) {
           delete this.audioManager.audioSources[height]
           delete this.audioManager.buffers[height]
           delete this.audioManager.gainNodes[height]
-          console.log('stopped audio at height: ' + height)
+          // console.log('stopped audio at height: ' + height)
         }
 
         clearTimeout(this.audioManager.loops[height])
@@ -2676,55 +2873,33 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  setupViveModels () {
+  initViveControllers () {
     this.camera.remove(this.viveController1)
     this.camera.remove(this.viveController2)
 
     this.viveController1 = this.renderer.vr.getController(0)
-    this.viveController1.userData.id = 0
-    this.viveController1.addEventListener('select', this.onVRControllerSelect.bind(this))
+    // this.viveController1.userData.id = 0
+    // this.viveController1.addEventListener('select', this.onVRControllerSelect.bind(this))
     this.viveController1.frustumCulled = false
     this.viveController1.renderOrder = -1
     this.camera.add(this.viveController1)
 
     this.viveController2 = this.renderer.vr.getController(1)
-    this.viveController2.userData.id = 1
+    // this.viveController2.userData.id = 1
     this.viveController2.frustumCulled = false
     this.viveController2.renderOrder = -1
     this.camera.add(this.viveController2)
 
     this.OBJLoader.setPath('assets/models/obj/vive-controller/')
     this.OBJLoader.load('vr_controller_vive_1_5.obj', function (object) {
-      this.TextureLoader.setPath('assets/models/obj/vive-controller/')
+      this.textureLoader.setPath('assets/models/obj/vive-controller/')
       let controller = object.children[0]
-      controller.material.map = this.TextureLoader.load('onepointfive_texture.png')
-      controller.material.specularMap = this.TextureLoader.load('onepointfive_spec.png')
+      controller.material.map = this.textureLoader.load('onepointfive_texture.png')
+      controller.material.specularMap = this.textureLoader.load('onepointfive_spec.png')
+      controller.frustumCulled = false
 
       this.viveController1.add(controller.clone())
       this.viveController2.add(controller.clone())
-
-      this.controllerCam = new THREE.PerspectiveCamera(
-        this.config.camera.fov,
-        window.innerWidth / window.innerHeight,
-        1.0,
-        5000000
-      )
-
-      let lineGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)
-      ])
-
-      let lineMat = new THREE.LineBasicMaterial({
-        color: 0x6ad16a
-      })
-
-      let line = new THREE.Line(lineGeo, lineMat)
-      line.scale.z = 5
-
-      controller.frustumCulled = false
-
-      this.viveController1.add(this.controllerCam)
-      this.viveController1.add(line)
     }.bind(this))
   }
 
@@ -2752,7 +2927,7 @@ class App extends mixin(EventEmitter, Component) {
     if (vrActive) {
       this.camera = new THREE.PerspectiveCamera()
       this.camera.add(this.cameraMain)
-      this.setupViveModels()
+      this.initViveControllers()
     } else {
       this.camera = this.cameraMain
 
