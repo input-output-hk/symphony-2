@@ -103,7 +103,8 @@ export default class Tx extends Base {
   passThroughTexture (input, output) {
     this.passThroughMaterial.uniforms.texture.value = input
     this.renderer.vr.enabled = false
-    this.renderer.render(this.passThroughScene, this.quadCamera, output)
+    this.renderer.setRenderTarget(output)
+    this.renderer.render(this.passThroughScene, this.quadCamera)
   }
 
   setTextureLocations (
@@ -207,7 +208,8 @@ export default class Tx extends Base {
     this.positionMaterial.uniforms.positionTexture.value = inputPositionRenderTarget.texture
 
     this.renderer.vr.enabled = false
-    this.renderer.render(this.positionScene, this.quadCamera, this.outputPositionRenderTarget)
+    this.renderer.setRenderTarget(this.outputPositionRenderTarget)
+    this.renderer.render(this.positionScene, this.quadCamera)
 
     this.material.uniforms.positionTexture.value = this.outputPositionRenderTarget.texture
 

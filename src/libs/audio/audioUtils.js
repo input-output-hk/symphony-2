@@ -87,7 +87,7 @@ export default class Audio extends EventEmitter {
 
       const txSpentRatio = spentRatios[i]
 
-      let txTime = map(i, 0, txCount, 0, this.soundDuration - 9)
+      let txTime = map(i, 0, txCount, 0, this.soundDuration - 4)
       txTimes.push(txTime)
 
       let mappedSpentRatio = map((1.0 - (txSpentRatio)), 1.0, 0.0, 8.0, 1.0)
@@ -156,38 +156,37 @@ export default class Audio extends EventEmitter {
 
     for (let i = 0; i + chunkIndex < length; i++) {
       let time = times[i + chunkIndex]
-      if (Math.abs(currentTime - time) < 6) {
-        let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
-        let currentAngle = currentTime * ANGULAR_FREQUENCY
-        let spentRatio = spent[i + chunkIndex]
+      // if (Math.abs(currentTime - time) < 8) {
+      let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
+      let currentAngle = currentTime * ANGULAR_FREQUENCY
+      let spentRatio = spent[i + chunkIndex]
 
-        // envelope
-        let attack = custom_smoothstep(time, (time + 0.1) + (custom_random(i) * 2.0), currentTime)
-        let release = (1.0 - custom_smoothstep(time + 2.0, (time + 3.0), currentTime))
+      // envelope
+      let attack = custom_smoothstep(time, (time + 0.1) + (custom_random(i) * 2.0), currentTime)
+      let release = (1.0 - custom_smoothstep(time + 2.0, (time + 3.0), currentTime))
 
-        let spent1 = 1.5
-        let spent2 = 0.2 + custom_step(2.0, spentRatio) * 1.0
-        let spent3 = 0.2 + custom_step(3.0, spentRatio) * 0.9
-        let spent4 = 0.2 + custom_step(4.0, spentRatio) * 0.8
-        let spent5 = 0.2 + custom_step(5.0, spentRatio) * 0.7
-        let spent6 = 0.2 + custom_step(6.0, spentRatio) * 0.6
-        let spent7 = 0.2 + custom_step(7.0, spentRatio) * 0.5
-        // let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
+      let spent1 = 1.5
+      let spent2 = 0.2 + custom_step(2.0, spentRatio) * 1.0
+      let spent3 = 0.2 + custom_step(3.0, spentRatio) * 0.9
+      let spent4 = 0.2 + custom_step(4.0, spentRatio) * 0.8
+      let spent5 = 0.2 + custom_step(5.0, spentRatio) * 0.7
+      let spent6 = 0.2 + custom_step(6.0, spentRatio) * 0.6
+      let spent7 = 0.2 + custom_step(7.0, spentRatio) * 0.5
+      let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
 
-        let wave = Math.sin(currentAngle) * spent1 +
+      let wave = Math.sin(currentAngle) * spent1 +
         Math.sin(currentAngle * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
         Math.sin(currentAngle * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
         Math.sin(currentAngle * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
         Math.sin(currentAngle * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
         Math.sin(currentAngle * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
-        Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7
+        Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
+        Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
-        // Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
+      wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
 
-        wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
-
-        sum += wave * attack * release
-      }
+      sum += wave * attack * release
+      // }
     }
 
     return sum

@@ -40,8 +40,13 @@ const getBlockData = async function (height, config) {
   const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
   let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + config.blockchainInfo.apiCode)
 
+  if (retryCount > 0) {
+    console.log('Retrying with different endpoint...')
+    url = 'https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + config.blockchainInfo.apiCode
+  }
+
   try {
-    let blockData = await fetch(url)
+    let blockData = await fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
     let blockDataJSON = await blockData.json()
 
     return blockDataJSON
@@ -52,8 +57,8 @@ const getBlockData = async function (height, config) {
       return null
     }
 
-    setTimeout(() => {
-      getBlockData()
-    }, 3000)
+    let returnVal = await getBlockData()
+
+    return returnVal
   }
 }

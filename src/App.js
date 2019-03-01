@@ -359,9 +359,11 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     if (this.vrActive && this.controllerCam) {
-      this.renderer.render(this.pickingScene, this.controllerCam, this.pickingTexture)
+      this.renderer.setRenderTarget(this.pickingTexture)
+      this.renderer.render(this.pickingScene, this.controllerCam)
     } else {
-      this.renderer.render(this.pickingScene, this.cameraMain, this.pickingTexture)
+      this.renderer.setRenderTarget(this.pickingTexture)
+      this.renderer.render(this.pickingScene, this.cameraMain)
     }
 
     let pixelBuffer = new Uint8Array(4)
@@ -864,11 +866,24 @@ class App extends mixin(EventEmitter, Component) {
       }
 
       try {
-        let blockData = await window.fetch(url)
+        let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
         let blockDataJSON = await blockData.json()
         this.blockHashToLoad = blockDataJSON.blocks[0].hash
       } catch (error) {
         console.log(error)
+
+        if (this.heightToLoad !== null) {
+          console.log('Retrying from different endpoint...')
+          url = 'https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + this.heightToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode
+
+          try {
+            let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+            let blockDataJSON = await blockData.json()
+            this.blockHashToLoad = blockDataJSON.blocks[0].hash
+          } catch (error) {
+            console.log(error)
+          }
+        }
       }
     }
 
@@ -1529,7 +1544,7 @@ class App extends mixin(EventEmitter, Component) {
                 return
               }
 
-              let retryCount = 0
+              // let retryCount = 0
 
               const blockHeightWorker = new BlockHeightWorker()
               blockHeightWorker.onmessage = async ({ data }) => {
@@ -1565,15 +1580,15 @@ class App extends mixin(EventEmitter, Component) {
                   console.error(data.error)
 
                   // try again
-                  retryCount++
-                  if (retryCount < 3) {
-                    setTimeout(() => {
-                      console.log('Retrying BlockHeightWorker for height: ' + height + 'again')
-                      blockHeightWorker.postMessage(
-                        blockHeightWorkerSendObj
-                      )
-                    }, 2000)
-                  }
+                  // retryCount++
+                  // if (retryCount < 3) {
+                  //   setTimeout(() => {
+                  //     console.log('Retrying BlockHeightWorker for height: ' + height)
+                  //     blockHeightWorker.postMessage(
+                  //       blockHeightWorkerSendObj
+                  //     )
+                  //   }, 2000)
+                  // }
                 }
               }
 
@@ -1990,7 +2005,7 @@ class App extends mixin(EventEmitter, Component) {
     let camPos = {x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z}
 
     this.autoPilotTween = new TWEEN.Tween(camPos)
-      .to(to, 1000)
+      .to(to, 20000)
       .onUpdate(function () {
         if (!that.autoPilot) {
           return
@@ -2007,7 +2022,7 @@ class App extends mixin(EventEmitter, Component) {
       })
       .start()
 
-    this.animateCamRotation(500)
+    this.animateCamRotation(5000)
   }
 
   autoPilotAnimLoopVR () {
@@ -2136,16 +2151,17 @@ class App extends mixin(EventEmitter, Component) {
       this.treeGenerator.update(window.performance.now())
     }
 
-    this.viveController1Buttons.update()
-    this.viveController2Buttons.update()
-
-    if (this.viveTriggerPressed1 && this.viveTriggerPressed2) {
-      if (this.camera.position.y < 2000) {
-        this.camera.position.y += 0.25
-      }
-    } else {
-      if (this.camera.position.y > 20) {
-        this.camera.position.y -= 0.1
+    if (this.vrActive) {
+      this.viveController1Buttons.update()
+      this.viveController2Buttons.update()
+      if (this.viveTriggerPressed1 && this.viveTriggerPressed2) {
+        if (this.camera.position.y < 2000) {
+          this.camera.position.y += 0.25
+        }
+      } else {
+        if (this.camera.position.y > 20) {
+          this.camera.position.y -= 0.1
+        }
       }
     }
 
@@ -2162,12 +2178,14 @@ class App extends mixin(EventEmitter, Component) {
         if (this.WebVR.VRSupported) {
           this.renderer.vr.enabled = true
         }
+        this.renderer.setRenderTarget(null)
         this.renderer.render(this.pickingScene, this.cameraMain)
       } else {
         // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
         if (this.WebVR.VRSupported) {
           this.renderer.vr.enabled = true
         }
+        this.renderer.setRenderTarget(null)
         this.renderer.render(this.scene, this.cameraMain)
         // this.composer.render()
       }
@@ -2907,7 +2925,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = true
+    this.vrActive = vrActive
 
     if (this.camera) {
       this.scene.remove(this.camera)
