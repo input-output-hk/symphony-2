@@ -57,7 +57,7 @@ const getBlockData = async function (height, config) {
       return null
     }
 
-    let returnVal = await getBlockData()
+    let returnVal = await getBlockData(height, config)
 
     return returnVal
   }
