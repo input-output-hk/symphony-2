@@ -86,11 +86,12 @@ class App extends mixin(EventEmitter, Component) {
     this.frame = 0
     this.loadingNearestBlocks = false
     this.blockGeoDataObject = {}
-    this.hashes = []
     this.blockPositions = null
     this.closestBlock = null
     this.prevClosestBlock = null
     this.underside = null
+    this.undersideL = null
+    this.undersideR = null
     this.closestBlockReadyForUpdate = false
     this.clock = new THREE.Clock()
     this.loadedBaseGeoHeights = []
@@ -104,23 +105,21 @@ class App extends mixin(EventEmitter, Component) {
     this.camFromPosition = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camFromRotation = new THREE.Vector3(0.0, 0.0, 0.0)
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
-    this.txSpawnLocation = new THREE.Vector3(0.0, 0.0, 0.0)
-    this.txSpawnStart = new THREE.Vector3(0, 0, 0)
-    this.txSpawnDestination = new THREE.Vector3(0, 0, 0)
     this.autoPilot = false
     this.autoPilotDirection = false
     this.mapControlsYPos = 500
     this.closestHeight = null
     this.originOffset = new THREE.Vector2(0, 0)
-    this.WebVR = new WebVR() // WebVR lib
     this.txCountBufferSize = 4000 // buffer size for tx counts
-    this.textMesh = null
-    this.camForwardVector = new THREE.Vector3()
-    this.vrActive = false
-    this.blockHeightTextMesh = null
     this.autoPilotYPos = 20
+    this.boundingBoxObj = null
 
-    // VR controllers
+    // VR
+    this.blockHeightTextMesh = null
+    this.blockDetailsTextMesh = null
+    this.txDetailsTextMesh = null
+    this.WebVRLib = new WebVR() // WebVR lib
+    this.vrActive = false
     this.viveController1 = null
     this.controllerCam = null
     this.viveController2 = null
@@ -238,9 +237,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.initScene()
     this.initCamera()
-
     this.initPost()
-    // this.initControls()
     this.initLights()
     await this.initPositions()
     this.initEnvironment()
@@ -350,7 +347,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.renderer.setClearColor(0)
-    if (this.WebVR.VRSupported) {
+    if (this.WebVRLib.VRSupported) {
       this.renderer.vr.enabled = true
     }
 
@@ -892,12 +889,11 @@ class App extends mixin(EventEmitter, Component) {
     this.closestHeight = blockGeoData.blockData.height
 
     this.crystal = await this.crystalGenerator.init(blockGeoData)
+    this.group.add(this.crystal)
 
     this.initPicker()
     this.picker = await this.pickerGenerator.init(blockGeoData)
     this.pickingScene.add(this.picker)
-
-    this.group.add(this.crystal)
 
     this.crystalAO = await this.crystalAOGenerator.init(blockGeoData)
     this.crystalAO.translateY(0.1)
@@ -1242,13 +1238,6 @@ class App extends mixin(EventEmitter, Component) {
     // this.animateCamRotation(5000)
   }
 
-  setConfig (newConfig) {
-    this.config = deepAssign(this.config, newConfig)
-
-    this.setControlsSettings()
-    this.setCameraSettings()
-  }
-
   getClosestBlock () {
     if (this.camera.position.y >= 2000) {
       if (this.state.closestBlock !== null) {
@@ -1544,8 +1533,6 @@ class App extends mixin(EventEmitter, Component) {
                 return
               }
 
-              // let retryCount = 0
-
               const blockHeightWorker = new BlockHeightWorker()
               blockHeightWorker.onmessage = async ({ data }) => {
                 if (typeof data.hash !== 'undefined') {
@@ -1578,17 +1565,6 @@ class App extends mixin(EventEmitter, Component) {
                   blockHeightWorker.terminate()
                 } else if (data.error !== 'undefined') {
                   console.error(data.error)
-
-                  // try again
-                  // retryCount++
-                  // if (retryCount < 3) {
-                  //   setTimeout(() => {
-                  //     console.log('Retrying BlockHeightWorker for height: ' + height)
-                  //     blockHeightWorker.postMessage(
-                  //       blockHeightWorkerSendObj
-                  //     )
-                  //   }, 2000)
-                  // }
                 }
               }
 
@@ -1765,25 +1741,26 @@ class App extends mixin(EventEmitter, Component) {
     this.undersideR.position.z = 0
   }
 
-  goToRandomBlock () {
+  prepareCamNavigation () {
+    this.setState({
+      showIntro: false
+    })
     this.audioManager.stopNotes()
-
     this.exitAutoPilot()
-
     this.hideMerkleDetail()
-
     this.hideVRText()
-
-    const randomHeight = Math.round(Math.random() * this.maxHeight)
-
-    this.closestHeight = randomHeight
-
-    this.loadNearestBlocks(true, randomHeight)
-
     this.closeSidebar()
+  }
 
-    let posX = this.blockPositions[randomHeight * 2 + 0]
-    let posZ = this.blockPositions[randomHeight * 2 + 1]
+  goToRandomBlock () {
+    this.prepareCamNavigation()
+
+    this.closestHeight = Math.round(Math.random() * this.maxHeight)
+
+    this.loadNearestBlocks(true, this.closestHeight)
+
+    let posX = this.blockPositions[this.closestHeight * 2 + 0]
+    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
 
@@ -1795,7 +1772,6 @@ class App extends mixin(EventEmitter, Component) {
     let blockYDist = this.vrActive ? 20 : 400
 
     let that = this
-
     new TWEEN.Tween(this.camera.position)
       .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
       .onUpdate(function () {
@@ -1847,25 +1823,13 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   goToLatestBlock () {
-    this.setState({
-      showIntro: false
-    })
-
-    this.audioManager.stopNotes()
-
-    this.exitAutoPilot()
-
-    this.hideMerkleDetail()
-
-    this.hideVRText()
+    this.prepareCamNavigation()
 
     if (this.closestHeight === null) {
       this.closestHeight = this.maxHeight
     }
 
     this.loadNearestBlocks(true, this.closestHeight)
-
-    this.closeSidebar()
 
     let posX = this.blockPositions[this.closestHeight * 2 + 0]
     let posZ = this.blockPositions[this.closestHeight * 2 + 1]
@@ -2059,7 +2023,7 @@ class App extends mixin(EventEmitter, Component) {
     let that = this
 
     this.autoPilotTween = new TWEEN.Tween(camPos)
-      .to(to, 20000)
+      .to(to, 30000)
       .onUpdate(function () {
         if (!that.autoPilot) {
           return
@@ -2136,9 +2100,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.particlesGenerator.update({
         time: window.performance.now(),
-        deltaTime: delta,
-        spawnStart: this.txSpawnStart,
-        spawnDestination: this.txSpawnDestination
+        deltaTime: delta
       })
 
       this.crystalGenerator.update({
@@ -2175,14 +2137,14 @@ class App extends mixin(EventEmitter, Component) {
 
     if (this.particlesGenerator && this.particlesGenerator.positionScene) {
       if (this.config.debug.debugPicker && this.pickingScene) {
-        if (this.WebVR.VRSupported) {
+        if (this.WebVRLib.VRSupported) {
           this.renderer.vr.enabled = true
         }
         this.renderer.setRenderTarget(null)
         this.renderer.render(this.pickingScene, this.cameraMain)
       } else {
         // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
-        if (this.WebVR.VRSupported) {
+        if (this.WebVRLib.VRSupported) {
           this.renderer.vr.enabled = true
         }
         this.renderer.setRenderTarget(null)
@@ -2192,35 +2154,149 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  startIntro () {
-    this.setState({
-      showIntro: true
-    })
-    setTimeout(() => {
+  async startIntro () {
+    if (this.vrActive) {
+      let introTextMesh = await this.textGenerator.create({
+        text: 'THIS IS THE BITCOIN BLOCKCHAIN',
+        position: { x: -6.5, y: -2, z: -9 },
+        width: 1400,
+        align: 'center',
+        scale: 0.0095,
+        lineHeight: 48
+      })
+
+      this.cameraMain.remove(this.introTextMesh)
+      this.introTextMesh = introTextMesh
+      this.cameraMain.add(this.introTextMesh)
+
+      let that = this
+      new TWEEN.Tween({opacity: 1})
+        .to({opacity: 0}, 10000)
+        .onUpdate(function () {
+          that.introTextMesh.material.uniforms.opacity.value = this.opacity
+        })
+        .onComplete(async () => {
+          let introTextMesh = await that.textGenerator.create({
+            text: 'BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK',
+            position: { x: -6.5, y: -2, z: -9 },
+            width: 1400,
+            align: 'center',
+            scale: 0.0095,
+            lineHeight: 48
+          })
+
+          that.cameraMain.remove(that.introTextMesh)
+          that.introTextMesh = introTextMesh
+          that.cameraMain.add(that.introTextMesh)
+
+          new TWEEN.Tween({opacity: 1})
+            .to({opacity: 0}, 10000)
+            .onUpdate(function () {
+              that.introTextMesh.material.uniforms.opacity.value = this.opacity
+            })
+            .onComplete(async () => {
+              let introTextMesh = await that.textGenerator.create({
+                text: 'A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES',
+                position: { x: -6.5, y: -2, z: -9 },
+                width: 1400,
+                align: 'center',
+                scale: 0.0095,
+                lineHeight: 48
+              })
+
+              that.cameraMain.remove(that.introTextMesh)
+              that.introTextMesh = introTextMesh
+              that.cameraMain.add(that.introTextMesh)
+
+              new TWEEN.Tween({opacity: 1})
+                .to({opacity: 0}, 10000)
+                .onUpdate(function () {
+                  that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                })
+                .onComplete(async () => {
+                  let introTextMesh = await that.textGenerator.create({
+                    text: `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`,
+                    position: { x: -6.5, y: -2, z: -9 },
+                    width: 1400,
+                    align: 'center',
+                    scale: 0.0095,
+                    lineHeight: 48
+                  })
+
+                  that.cameraMain.remove(that.introTextMesh)
+                  that.introTextMesh = introTextMesh
+                  that.cameraMain.add(that.introTextMesh)
+
+                  new TWEEN.Tween({opacity: 1})
+                    .to({opacity: 0}, 10000)
+                    .onUpdate(function () {
+                      that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                    })
+                    .onComplete(async () => {
+                      let introTextMesh = await that.textGenerator.create({
+                        text: `... NAVIGATING TO LATEST BLOCK ...`,
+                        position: { x: -6.5, y: -2, z: -9 },
+                        width: 1400,
+                        align: 'center',
+                        scale: 0.0095,
+                        lineHeight: 48
+                      })
+
+                      that.cameraMain.remove(that.introTextMesh)
+                      that.introTextMesh = introTextMesh
+                      that.cameraMain.add(that.introTextMesh)
+
+                      that.goToLatestBlock()
+
+                      new TWEEN.Tween({opacity: 1})
+                        .to({opacity: 0}, 10000)
+                        .onUpdate(function () {
+                          that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                        })
+                        .easing(that.defaultCamEasing)
+                        .start()
+                    })
+                    .easing(that.defaultCamEasing)
+                    .start()
+                })
+                .easing(that.defaultCamEasing)
+                .start()
+            })
+            .easing(that.defaultCamEasing)
+            .start()
+        })
+        .easing(that.defaultCamEasing)
+        .start()
+    } else {
       this.setState({
-        activeIntro: 1
+        showIntro: true
       })
       setTimeout(() => {
         this.setState({
-          activeIntro: 2
+          activeIntro: 1
         })
         setTimeout(() => {
           this.setState({
-            activeIntro: 3
+            activeIntro: 2
           })
           setTimeout(() => {
             this.setState({
-              activeIntro: 4
+              activeIntro: 3
             })
             setTimeout(() => {
               this.setState({
-                activeIntro: 5
+                activeIntro: 4
               })
+              setTimeout(() => {
+                this.setState({
+                  activeIntro: 5
+                })
+              }, 8000)
             }, 8000)
           }, 8000)
         }, 8000)
-      }, 8000)
-    }, 2000)
+      }, 2000)
+    }
   }
 
   addEvents () {
@@ -2925,7 +3001,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = vrActive
+    this.vrActive = true
 
     if (this.camera) {
       this.scene.remove(this.camera)
@@ -3066,6 +3142,19 @@ class App extends mixin(EventEmitter, Component) {
     this.cameraMain.remove(this.txDetailsTextMesh)
     this.txDetailsTextMesh = txDetailsTextMesh
     this.cameraMain.add(this.txDetailsTextMesh)
+
+    let that = this
+
+    that.txDetailsTextMesh.material.uniforms.opacity.value = 1.0
+
+    // fade text out
+    new TWEEN.Tween({opacity: 1})
+      .to({opacity: 0}, 6000)
+      .onUpdate(function () {
+        that.txDetailsTextMesh.material.uniforms.opacity.value = this.opacity
+      })
+      .easing(this.defaultCamEasing)
+      .start()
   }
 
   hideVRText () {
@@ -3088,7 +3177,7 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.renderer.setPixelRatio(window.devicePixelRatio)
 
-    this.WebVR.setRenderer(this.renderer)
+    this.WebVRLib.setRenderer(this.renderer)
   }
 
   /**
@@ -3366,9 +3455,9 @@ class App extends mixin(EventEmitter, Component) {
         />
         <WebVRButton
           initCamera={this.initCamera.bind(this)}
-          startVRSession={this.WebVR.startVRSession.bind(this.WebVR)}
-          endVRSession={this.WebVR.endVRSession.bind(this.WebVR)}
-          VRSupported={this.WebVR.VRSupported}
+          startVRSession={this.WebVRLib.startVRSession.bind(this.WebVRLib)}
+          endVRSession={this.WebVRLib.endVRSession.bind(this.WebVRLib)}
+          VRSupported={this.WebVRLib.VRSupported}
         />
       </div>
     )
@@ -3395,9 +3484,9 @@ class App extends mixin(EventEmitter, Component) {
         <div className='intro-container'>
           <h1 className={(this.state.activeIntro === 1 ? 'show' : '')}>This is the bitcoin blockchain</h1>
           <h1 className={(this.state.activeIntro === 2 ? 'show' : '')}>Blocks spiral outward from the center, starting with the latest block</h1>
-          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created every 10 minutes</h1>
+          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
           <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
-          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}><span onClick={this.goToLatestBlock.bind(this)}>Enter the Blockchain</span></h1>
+          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToLatestBlock.bind(this)}>Enter the Blockchain</span></h1>
         </div>
       )
     }

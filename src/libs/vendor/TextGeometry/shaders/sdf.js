@@ -5,7 +5,7 @@ var assign = require('object-assign')
 module.exports = function createSDFShader (opt) {
   opt = opt || {}
   var opacity = typeof opt.opacity === 'number' ? opt.opacity : 1
-  var alphaTest = typeof opt.alphaTest === 'number' ? opt.alphaTest : 0.0001
+  var alphaTest = typeof opt.alphaTest === 'number' ? opt.alphaTest : 0.1
   var precision = opt.precision || 'highp'
   var color = opt.color
   var map = opt.map

@@ -3,7 +3,6 @@
 uniform vec3 diffuse;
 uniform float opacity;
 uniform float uTime;
-uniform float uFrame;
 uniform float uParticleLifeMax;
 
 varying float vLife;

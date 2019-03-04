@@ -164,16 +164,19 @@ void main() {
 
 	#include <clipping_planes_fragment>
 
-	// vec2 dt = fwidth(vUv) * 50.0;
-	// float maxDerivative = clamp(max(dt.t, dt.s), 0.0, 1.0);
-	//maxDerivative *= maxDerivative;
-
 	float d = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
-	float edgeAmount = (pow(clamp( (1.0 - d), 0.9, 1.0), mix(4.0, 10.0, vIsHovered + vIsSelected)  ) * 1.0);
+
+	float edgeAmount = pow(
+		clamp(
+			 (1.0 - d),
+			 0.9, 1.0
+		), 
+		10.0
+	);
+
 
 	float sideEdgeAmount = edgeAmount * ((1.0-(vBottomVertex * 0.7)));
 
-	//vec3 diffuseVar = vec3( clamp( vEnvelope, 0.0, 4.0  ) );
 	vec3 diffuseVar = vec3( 0.0 );
 
 	diffuseVar += 1.0-(vSpentRatio * 0.7);
@@ -190,24 +193,11 @@ void main() {
 
 	#include <normal_fragment_maps>
 
-	//diffuseColor.rgb *= packNormalToRGB( normal + 0.6 );
-
-	//vec3 dispersion = diffuseColor.rgb * packNormalToRGB( normalSmooth + 0.8 );
-
-	//diffuseColor.rgb = mix(diffuseColor.rgb, dispersion, 0.3);
-
-
-	//diffuseColor.rgb = mix(vec3(32./255., 86./255., 159./255.), diffuseColor.rgb, 0.8);
-
 	diffuseColor.rgb = mix( vec3(23./255., 73./255., 141./255.), diffuseColor.rgb, 0.5 );
-	//diffuseColor.rgb = mix( vec3(23./255., 73./255., 141./255.), diffuseColor.rgb, 1.0-vSpentRatio );
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	//  vec3 totalEmissiveRadiance = vec3(vEnvelope) * 0.1;
 	vec3 totalEmissiveRadiance = vec3(0.0);
-	//totalEmissiveRadiance += (1.0-vSpentRatio) * 0.3;
-
 
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>
@@ -231,7 +221,6 @@ void main() {
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
 
-	// float noiseAmount = noise(vec4(vTransformed.xyz / (vScale * 5.0), uTime * 0.00025)) * 0.1;
 	float noiseAmount = noise(vec4(vOffset.xyz / (vScale * 8.0), uTime * 0.00025)) * 0.1;
 
 	outgoingLight += noiseAmount * 0.5;
@@ -261,40 +250,21 @@ void main() {
 			smoothstep(tile.y,tile.y-0.3,1.0);
 
 	float absNoise = abs(noiseAmount) * 30.0;
-	// float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (1.0-vSpentRatio);
+	
 	float tileNoiseColor = ((pow(tileColor, 3.0) * 2.0) * absNoise) * (0.1 + (vEnvelope * 3.0));
 
-	//float noiseTileMix = mix(tileNoiseColor, 1.0, pow(maxDerivative, 2.0)) * ((1.0 - maxDerivative) * 2.0);
 
 	outgoingLight.b += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) );
 	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) ) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
 
-	//outgoingLight += 0.05;
-	//outgoingLight.rgb += (1.0-vSpentRatio) * 0.3;
-
-	// vec3 colorMix = mix( 
-	// 	mix(vec3(32./255., 86./255., 159./255.), outgoingLight, 0.93), 
-	// 	mix(vec3(32./255., 86./255., 159./255.), outgoingLight, 0.93),
-	// 	vSpentRatio
-	// );
-
-	
-
-
-	outgoingLight += vIsHovered * (edgeAmount * 1.0);
-	outgoingLight += vIsSelected * (edgeAmount * 1.0);
-	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsHovered;
-	// outgoingLight += (1.0 - step(sideEdgeAmount , 0.95)) * 1.2 * vIsSelected;
-
-	//outgoingLight += packNormalToRGB(normal - normalize(vViewPosition) ) * 0.025;
-	//outgoingLight += packNormalToRGB(normal ) * 0.1;
+	outgoingLight += vIsHovered * (edgeAmount * 0.5);
+	outgoingLight += vIsSelected * (edgeAmount * 0.5);
 
 	if (vWorldPosition.y < 0.0) {
 		diffuseColor.a *= 0.8;
 	}
-	//diffuseColor.a *= smoothstep(-100.0, 0.0, vWorldPosition.y);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a);
 

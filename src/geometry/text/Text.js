@@ -74,6 +74,7 @@ export default class Text {
       side: THREE.DoubleSide,
       transparent: true,
       color: 0xffffff
+      // blending: THREE.AdditiveBlending
     }))
 
     let mesh = new THREE.Mesh(geometry, material)

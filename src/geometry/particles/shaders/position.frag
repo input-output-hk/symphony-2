@@ -2,11 +2,6 @@
 
 varying vec2 vUv;
 
-uniform vec2 uOriginOffset;
-uniform vec3 uSpawnStart;
-uniform float uTime;
-uniform float uDeltaTime;
-uniform float uFrame;
 uniform sampler2D positionTexture;
 uniform sampler2D defaultPositionTexture;
 
@@ -19,7 +14,6 @@ void main() {
   currentPosition.w -= 1.0;
   if (currentPosition.w < 0.0 ) {
     currentPosition = defaultPosition;
-    currentPosition.xyz += uSpawnStart;
   }
 
   gl_FragColor = currentPosition;

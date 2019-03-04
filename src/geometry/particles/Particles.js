@@ -52,18 +52,6 @@ export default class Particles extends Base {
           type: 'v2',
           value: new THREE.Vector2(0.0, 0.0)
         },
-        uSpawnStart: {
-          type: 'v3',
-          value: new THREE.Vector2(0.0, 0.0, 0.0)
-        },
-        uSpawnDestination: {
-          type: 'v3',
-          value: new THREE.Vector2(0.0, 0.0, 0.0)
-        },
-        uTime: {
-          type: 'f',
-          value: 0.0
-        },
         uDeltaTime: {
           type: 'f',
           value: 0.0
@@ -197,16 +185,8 @@ export default class Particles extends Base {
 
   update (args) {
     this.frame++
-    this.material.uniforms.uTime.value = args.time
-    this.material.uniforms.uDeltaTime.value = args.deltaTime
-    this.material.uniforms.uFrame.value = this.frame
 
-    this.material.uniforms.uSpawnDestination.value = args.spawnDestination
-    this.positionMaterial.uniforms.uTime.value = args.time
-    this.positionMaterial.uniforms.uDeltaTime.value = args.deltaTime
-    this.positionMaterial.uniforms.uSpawnStart.value = args.spawnStart
-    this.positionMaterial.uniforms.uSpawnDestination.value = args.spawnDestination
-    this.positionMaterial.uniforms.uFrame.value = this.frame
+    this.material.uniforms.uFrame.value = this.frame
 
     this.updatePositions()
   }
@@ -235,16 +215,6 @@ class ParticlesMaterial extends THREE.PointsMaterial {
 
     this.uniforms = THREE.ShaderLib.points.uniforms
 
-    this.uniforms.uTime = {
-      type: 'f',
-      value: 0.0
-    }
-
-    this.uniforms.uDeltaTime = {
-      type: 'f',
-      value: 0.0
-    }
-
     this.uniforms.uFrame = {
       type: 'f',
       value: 0.0
@@ -268,16 +238,6 @@ class ParticlesMaterial extends THREE.PointsMaterial {
     this.uniforms.scale = {
       type: 'f',
       value: 10.0
-    }
-
-    this.uniforms.uSpawnStart = {
-      type: 'v3v',
-      value: new THREE.Vector3(0.0, 0.0, 0.0)
-    }
-
-    this.uniforms.uSpawnDestination = {
-      type: 'v3',
-      value: new THREE.Vector3(0.0, 0.0, 0.0)
     }
 
     this.uniforms.uOriginOffset = {

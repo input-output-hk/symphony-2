@@ -2,13 +2,7 @@ attribute float life;
 
 uniform float size;
 uniform float scale;
-
-uniform vec3 uSpawnStart;
-uniform vec3 uSpawnDestination;
-uniform float uDeltaTime;
-
 uniform vec2 uOriginOffset;
-uniform float uTime;
 uniform sampler2D positionTexture;
 
 varying float vLifeAttr;
@@ -33,8 +27,6 @@ void main() {
 	transformed.xyz = positionData.xyz;
 
 	transformed.xz -= uOriginOffset;
-
-	//transformed.xyz += uSpawnStart.xyz;
 
 	#include <morphtarget_vertex>
 	#include <project_vertex>

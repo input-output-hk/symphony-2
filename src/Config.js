@@ -6,7 +6,7 @@ const detector = new Detector()
 
 const Config = {
   scene: {
-    showIntro: false,
+    showIntro: true,
     fullScreen: true,
     width: 300,
     height: 300,
