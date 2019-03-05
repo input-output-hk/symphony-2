@@ -52,10 +52,6 @@ export default class Particles extends Base {
           type: 'v2',
           value: new THREE.Vector2(0.0, 0.0)
         },
-        uDeltaTime: {
-          type: 'f',
-          value: 0.0
-        },
         uFrame: {
           type: 'f',
           value: 0.0
@@ -183,10 +179,11 @@ export default class Particles extends Base {
     this.material.uniforms.positionTexture.value = this.outputPositionRenderTarget.texture
   }
 
-  update (args) {
+  update () {
     this.frame++
 
     this.material.uniforms.uFrame.value = this.frame
+    this.positionMaterial.uniforms.uFrame.value = this.frame
 
     this.updatePositions()
   }

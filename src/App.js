@@ -145,7 +145,9 @@ class App extends mixin(EventEmitter, Component) {
       showIntro: false,
       posX: 0,
       posY: 0,
-      posZ: 0
+      posZ: 0,
+      sceneReady: false,
+      started: false // if the experience has started
     }
 
     this.setTimestampToLoad()
@@ -2155,163 +2157,150 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async startIntro () {
-    if (this.vrActive) {
-      let introTextMesh = await this.textGenerator.create({
-        text: 'THIS IS THE BITCOIN BLOCKCHAIN',
-        position: { x: -6.5, y: -2, z: -9 },
-        width: 1400,
-        align: 'center',
-        scale: 0.0095,
-        lineHeight: 48
-      })
+    this.setState({
+      started: true
+    })
 
-      this.cameraMain.remove(this.introTextMesh)
-      this.introTextMesh = introTextMesh
-      this.cameraMain.add(this.introTextMesh)
-
-      let that = this
-      new TWEEN.Tween({opacity: 1})
-        .to({opacity: 0}, 10000)
-        .onUpdate(function () {
-          that.introTextMesh.material.uniforms.opacity.value = this.opacity
-        })
-        .onComplete(async () => {
-          let introTextMesh = await that.textGenerator.create({
-            text: 'BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK',
-            position: { x: -6.5, y: -2, z: -9 },
-            width: 1400,
-            align: 'center',
-            scale: 0.0095,
-            lineHeight: 48
-          })
-
-          that.cameraMain.remove(that.introTextMesh)
-          that.introTextMesh = introTextMesh
-          that.cameraMain.add(that.introTextMesh)
-
-          new TWEEN.Tween({opacity: 1})
-            .to({opacity: 0}, 10000)
-            .onUpdate(function () {
-              that.introTextMesh.material.uniforms.opacity.value = this.opacity
-            })
-            .onComplete(async () => {
-              let introTextMesh = await that.textGenerator.create({
-                text: 'A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES',
-                position: { x: -6.5, y: -2, z: -9 },
-                width: 1400,
-                align: 'center',
-                scale: 0.0095,
-                lineHeight: 48
-              })
-
-              that.cameraMain.remove(that.introTextMesh)
-              that.introTextMesh = introTextMesh
-              that.cameraMain.add(that.introTextMesh)
-
-              new TWEEN.Tween({opacity: 1})
-                .to({opacity: 0}, 10000)
-                .onUpdate(function () {
-                  that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                })
-                .onComplete(async () => {
-                  let introTextMesh = await that.textGenerator.create({
-                    text: `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`,
-                    position: { x: -6.5, y: -2, z: -9 },
-                    width: 1400,
-                    align: 'center',
-                    scale: 0.0095,
-                    lineHeight: 48
-                  })
-
-                  that.cameraMain.remove(that.introTextMesh)
-                  that.introTextMesh = introTextMesh
-                  that.cameraMain.add(that.introTextMesh)
-
-                  new TWEEN.Tween({opacity: 1})
-                    .to({opacity: 0}, 10000)
-                    .onUpdate(function () {
-                      that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                    })
-                    .onComplete(async () => {
-                      let introTextMesh = await that.textGenerator.create({
-                        text: `... NAVIGATING TO LATEST BLOCK ...`,
-                        position: { x: -6.5, y: -2, z: -9 },
-                        width: 1400,
-                        align: 'center',
-                        scale: 0.0095,
-                        lineHeight: 48
-                      })
-
-                      that.cameraMain.remove(that.introTextMesh)
-                      that.introTextMesh = introTextMesh
-                      that.cameraMain.add(that.introTextMesh)
-
-                      that.goToLatestBlock()
-
-                      new TWEEN.Tween({opacity: 1})
-                        .to({opacity: 0}, 10000)
-                        .onUpdate(function () {
-                          that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                        })
-                        .easing(that.defaultCamEasing)
-                        .start()
-                    })
-                    .easing(that.defaultCamEasing)
-                    .start()
-                })
-                .easing(that.defaultCamEasing)
-                .start()
-            })
-            .easing(that.defaultCamEasing)
-            .start()
-        })
-        .easing(that.defaultCamEasing)
-        .start()
+    if (!this.config.scene.showIntro) {
+      this.goToLatestBlock()
     } else {
-      this.setState({
-        showIntro: true
-      })
-      setTimeout(() => {
+      if (this.vrActive) {
+        let meshObj = {
+          text: '',
+          position: { x: -3.5, y: -2, z: -9 },
+          width: 800,
+          align: 'center',
+          scale: 0.0095,
+          lineHeight: 48
+        }
+
+        meshObj.text = 'THIS IS THE BITCOIN BLOCKCHAIN'
+        let introTextMesh = await this.textGenerator.create(meshObj)
+
+        this.cameraMain.remove(this.introTextMesh)
+        this.introTextMesh = introTextMesh
+        this.cameraMain.add(this.introTextMesh)
+
+        let that = this
+        new TWEEN.Tween({opacity: 1})
+          .to({opacity: 0}, 10000)
+          .onUpdate(function () {
+            that.introTextMesh.material.uniforms.opacity.value = this.opacity
+          })
+          .onComplete(async () => {
+            meshObj.text = 'BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK'
+            let introTextMesh = await this.textGenerator.create(meshObj)
+
+            that.cameraMain.remove(that.introTextMesh)
+            that.introTextMesh = introTextMesh
+            that.cameraMain.add(that.introTextMesh)
+
+            new TWEEN.Tween({opacity: 1})
+              .to({opacity: 0}, 10000)
+              .onUpdate(function () {
+                that.introTextMesh.material.uniforms.opacity.value = this.opacity
+              })
+              .onComplete(async () => {
+                meshObj.text = 'A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES'
+                let introTextMesh = await this.textGenerator.create(meshObj)
+
+                that.cameraMain.remove(that.introTextMesh)
+                that.introTextMesh = introTextMesh
+                that.cameraMain.add(that.introTextMesh)
+
+                new TWEEN.Tween({opacity: 1})
+                  .to({opacity: 0}, 10000)
+                  .onUpdate(function () {
+                    that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                  })
+                  .onComplete(async () => {
+                    meshObj.text = `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`
+                    let introTextMesh = await this.textGenerator.create(meshObj)
+
+                    that.cameraMain.remove(that.introTextMesh)
+                    that.introTextMesh = introTextMesh
+                    that.cameraMain.add(that.introTextMesh)
+
+                    new TWEEN.Tween({opacity: 1})
+                      .to({opacity: 0}, 10000)
+                      .onUpdate(function () {
+                        that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                      })
+                      .onComplete(async () => {
+                        meshObj.text = `... NAVIGATING TO LATEST BLOCK ...`
+                        let introTextMesh = await this.textGenerator.create(meshObj)
+
+                        that.cameraMain.remove(that.introTextMesh)
+                        that.introTextMesh = introTextMesh
+                        that.cameraMain.add(that.introTextMesh)
+
+                        that.goToLatestBlock()
+
+                        new TWEEN.Tween({opacity: 1})
+                          .to({opacity: 0}, 10000)
+                          .onUpdate(function () {
+                            that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                          })
+                          .easing(that.defaultCamEasing)
+                          .start()
+                      })
+                      .easing(that.defaultCamEasing)
+                      .start()
+                  })
+                  .easing(that.defaultCamEasing)
+                  .start()
+              })
+              .easing(that.defaultCamEasing)
+              .start()
+          })
+          .easing(that.defaultCamEasing)
+          .start()
+      } else {
         this.setState({
-          activeIntro: 1
+          showIntro: true
         })
         setTimeout(() => {
           this.setState({
-            activeIntro: 2
+            activeIntro: 1
           })
           setTimeout(() => {
             this.setState({
-              activeIntro: 3
+              activeIntro: 2
             })
             setTimeout(() => {
               this.setState({
-                activeIntro: 4
+                activeIntro: 3
               })
               setTimeout(() => {
                 this.setState({
-                  activeIntro: 5
+                  activeIntro: 4
                 })
+                setTimeout(() => {
+                  this.setState({
+                    activeIntro: 5
+                  })
+                }, 8000)
               }, 8000)
             }, 8000)
           }, 8000)
-        }, 8000)
-      }, 2000)
+        }, 2000)
+      }
     }
   }
 
   addEvents () {
     window.addEventListener('resize', this.resize.bind(this), false)
 
-    this.on('sceneReady', () => {
-      if (this.config.scene.showIntro) {
-        this.startIntro()
-      } else {
-        // this.switchControls('map')
+    // this.on('sceneReady', () => {
+    //   if (this.config.scene.showIntro) {
+    //     // this.startIntro()
+    //   } else {
+    //     // this.switchControls('map')
 
-        this.goToLatestBlock()
-        // this.goToRandomBlock()
-      }
-    })
+    //     this.goToLatestBlock()
+    //     // this.goToRandomBlock()
+    //   }
+    // })
 
     this.on('blockChanged', () => {
       this.addClosestBlockDetail()
@@ -2420,7 +2409,7 @@ class App extends mixin(EventEmitter, Component) {
     viveController.add(line)
 
     // add buttons
-    let buttonGeo = new THREE.PlaneBufferGeometry(0.015, 0.015, 1)
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.018, 0.018, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
@@ -2458,6 +2447,7 @@ class App extends mixin(EventEmitter, Component) {
       transparent: true,
       alphaTest: 0.5
     })
+
     let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
     buttonUpMesh.position.y = 0.009
     buttonUpMesh.position.z = 0.035
@@ -2478,7 +2468,7 @@ class App extends mixin(EventEmitter, Component) {
 
   setupLeftViveController (viveController) {
     // add buttons
-    let buttonGeo = new THREE.PlaneBufferGeometry(0.015, 0.015, 1)
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.018, 0.018, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
@@ -2748,6 +2738,10 @@ class App extends mixin(EventEmitter, Component) {
 
     this.updateClosestTrees()
 
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+    this.updateOriginOffsets()
+
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
       setTimeout(() => {
         this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
@@ -2772,8 +2766,8 @@ class App extends mixin(EventEmitter, Component) {
         this.crystalGenerator.updateBlockStartTimes(prevBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(prevBlock.blockData)
       }
-      let block2 = prevBlock
-      const nTX2 = block2.blockData.n_tx
+      // let block2 = prevBlock
+      // const nTX2 = block2.blockData.n_tx
       // undersideTexture2 = await this.circuit.draw(nTX2, block2)
     } else {
       this.undersideL.visible = false
@@ -2785,8 +2779,8 @@ class App extends mixin(EventEmitter, Component) {
         this.crystalGenerator.updateBlockStartTimes(nextBlock.blockData)
         this.crystalAOGenerator.updateBlockStartTimes(nextBlock.blockData)
       }
-      let block3 = nextBlock
-      const nTX3 = block3.blockData.n_tx
+      // let block3 = nextBlock
+      // const nTX3 = block3.blockData.n_tx
       // undersideTexture3 = await this.circuit.draw(nTX3, block3)
     } else {
       this.undersideR.visible = false
@@ -2803,10 +2797,6 @@ class App extends mixin(EventEmitter, Component) {
     if (undersideTexture3) {
       this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
     }
-
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-    this.updateOriginOffsets()
   }
 
   updateOriginOffsets () {
@@ -3001,7 +2991,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = true
+    this.vrActive = vrActive
 
     if (this.camera) {
       this.scene.remove(this.camera)
@@ -3119,10 +3109,9 @@ class App extends mixin(EventEmitter, Component) {
 
     let txDetailsTextMesh = await this.textGenerator.create({
       text: `
-      TX-${txData.hash.substring(0, 24)}...
+      TX-${txData.hash.substring(0, 24)}
       ${moment.unix(txData.time).format('YYYY-MM-DD HH:mm:ss')}
       ${txData.size} BYTES
-      RELAYED BY: ${txData.relayed_by}
       FEE: ${txData.fee} BTC
       OUTPUT TOTAL: ${(txData.outTotal).toFixed(2)} BTC
       `,
@@ -3453,12 +3442,7 @@ class App extends mixin(EventEmitter, Component) {
           toggleFlyControls={this.toggleFlyControls.bind(this)}
           stopAutoPilot={this.stopAutoPilot.bind(this)}
         />
-        <WebVRButton
-          initCamera={this.initCamera.bind(this)}
-          startVRSession={this.WebVRLib.startVRSession.bind(this.WebVRLib)}
-          endVRSession={this.WebVRLib.endVRSession.bind(this.WebVRLib)}
-          VRSupported={this.WebVRLib.VRSupported}
-        />
+
       </div>
     )
   }
@@ -3468,6 +3452,7 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.state.loading) {
       className += ' loaded'
     }
+
     return (
       <div className={className}>
         <div className='logo-container'>
@@ -3476,6 +3461,20 @@ class App extends mixin(EventEmitter, Component) {
         </div>
       </div>
     )
+  }
+
+  UIStart () {
+    if (!this.state.loading && !this.state.started) {
+      return (
+        <div className='start-container'>
+          <h1 onClick={this.startIntro.bind(this)}>START</h1>
+        </div>
+      )
+    } else {
+      return (
+        <div />
+      )
+    }
   }
 
   UIIntro () {
@@ -3496,9 +3495,16 @@ class App extends mixin(EventEmitter, Component) {
     return (
       <div className='symphony'>
         {this.UIIntro()}
+        {this.UIStart()}
         {this.UILoadingScreen()}
         <canvas id={this.config.scene.canvasID} />
         {this.UI()}
+        <WebVRButton
+          initCamera={this.initCamera.bind(this)}
+          startVRSession={this.WebVRLib.startVRSession.bind(this.WebVRLib)}
+          endVRSession={this.WebVRLib.endVRSession.bind(this.WebVRLib)}
+          VRSupported={this.WebVRLib.VRSupported}
+        />
       </div>
     )
   }

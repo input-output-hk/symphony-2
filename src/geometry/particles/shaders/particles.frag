@@ -34,6 +34,7 @@ void main() {
 	}
 
 	outgoingLight = vec3(112./255., 158./255., 236./255.);
+	outgoingLight.r += (vLife / uParticleLifeMax) * 0.3;
 	diffuseColor.a = (vLife / uParticleLifeMax);
 	diffuseColor.a *= 1.0 - (vLife / uParticleLifeMax);
 

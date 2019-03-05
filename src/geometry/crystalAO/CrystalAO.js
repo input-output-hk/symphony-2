@@ -17,13 +17,13 @@ export default class CrystalAO extends Base {
       transparent: true,
       side: THREE.DoubleSide,
       map: this.map,
-      opacity: 0.45,
+      opacity: 0.5,
       depthTest: true,
       depthWrite: false
     })
 
     this.txIndexOffsets = {}
-    this.instanceTotal = 10000
+    this.instanceTotal = 10 * 3000
     this.txCount = 0
   }
 

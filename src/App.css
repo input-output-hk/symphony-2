@@ -881,3 +881,29 @@ canvas#sketchboard {
 .enter-blockchain-text:hover {
   cursor: pointer;
 }
+
+.start-container {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  z-index: 2;
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  text-align: center;
+  justify-content: center;
+  padding-bottom: 6%;
+}
+
+.start-container h1 {
+  font-weight: 400;
+  font-size: 1vw;
+  text-transform: uppercase;
+  position: absolute;
+}
+
+.start-container h1:hover {
+  cursor: pointer;
+}
