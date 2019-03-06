@@ -62,6 +62,7 @@ export default class Audio extends EventEmitter {
     }
 
     this.convolver = this.audioContext.createConvolver()
+    this.convolver2 = this.audioContext.createConvolver()
 
     this.analyser = this.audioContext.createAnalyser()
     this.analyser.fftSize = 1024
@@ -96,19 +97,10 @@ export default class Audio extends EventEmitter {
     this.analyserGain = this.audioContext.createGain()
     this.analyserGain.gain.setTargetAtTime(4.0, this.audioContext.currentTime, 0.0)
 
-    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/EchoBridge.wav').then((buffer) => {
-    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/GraffitiHallway.wav').then((buffer) => {
-    // getImpulseBuffer(this.audioContext, './assets/sounds/IR/CedarCreekWinery.wav').then((buffer) => {
     getImpulseBuffer(this.audioContext, './assets/sounds/IR/LittlefieldLobby.wav').then((buffer) => {
       this.convolver.buffer = buffer
       this.blockAudioBus.connect(this.masterBus)
       this.masterBus.connect(delay.input)
-
-      // this.masterBus.connect(this.highShelf)
-      // this.highShelf.connect(this.biquadFilter)
-      // this.biquadFilter.connect(this.biquadFilter2)
-      // this.biquadFilter2.connect(delay.input)
-      // this.biquadFilter2.connect(this.compressor)
 
       delay.connect(this.convolver)
 
@@ -121,6 +113,11 @@ export default class Audio extends EventEmitter {
       this.analyserGain.connect(this.analyser)
 
       this.highShelf.connect(this.audioContext.destination)
+    })
+
+    getImpulseBuffer(this.audioContext, './assets/sounds/IR/Space4ArtGallery.wav').then((buffer) => {
+      this.convolver2.buffer = buffer
+      this.convolver2.connect(this.audioContext.destination)
     })
 
     this.notes = {
@@ -362,6 +359,8 @@ export default class Audio extends EventEmitter {
     if (typeof window.OffscreenCanvas !== 'undefined') {
       this.offscreenMode = true
     }
+
+    this.narrationFilePath = 'assets/sounds/narration/'
   }
 
   startAudio (blockData, arrayBuffers) {
@@ -514,5 +513,20 @@ export default class Audio extends EventEmitter {
     noteSource.loop = true
 
     noteSource.start()
+  }
+
+  async playNarrationFile (group, index) {
+    let path = this.narrationFilePath + group + '/' + index + '.mp3'
+
+    let response = await window.fetch(path)
+    let arrayBuffer = await response.arrayBuffer()
+    let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+
+    const source = this.audioContext.createBufferSource()
+    source.buffer = audioBuffer
+
+    source.connect(this.convolver2)
+
+    source.start()
   }
 }

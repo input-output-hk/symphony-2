@@ -2181,6 +2181,8 @@ class App extends mixin(EventEmitter, Component) {
         this.introTextMesh = introTextMesh
         this.cameraMain.add(this.introTextMesh)
 
+        this.audioManager.playNarrationFile('intro', '1')
+
         let that = this
         new TWEEN.Tween({opacity: 1})
           .to({opacity: 0}, 10000)
@@ -2195,6 +2197,8 @@ class App extends mixin(EventEmitter, Component) {
             that.introTextMesh = introTextMesh
             that.cameraMain.add(that.introTextMesh)
 
+            this.audioManager.playNarrationFile('intro', '2')
+
             new TWEEN.Tween({opacity: 1})
               .to({opacity: 0}, 10000)
               .onUpdate(function () {
@@ -2208,18 +2212,22 @@ class App extends mixin(EventEmitter, Component) {
                 that.introTextMesh = introTextMesh
                 that.cameraMain.add(that.introTextMesh)
 
+                this.audioManager.playNarrationFile('intro', '3')
+
                 new TWEEN.Tween({opacity: 1})
                   .to({opacity: 0}, 10000)
                   .onUpdate(function () {
                     that.introTextMesh.material.uniforms.opacity.value = this.opacity
                   })
                   .onComplete(async () => {
-                    meshObj.text = `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`
+                    meshObj.text = `THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTION GATHER HERE`
                     let introTextMesh = await this.textGenerator.create(meshObj)
 
                     that.cameraMain.remove(that.introTextMesh)
                     that.introTextMesh = introTextMesh
                     that.cameraMain.add(that.introTextMesh)
+
+                    this.audioManager.playNarrationFile('intro', '4')
 
                     new TWEEN.Tween({opacity: 1})
                       .to({opacity: 0}, 10000)
@@ -2227,19 +2235,35 @@ class App extends mixin(EventEmitter, Component) {
                         that.introTextMesh.material.uniforms.opacity.value = this.opacity
                       })
                       .onComplete(async () => {
-                        meshObj.text = `... NAVIGATING TO LATEST BLOCK ...`
+                        meshObj.text = `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`
                         let introTextMesh = await this.textGenerator.create(meshObj)
 
                         that.cameraMain.remove(that.introTextMesh)
                         that.introTextMesh = introTextMesh
                         that.cameraMain.add(that.introTextMesh)
 
-                        that.goToLatestBlock()
-
                         new TWEEN.Tween({opacity: 1})
                           .to({opacity: 0}, 10000)
                           .onUpdate(function () {
                             that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                          })
+                          .onComplete(async () => {
+                            meshObj.text = `... NAVIGATING TO LATEST BLOCK ...`
+                            let introTextMesh = await this.textGenerator.create(meshObj)
+
+                            that.cameraMain.remove(that.introTextMesh)
+                            that.introTextMesh = introTextMesh
+                            that.cameraMain.add(that.introTextMesh)
+
+                            that.goToLatestBlock()
+
+                            new TWEEN.Tween({opacity: 1})
+                              .to({opacity: 0}, 10000)
+                              .onUpdate(function () {
+                                that.introTextMesh.material.uniforms.opacity.value = this.opacity
+                              })
+                              .easing(that.defaultCamEasing)
+                              .start()
                           })
                           .easing(that.defaultCamEasing)
                           .start()
@@ -2279,6 +2303,11 @@ class App extends mixin(EventEmitter, Component) {
                   this.setState({
                     activeIntro: 5
                   })
+                  setTimeout(() => {
+                    this.setState({
+                      activeIntro: 6
+                    })
+                  }, 8000)
                 }, 8000)
               }, 8000)
             }, 8000)
@@ -2991,7 +3020,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = vrActive
+    this.vrActive = true
 
     if (this.camera) {
       this.scene.remove(this.camera)
@@ -3484,8 +3513,9 @@ class App extends mixin(EventEmitter, Component) {
           <h1 className={(this.state.activeIntro === 1 ? 'show' : '')}>This is the bitcoin blockchain</h1>
           <h1 className={(this.state.activeIntro === 2 ? 'show' : '')}>Blocks spiral outward from the center, starting with the latest block</h1>
           <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
-          <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
-          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToLatestBlock.bind(this)}>Enter the Blockchain</span></h1>
+          <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>The mempool sits at the center, unconfirmed transactions gather here</h1>
+          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
+          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToLatestBlock.bind(this)}>Enter the Blockchain</span></h1>
         </div>
       )
     }

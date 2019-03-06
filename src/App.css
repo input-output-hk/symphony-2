@@ -907,3 +907,7 @@ canvas#sketchboard {
 .start-container h1:hover {
   cursor: pointer;
 }
+
+.not-supported {
+  display: none;
+}
