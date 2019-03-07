@@ -10,7 +10,7 @@ export default class ViveController extends THREE.Object3D {
     super()
     this.index = index
     this.gamepad = null
-    this.axes = [ 0, 0 ]
+    this.axes = [0, 0]
     this.thumbpadIsPressed = false
     this.triggerIsPressed = false
     this.gripsArePressed = false

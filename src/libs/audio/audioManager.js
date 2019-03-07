@@ -222,7 +222,7 @@ export default class Audio extends EventEmitter {
       7902.13: 'B8'
     }
 
-    this.modes = {
+    this.chords = {
       'A#': [
         'A#',
         'D',
@@ -387,6 +387,8 @@ export default class Audio extends EventEmitter {
 
     this.loops[blockData.height](blockData)
 
+    this.fadeInBlockAudio()
+
     this.audioSources[blockData.height].start()
   }
 
@@ -408,7 +410,7 @@ export default class Audio extends EventEmitter {
         cmd: 'get',
         blockData: blockData,
         config: this.config,
-        modes: this.modes,
+        chords: this.chords,
         notes: this.notes,
         sampleRate: this.sampleRate,
         soundDuration: this.soundDuration,
@@ -431,7 +433,7 @@ export default class Audio extends EventEmitter {
       sineBank.addNativeFunction('custom_step', this.audioUtils.customStep)
       sineBank.addNativeFunction('custom_random', this.audioUtils.customRandom)
 
-      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.modes, this.notes, TXValues, spentRatios)
+      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.chords, this.notes, TXValues, spentRatios)
 
       console.time('sineBank')
       let sineArray = sineBank(blockAudio.frequencies, blockAudio.txTimes, blockAudio.spent, blockAudio.health, blockAudio.frequencies.length, this.sampleRate)
@@ -466,6 +468,14 @@ export default class Audio extends EventEmitter {
         noteDuration: this.noteDuration
       })
     }
+  }
+
+  fadeOutBlockAudio () {
+    this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 3)
+  }
+
+  fadeInBlockAudio () {
+    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 3)
   }
 
   stopNotes () {

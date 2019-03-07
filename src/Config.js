@@ -7,6 +7,7 @@ const detector = new Detector()
 const Config = {
   scene: {
     showIntro: true,
+    introTextTime: 5500, // ms
     fullScreen: true,
     width: 300,
     height: 300,

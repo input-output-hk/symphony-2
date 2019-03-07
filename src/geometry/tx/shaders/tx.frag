@@ -13,13 +13,13 @@ varying float vTopVertex;
 #include <color_pars_fragment>
 #include <uv_pars_fragment>
 #include <uv2_pars_fragment>
-#include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <aomap_pars_fragment>
-#include <lightmap_pars_fragment>
-#include <envmap_pars_fragment>
+// #include <map_pars_fragment>
+// #include <alphamap_pars_fragment>
+// #include <aomap_pars_fragment>
+// #include <lightmap_pars_fragment>
+// #include <envmap_pars_fragment>
 #include <fog_pars_fragment>
-#include <specularmap_pars_fragment>
+// #include <specularmap_pars_fragment>
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
@@ -30,11 +30,11 @@ void main() {
 	vec4 diffuseColor = vec4( diffuse, opacity );
 
 	#include <logdepthbuf_fragment>
-	#include <map_fragment>
+	// #include <map_fragment>
 	#include <color_fragment>
-	#include <alphamap_fragment>
+	// #include <alphamap_fragment>
 	#include <alphatest_fragment>
-	#include <specularmap_fragment>
+	// #include <specularmap_fragment>
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
@@ -50,7 +50,7 @@ void main() {
 	#endif
 
 	// modulation
-	#include <aomap_fragment>
+	// #include <aomap_fragment>
 
 	reflectedLight.indirectDiffuse *= diffuseColor.rgb;
 
@@ -59,7 +59,7 @@ void main() {
 	// diffuseColor.a *= vTopVertex;
 	// diffuseColor.a = pow(diffuseColor.a, 10.0);
 
-	#include <envmap_fragment>
+	// #include <envmap_fragment>
 
 	//outgoingLight += 5.0;
 

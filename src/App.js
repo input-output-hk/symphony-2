@@ -1125,7 +1125,7 @@ class App extends mixin(EventEmitter, Component) {
 
       case 'fly':
         this.controls = new FlyControls(this.cameraMain)
-        this.controls.movementSpeed = 100
+        this.controls.movementSpeed = 70
         this.controls.domElement = this.renderer.domElement
         this.controls.rollSpeed = Math.PI / 24
         this.controls.autoForward = false
@@ -1748,6 +1748,7 @@ class App extends mixin(EventEmitter, Component) {
       showIntro: false
     })
     this.audioManager.stopNotes()
+    this.audioManager.fadeOutBlockAudio()
     this.exitAutoPilot()
     this.hideMerkleDetail()
     this.hideVRText()
@@ -2185,7 +2186,7 @@ class App extends mixin(EventEmitter, Component) {
 
         let that = this
         new TWEEN.Tween({opacity: 1})
-          .to({opacity: 0}, 10000)
+          .to({opacity: 0}, this.config.scene.introTextTime)
           .onUpdate(function () {
             that.introTextMesh.material.uniforms.opacity.value = this.opacity
           })
@@ -2200,7 +2201,7 @@ class App extends mixin(EventEmitter, Component) {
             this.audioManager.playNarrationFile('intro', '2')
 
             new TWEEN.Tween({opacity: 1})
-              .to({opacity: 0}, 10000)
+              .to({opacity: 0}, this.config.scene.introTextTime)
               .onUpdate(function () {
                 that.introTextMesh.material.uniforms.opacity.value = this.opacity
               })
@@ -2215,12 +2216,12 @@ class App extends mixin(EventEmitter, Component) {
                 this.audioManager.playNarrationFile('intro', '3')
 
                 new TWEEN.Tween({opacity: 1})
-                  .to({opacity: 0}, 10000)
+                  .to({opacity: 0}, this.config.scene.introTextTime)
                   .onUpdate(function () {
                     that.introTextMesh.material.uniforms.opacity.value = this.opacity
                   })
                   .onComplete(async () => {
-                    meshObj.text = `THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTION GATHER HERE`
+                    meshObj.text = `THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE`
                     let introTextMesh = await this.textGenerator.create(meshObj)
 
                     that.cameraMain.remove(that.introTextMesh)
@@ -2230,7 +2231,7 @@ class App extends mixin(EventEmitter, Component) {
                     this.audioManager.playNarrationFile('intro', '4')
 
                     new TWEEN.Tween({opacity: 1})
-                      .to({opacity: 0}, 10000)
+                      .to({opacity: 0}, this.config.scene.introTextTime)
                       .onUpdate(function () {
                         that.introTextMesh.material.uniforms.opacity.value = this.opacity
                       })
@@ -2243,7 +2244,7 @@ class App extends mixin(EventEmitter, Component) {
                         that.cameraMain.add(that.introTextMesh)
 
                         new TWEEN.Tween({opacity: 1})
-                          .to({opacity: 0}, 10000)
+                          .to({opacity: 0}, this.config.scene.introTextTime)
                           .onUpdate(function () {
                             that.introTextMesh.material.uniforms.opacity.value = this.opacity
                           })
@@ -2258,7 +2259,7 @@ class App extends mixin(EventEmitter, Component) {
                             that.goToLatestBlock()
 
                             new TWEEN.Tween({opacity: 1})
-                              .to({opacity: 0}, 10000)
+                              .to({opacity: 0}, this.config.scene.introTextTime)
                               .onUpdate(function () {
                                 that.introTextMesh.material.uniforms.opacity.value = this.opacity
                               })
@@ -2307,11 +2308,11 @@ class App extends mixin(EventEmitter, Component) {
                     this.setState({
                       activeIntro: 6
                     })
-                  }, 8000)
-                }, 8000)
-              }, 8000)
-            }, 8000)
-          }, 8000)
+                  }, this.config.scene.introTextTime)
+                }, this.config.scene.introTextTime)
+              }, this.config.scene.introTextTime)
+            }, this.config.scene.introTextTime)
+          }, this.config.scene.introTextTime)
         }, 2000)
       }
     }
@@ -2493,6 +2494,19 @@ class App extends mixin(EventEmitter, Component) {
     buttonDownMesh.position.y = 0.009
     buttonDownMesh.position.z = 0.065
     viveController.add(buttonDownMesh)
+
+    // info button
+    let buttonInfoMap = this.textureLoader.load('info.png')
+    let buttonInfoMat = new THREE.MeshBasicMaterial({
+      map: buttonInfoMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
+
+    let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
+    buttonInfoMesh.position.y = 0.009
+    buttonInfoMesh.position.z = 0.0
+    viveController.add(buttonInfoMesh)
   }
 
   setupLeftViveController (viveController) {
@@ -2544,10 +2558,27 @@ class App extends mixin(EventEmitter, Component) {
           this.viveController1Buttons.interactionTimeout = setTimeout(() => {
             switch (this.viveController1Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightButtonEvents(e)
+                this.viveControllerRightDPadEvents(e)
                 break
               case 'left':
-                this.viveControllerLeftButtonEvents(e)
+                this.viveControllerLeftDPadEvents(e)
+                break
+
+              default:
+                break
+            }
+          }, this.config.VR.interactionTimeout)
+        }.bind(this))
+
+        this.viveController1Buttons.addEventListener('menudown', function (e) {
+          console.log('menudown')
+          this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+            switch (this.viveController1Buttons.gamepad.hand) {
+              case 'right':
+                this.viveControllerRightMenuEvents(e)
+                break
+              case 'left':
+                this.viveControllerLeftMenuEvents(e)
                 break
 
               default:
@@ -2578,10 +2609,27 @@ class App extends mixin(EventEmitter, Component) {
           this.viveController2Buttons.interactionTimeout = setTimeout(() => {
             switch (this.viveController2Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightButtonEvents(e)
+                this.viveControllerRightDPadEvents(e)
                 break
               case 'left':
-                this.viveControllerLeftButtonEvents(e)
+                this.viveControllerLeftDPadEvents(e)
+                break
+
+              default:
+                break
+            }
+          }, this.config.VR.interactionTimeout)
+        }.bind(this))
+
+        this.viveController2Buttons.addEventListener('menudown', function (e) {
+          console.log('menudown')
+          this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+            switch (this.viveController2Buttons.gamepad.hand) {
+              case 'right':
+                this.viveControllerRightMenuEvents(e)
+                break
+              case 'left':
+                this.viveControllerLeftMenuEvents(e)
                 break
 
               default:
@@ -2599,7 +2647,7 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  viveControllerRightButtonEvents (e) {
+  viveControllerRightDPadEvents (e) {
     // left dpad
     if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
       if (this.closestBlock) {
@@ -2625,7 +2673,7 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  viveControllerLeftButtonEvents (e) {
+  viveControllerLeftDPadEvents (e) {
     // left dpad
     if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
 
@@ -2644,6 +2692,17 @@ class App extends mixin(EventEmitter, Component) {
     // bottom dpad
     if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
       this.goToRandomBlock()
+    }
+  }
+
+  viveControllerLeftMenuEvents () {
+
+  }
+
+  viveControllerRightMenuEvents () {
+    // Merkle Tree Narration
+    if (this.camera.position.y < 0) {
+      this.audioManager.playNarrationFile('merkle-tree', '1')
     }
   }
 
@@ -3020,7 +3079,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = true
+    this.vrActive = vrActive
 
     if (this.camera) {
       this.scene.remove(this.camera)

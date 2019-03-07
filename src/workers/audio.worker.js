@@ -9,7 +9,7 @@ self.addEventListener('message', async function (e) {
 
       const blockData = data.blockData
       const config = data.config
-      const modes = data.modes
+      const chords = data.chords
       const notes = data.notes
       const sampleRate = data.sampleRate
       const soundDuration = data.soundDuration
@@ -23,9 +23,9 @@ self.addEventListener('message', async function (e) {
         config: config
       })
 
-      const blockAudio = audioUtils.generateBlockAudio(blockData, modes, notes, TXValues, spentRatios)
+      const blockAudio = audioUtils.generateBlockAudio(blockData, chords, notes, TXValues, spentRatios)
 
-      let parts = 10
+      let parts = 15
 
       const gpu = new GPU()
 

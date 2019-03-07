@@ -26,7 +26,7 @@ export default class Audio extends EventEmitter {
          }`
   }
 
-  generateBlockAudio (blockData, modes, notes, TXValues, spentRatios) {
+  generateBlockAudio (blockData, chords, notes, TXValues, spentRatios) {
     // compute number from hash
     let total = 0
     for (let i = 0; i < blockData.hash.length; i++) {
@@ -35,9 +35,9 @@ export default class Audio extends EventEmitter {
     }
 
     // // set unique mode for this block hash
-    let modeIndex = total % Object.keys(modes).length
-    let mode = modes[Object.keys(modes)[modeIndex]]
-    // let mode = modes['dorian']
+    let modeIndex = total % Object.keys(chords).length
+    let mode = chords[Object.keys(chords)[modeIndex]]
+    // let mode = chords['dorian']
 
     let minOutput = Number.MAX_SAFE_INTEGER
     let maxOutput = 0
@@ -158,7 +158,13 @@ export default class Audio extends EventEmitter {
       let time = times[i + chunkIndex]
       // if (Math.abs(currentTime - time) < 8) {
       let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
+
+      let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * (health * 10.0))) * twoPI
+
       let currentAngle = currentTime * ANGULAR_FREQUENCY
+
+      let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
+
       let spentRatio = spent[i + chunkIndex]
 
       // envelope
@@ -166,22 +172,22 @@ export default class Audio extends EventEmitter {
       let release = (1.0 - custom_smoothstep(time + 2.0, (time + 3.0), currentTime))
 
       let spent1 = 1.5
-      let spent2 = 0.2 + custom_step(2.0, spentRatio) * 1.0
-      let spent3 = 0.2 + custom_step(3.0, spentRatio) * 0.9
-      let spent4 = 0.2 + custom_step(4.0, spentRatio) * 0.8
-      let spent5 = 0.2 + custom_step(5.0, spentRatio) * 0.7
-      let spent6 = 0.2 + custom_step(6.0, spentRatio) * 0.6
-      let spent7 = 0.2 + custom_step(7.0, spentRatio) * 0.5
-      let spent8 = 0.2 + custom_step(8.0, spentRatio) * 0.4
+      let spent2 = 0.1 + custom_step(2.0, spentRatio) * 1.0
+      let spent3 = 0.1 + custom_step(3.0, spentRatio) * 0.9
+      let spent4 = 0.1 + custom_step(4.0, spentRatio) * 0.8
+      let spent5 = 0.1 + custom_step(5.0, spentRatio) * 0.7
+      let spent6 = 0.1 + custom_step(6.0, spentRatio) * 0.6
+      let spent7 = 0.1 + custom_step(7.0, spentRatio) * 0.5
+      let spent8 = 0.1 + custom_step(8.0, spentRatio) * 0.4
 
-      let wave = Math.sin(currentAngle) * spent1 +
-        Math.sin(currentAngle * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
-        Math.sin(currentAngle * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
-        Math.sin(currentAngle * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
-        Math.sin(currentAngle * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
-        Math.sin(currentAngle * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
-        Math.sin(currentAngle * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
-        Math.sin(currentAngle * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
+      let wave = Math.sin(currentAngleMod) * spent1 +
+        Math.sin(currentAngleMod * (2.0 + (custom_random(ANGULAR_FREQUENCY * 2.0) * health))) * spent2 +
+        Math.sin(currentAngleMod * (3.0 + (custom_random(ANGULAR_FREQUENCY * 3.0) * health))) * spent3 +
+        Math.sin(currentAngleMod * (4.0 + (custom_random(ANGULAR_FREQUENCY * 4.0) * health))) * spent4 +
+        Math.sin(currentAngleMod * (5.0 + (custom_random(ANGULAR_FREQUENCY * 5.0) * health))) * spent5 +
+        Math.sin(currentAngleMod * (6.0 + (custom_random(ANGULAR_FREQUENCY * 6.0) * health))) * spent6 +
+        Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
+        Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
       wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
 
