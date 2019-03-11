@@ -113,6 +113,9 @@ class App extends mixin(EventEmitter, Component) {
     this.txCountBufferSize = 4000 // buffer size for tx counts
     this.autoPilotYPos = 20
     this.boundingBoxObj = null
+    this.OBJLoader = new OBJLoader()
+    this.textureLoader = new THREE.TextureLoader()
+    this.maxHeight = null
 
     // VR
     this.blockHeightTextMesh = null
@@ -127,9 +130,34 @@ class App extends mixin(EventEmitter, Component) {
     this.viveController2Buttons = new ViveController(1)
     this.viveTriggerPressed1 = false
     this.viveTriggerPressed2 = false
-
-    this.OBJLoader = new OBJLoader()
-    this.textureLoader = new THREE.TextureLoader()
+    this.chapters = {
+      1: {
+        title: 'THE GENESIS BLOCK',
+        height: 0
+      },
+      2: {
+        title: 'BITCOIN PIZZA DAY',
+        height: 57043
+      },
+      3: {
+        title: 'THE MERKLE TREE',
+        height: 132749
+      },
+      4: {
+        title: 'NETWORK CONGESTION',
+        height: 502117
+      },
+      5: {
+        title: 'CURRENT DAY',
+        height: this.maxHeight
+      },
+      6: {
+        title: 'MEMPOOL'
+      },
+      7: {
+        title: 'END'
+      }
+    }
 
     this.state = {
       loading: true,
@@ -908,7 +936,7 @@ class App extends mixin(EventEmitter, Component) {
     })
     this.group.add(this.txs)
 
-    this.trees = await this.treeGenerator.init(blockGeoData)
+    this.trees = await this.treeGenerator.init(blockGeoData, 1)
     this.group.add(this.trees)
 
     this.plane = await this.planeGenerator.init(blockGeoData)
@@ -1825,67 +1853,72 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(20000)
   }
 
-  goToLatestBlock () {
-    this.prepareCamNavigation()
+  async goToBlock (blockHeight = null) {
+    return new Promise((resolve) => {
+      this.prepareCamNavigation()
 
-    if (this.closestHeight === null) {
-      this.closestHeight = this.maxHeight
-    }
+      if (blockHeight !== null) {
+        this.closestHeight = blockHeight
+      } else if (this.closestHeight === null) {
+        this.closestHeight = this.maxHeight
+      }
 
-    this.loadNearestBlocks(true, this.closestHeight)
+      this.loadNearestBlocks(true, this.closestHeight)
 
-    let posX = this.blockPositions[this.closestHeight * 2 + 0]
-    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
+      let posX = this.blockPositions[this.closestHeight * 2 + 0]
+      let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
-    let to = new THREE.Vector3(posX, 1000000, posZ)
+      let to = new THREE.Vector3(posX, 1000000, posZ)
 
-    this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
+      this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
 
-    let aboveStart = this.camera.position.clone()
-    aboveStart.y = 1000000
+      let aboveStart = this.camera.position.clone()
+      aboveStart.y = 1000000
 
-    let blockYDist = this.vrActive ? 20 : 400
+      let blockYDist = this.vrActive ? 20 : 400
 
-    let that = this
-    new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 5000)
-      .onUpdate(function () {
-        that.camera.position.set(this.x, this.y, this.z)
-      })
-      .onComplete(() => {
-        new TWEEN.Tween(that.camera.position)
-          .to(to, 5000)
-          .onUpdate(function () {
-            that.camera.position.set(this.x, this.y, this.z)
-          })
-          .onComplete(() => {
-            new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
-              .onUpdate(function () {
-                that.camera.position.set(this.x, this.y, this.z)
-              })
-              .onComplete(() => {
-                new TWEEN.Tween(this.camera.position)
-                  .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
-                  .onUpdate(function () {
-                    that.camera.position.set(this.x, this.y, this.z)
-                  })
-                  .onComplete(() => {
-                    this.animatingCamera = false
-                  })
-                  .easing(TWEEN.Easing.Quadratic.Out)
-                  .start()
-              })
-              .easing(this.defaultCamEasing)
-              .start()
-          })
-          .easing(this.defaultCamEasing)
-          .start()
-      })
-      .easing(this.defaultCamEasing)
-      .start()
+      let that = this
+      new TWEEN.Tween(this.camera.position)
+        .to(aboveStart, 5000)
+        .onUpdate(function () {
+          that.camera.position.set(this.x, this.y, this.z)
+        })
+        .onComplete(() => {
+          new TWEEN.Tween(that.camera.position)
+            .to(to, 5000)
+            .onUpdate(function () {
+              that.camera.position.set(this.x, this.y, this.z)
+            })
+            .onComplete(() => {
+              new TWEEN.Tween(this.camera.position)
+                .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
+                .onUpdate(function () {
+                  that.camera.position.set(this.x, this.y, this.z)
+                })
+                .onComplete(() => {
+                  new TWEEN.Tween(this.camera.position)
+                    .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                    .onUpdate(function () {
+                      that.camera.position.set(this.x, this.y, this.z)
+                    })
+                    .onComplete(() => {
+                      resolve(true)
+                      this.animatingCamera = false
+                    })
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start()
+                })
+                .easing(this.defaultCamEasing)
+                .start()
+            })
+            .easing(this.defaultCamEasing)
+            .start()
+        })
+        .easing(this.defaultCamEasing)
+        .start()
 
-    this.animateCamRotation(10000)
+      this.animateCamRotation(10000)
+    })
   }
 
   exitAutoPilot () {
@@ -2157,15 +2190,127 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  async playTutorial () {
+    await this.audioManager.playNarrationFile('tutorial', '1')
+    await this.audioManager.playNarrationFile('tutorial', '2')
+    await this.audioManager.playNarrationFile('tutorial', '3')
+    await this.audioManager.playNarrationFile('tutorial', '4')
+    await this.audioManager.playNarrationFile('tutorial', '5')
+    await this.audioManager.playNarrationFile('tutorial', '6')
+    return true
+  }
+
+  async showVRTitleText (text = '') {
+    let meshObj = {
+      text: '',
+      position: { x: -3.5, y: -2, z: -9 },
+      width: 700,
+      align: 'center',
+      scale: 0.0095,
+      lineHeight: 48
+    }
+
+    meshObj.text = text
+    let introTextMesh = await this.textGenerator.create(meshObj)
+
+    this.cameraMain.remove(this.introTextMesh)
+    this.introTextMesh = introTextMesh
+    this.cameraMain.add(this.introTextMesh)
+
+    // fade text out
+    let that = this
+    new TWEEN.Tween({opacity: 1})
+      .to({opacity: 0}, 10000)
+      .onUpdate(function () {
+        that.introTextMesh.material.uniforms.opacity.value = this.opacity
+      })
+      .easing(that.defaultCamEasing)
+      .start()
+  }
+
+  async startStory () {
+    this.currentChapter = 1
+
+    await this.goToBlock(this.chapters[this.currentChapter].height)
+    this.showVRTitleText(this.chapters[this.currentChapter].title)
+
+    await this.audioManager.playNarrationFile('genesis', '1')
+    await this.audioManager.playNarrationFile('genesis', '2')
+    await this.audioManager.playNarrationFile('genesis', '3')
+    await this.audioManager.playNarrationFile('genesis', '4')
+  }
+
+  async advanceToNextChapter () {
+    if (this.audioManager.narrationPlaying || this.animatingCamera) {
+      return
+    }
+
+    this.currentChapter++
+
+    switch (this.currentChapter) {
+      case 2:
+        await this.goToBlock(this.chapters[2].height)
+        this.showVRTitleText(this.chapters[2].title)
+        await this.audioManager.playNarrationFile('pizza', '1')
+        break
+      case 3:
+        await this.goToBlock(this.chapters[3].height)
+        this.toggleUndersideView()
+        this.showVRTitleText(this.chapters[3].title)
+        await this.audioManager.playNarrationFile('merkle-tree', '1')
+        await this.audioManager.playNarrationFile('merkle-tree', '2')
+        await this.audioManager.playNarrationFile('merkle-tree', '3')
+        await this.audioManager.playNarrationFile('merkle-tree', '4')
+        break
+      case 4:
+        await this.goToBlock(this.chapters[4].height)
+        this.showVRTitleText(this.chapters[4].title)
+        await this.audioManager.playNarrationFile('congestion', '1')
+        await this.audioManager.playNarrationFile('congestion', '2')
+        await this.audioManager.playNarrationFile('congestion', '3')
+        await this.audioManager.playNarrationFile('congestion', '4')
+        break
+      case 5:
+        await this.goToBlock(this.maxHeight)
+        this.showVRTitleText(this.chapters[5].title)
+        await this.audioManager.playNarrationFile('latest', '1')
+        break
+      case 6:
+        let to = new THREE.Vector3(0, 0, 0)
+        this.prepareCamAnim(new THREE.Vector3(to.x, 0, to.z))
+        let that = this
+        new TWEEN.Tween(this.camera.position)
+          .to(to, 50000)
+          .onUpdate(function () {
+            that.camera.position.set(this.x, this.y, this.z)
+          })
+          .easing(this.defaultCamEasing)
+          .start()
+
+        this.showVRTitleText(this.chapters[6].title)
+        await this.audioManager.playNarrationFile('mempool', '1')
+        break
+      case 7:
+        this.showVRTitleText('YOU CAN ACCESS SYMPHONY AT ANY TIME IN A WEB BROWSER AT SYMPHONY.IOHK.IO')
+        await this.audioManager.playNarrationFile('end', '1')
+        break
+
+      default:
+        break
+    }
+  }
+
   async startIntro () {
     this.setState({
       started: true
     })
 
     if (!this.config.scene.showIntro) {
-      this.goToLatestBlock()
+      this.goToBlock()
     } else {
       if (this.vrActive) {
+        await this.playTutorial()
+
         let meshObj = {
           text: '',
           position: { x: -3.5, y: -2, z: -9 },
@@ -2249,22 +2394,7 @@ class App extends mixin(EventEmitter, Component) {
                             that.introTextMesh.material.uniforms.opacity.value = this.opacity
                           })
                           .onComplete(async () => {
-                            meshObj.text = `... NAVIGATING TO LATEST BLOCK ...`
-                            let introTextMesh = await this.textGenerator.create(meshObj)
-
-                            that.cameraMain.remove(that.introTextMesh)
-                            that.introTextMesh = introTextMesh
-                            that.cameraMain.add(that.introTextMesh)
-
-                            that.goToLatestBlock()
-
-                            new TWEEN.Tween({opacity: 1})
-                              .to({opacity: 0}, this.config.scene.introTextTime)
-                              .onUpdate(function () {
-                                that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                              })
-                              .easing(that.defaultCamEasing)
-                              .start()
+                            that.startStory()
                           })
                           .easing(that.defaultCamEasing)
                           .start()
@@ -2327,7 +2457,7 @@ class App extends mixin(EventEmitter, Component) {
     //   } else {
     //     // this.switchControls('map')
 
-    //     this.goToLatestBlock()
+    //     this.goToBlock()
     //     // this.goToRandomBlock()
     //   }
     // })
@@ -2495,50 +2625,38 @@ class App extends mixin(EventEmitter, Component) {
     buttonDownMesh.position.z = 0.065
     viveController.add(buttonDownMesh)
 
-    // info button
-    let buttonInfoMap = this.textureLoader.load('info.png')
-    let buttonInfoMat = new THREE.MeshBasicMaterial({
-      map: buttonInfoMap,
-      transparent: true,
-      alphaTest: 0.5
-    })
+    // // info button
+    // let buttonInfoMap = this.textureLoader.load('info.png')
+    // let buttonInfoMat = new THREE.MeshBasicMaterial({
+    //   map: buttonInfoMap,
+    //   transparent: true,
+    //   alphaTest: 0.5
+    // })
 
-    let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
-    buttonInfoMesh.position.y = 0.009
-    buttonInfoMesh.position.z = 0.0
-    viveController.add(buttonInfoMesh)
+    // let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
+    // buttonInfoMesh.position.y = 0.009
+    // buttonInfoMesh.position.z = 0.0
+    // viveController.add(buttonInfoMesh)
   }
 
   setupLeftViveController (viveController) {
     // add buttons
-    let buttonGeo = new THREE.PlaneBufferGeometry(0.018, 0.018, 1)
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.028, 0.028, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
 
-    // random button
-    let buttonRandomMap = this.textureLoader.load('random.png')
-    let buttonRandomMat = new THREE.MeshBasicMaterial({
-      map: buttonRandomMap,
+    // next chapter button
+    let buttonNextChapterMap = this.textureLoader.load('next-chapter.png')
+    let buttonNextChapterMat = new THREE.MeshBasicMaterial({
+      map: buttonNextChapterMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonRandomMesh = new THREE.Mesh(buttonGeo, buttonRandomMat)
-    buttonRandomMesh.position.y = 0.009
-    buttonRandomMesh.position.z = 0.065
-    viveController.add(buttonRandomMesh)
-
-    // latest button
-    let buttonLatestMap = this.textureLoader.load('latest.png')
-    let buttonLatestMat = new THREE.MeshBasicMaterial({
-      map: buttonLatestMap,
-      transparent: true,
-      alphaTest: 0.5
-    })
-    let buttonLatestMesh = new THREE.Mesh(buttonGeo, buttonLatestMat)
-    buttonLatestMesh.position.y = 0.009
-    buttonLatestMesh.position.z = 0.035
-    viveController.add(buttonLatestMesh)
+    let buttonNextChapterMesh = new THREE.Mesh(buttonGeo, buttonNextChapterMat)
+    buttonNextChapterMesh.position.y = 0.009
+    buttonNextChapterMesh.position.z = 0.05
+    viveController.add(buttonNextChapterMesh)
   }
 
   bindVRGamepadEvents () {
@@ -2674,25 +2792,27 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerLeftDPadEvents (e) {
-    // left dpad
-    if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+    this.advanceToNextChapter()
 
-    }
+    // // left dpad
+    // if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
 
-    // right dpad
-    if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+    // }
 
-    }
+    // // right dpad
+    // if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
 
-    // top dpad
-    if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-      this.goToLatestBlock()
-    }
+    // }
 
-    // bottom dpad
-    if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-      this.goToRandomBlock()
-    }
+    // // top dpad
+    // if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+    //   this.goToBlock()
+    // }
+
+    // // bottom dpad
+    // if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+    //   this.goToRandomBlock()
+    // }
   }
 
   viveControllerLeftMenuEvents () {
@@ -2701,9 +2821,9 @@ class App extends mixin(EventEmitter, Component) {
 
   viveControllerRightMenuEvents () {
     // Merkle Tree Narration
-    if (this.camera.position.y < 0) {
-      this.audioManager.playNarrationFile('merkle-tree', '1')
-    }
+    // if (this.camera.position.y < 0) {
+    //   this.audioManager.playNarrationFile('merkle-tree', '1')
+    // }
   }
 
   sendWsMessage (message) {
@@ -3079,7 +3199,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = vrActive
+    this.vrActive = true
 
     if (this.camera) {
       this.scene.remove(this.camera)
@@ -3574,7 +3694,7 @@ class App extends mixin(EventEmitter, Component) {
           <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
           <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>The mempool sits at the center, unconfirmed transactions gather here</h1>
           <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
-          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToLatestBlock.bind(this)}>Enter the Blockchain</span></h1>
+          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToBlock.bind(this)}>Enter the Blockchain</span></h1>
         </div>
       )
     }

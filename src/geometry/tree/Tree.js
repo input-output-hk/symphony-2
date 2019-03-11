@@ -136,7 +136,7 @@ export default class Tree extends Base {
     })
   }
 
-  async init (blockGeoData) {
+  async init (blockGeoData, nTXOverride) {
     // let planeOffsetsArray = new Float32Array(this.instanceTotal * 2).fill(99999999)
     let planeOffsetsArray = new Float32Array(this.instanceTotal * 2)
     let quatArray = new Float32Array(this.instanceTotal * 4)
@@ -145,6 +145,10 @@ export default class Tree extends Base {
     let nTX = blockGeoData.blockData.n_tx
     if (nTX > 128) {
       nTX = 128
+    }
+
+    if (nTXOverride) {
+      nTX = nTXOverride
     }
 
     let geometry = await this.loadTreeModel(nTX)

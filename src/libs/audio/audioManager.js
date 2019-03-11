@@ -14,6 +14,8 @@ export default class Audio extends EventEmitter {
     this.noteDuration = args.noteDuration
     this.config = args.config
 
+    this.narrationPlaying = false
+
     this.audioUtils = new AudioUtils({
       sampleRate: this.sampleRate,
       soundDuration: this.soundDuration,
@@ -471,11 +473,11 @@ export default class Audio extends EventEmitter {
   }
 
   fadeOutBlockAudio () {
-    this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 3)
+    this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 2)
   }
 
   fadeInBlockAudio () {
-    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 3)
+    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 2)
   }
 
   stopNotes () {
@@ -525,18 +527,45 @@ export default class Audio extends EventEmitter {
     noteSource.start()
   }
 
-  async playNarrationFile (group, index) {
-    let path = this.narrationFilePath + group + '/' + index + '.mp3'
+  /**
+   * Play a narration file
+   *
+   * @param {string} group
+   * @param {string} index
+   * @param {int} delay in ms
+   *
+   * @returns Promise
+   */
+  async playNarrationFile (group, index, delay = 2000) {
+    return new Promise(async (resolve, reject) => {
+      if (this.narrationPlaying) {
+        reject(new Error('Narration already playing'))
+      }
 
-    let response = await window.fetch(path)
-    let arrayBuffer = await response.arrayBuffer()
-    let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+      this.blockAudioBus.gain.setTargetAtTime(0.1, this.audioContext.currentTime, 0.1)
 
-    const source = this.audioContext.createBufferSource()
-    source.buffer = audioBuffer
+      this.narrationPlaying = true
 
-    source.connect(this.convolver2)
+      let path = this.narrationFilePath + group + '/' + index + '.mp3'
 
-    source.start()
+      let response = await window.fetch(path)
+      let arrayBuffer = await response.arrayBuffer()
+      let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+
+      const source = this.audioContext.createBufferSource()
+      source.buffer = audioBuffer
+
+      source.connect(this.convolver2)
+
+      source.start()
+
+      source.onended = async (e) => {
+        setTimeout(() => {
+          this.narrationPlaying = false
+          this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1)
+          resolve(true)
+        }, delay)
+      }
+    })
   }
 }
