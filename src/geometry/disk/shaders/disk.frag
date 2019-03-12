@@ -152,7 +152,7 @@ void main() {
 
 	//outgoingLight.r += pow(toCenter, 80.0) * 10.0;
 
-	gl_FragColor = vec4( outgoingLight, s.x * 0.6 );
+	gl_FragColor = vec4( outgoingLight, s.x * 1.0 );
 
 	#include <tonemapping_fragment>
 	#include <encodings_fragment>

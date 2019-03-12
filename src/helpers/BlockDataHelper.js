@@ -22,7 +22,7 @@ export default class BlockDataHelper {
       let outputTotal = 0
       let transactions = []
 
-      for (let i = 0; i < block.tx.length; i++) {
+      for (let i = 0; i < block.n_tx; i++) {
         const tx = block.tx[i]
 
         let spentCount = 0

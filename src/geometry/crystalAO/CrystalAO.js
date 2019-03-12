@@ -17,7 +17,7 @@ export default class CrystalAO extends Base {
       transparent: true,
       side: THREE.DoubleSide,
       map: this.map,
-      opacity: 0.5,
+      opacity: 0.45,
       depthTest: true,
       depthWrite: false
     })

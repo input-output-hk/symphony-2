@@ -31,13 +31,13 @@ void main() {
 	#include <morphtarget_vertex>
 	#include <project_vertex>
 
-	gl_PointSize = 2.8;
+	gl_PointSize = 3000.8;
 
 	// #ifdef USE_SIZEATTENUATION
 
-	// 	bool isPerspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 );
+	 	bool isPerspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 );
 
-	// 	if ( isPerspective ) gl_PointSize *= ( scale / - mvPosition.z );
+	 	if ( isPerspective ) gl_PointSize *= ( scale / - mvPosition.z );
 
 	// #endif
 

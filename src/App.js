@@ -136,12 +136,12 @@ class App extends mixin(EventEmitter, Component) {
         height: 0
       },
       2: {
-        title: 'BITCOIN PIZZA DAY',
+        title: '"BITCOIN PIZZA DAY"',
         height: 57043
       },
       3: {
         title: 'THE MERKLE TREE',
-        height: 132749
+        height: 300000
       },
       4: {
         title: 'NETWORK CONGESTION',
@@ -1289,7 +1289,7 @@ class App extends mixin(EventEmitter, Component) {
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
           if (typeof this.audioManager.gainNodes[height] !== 'undefined') {
-            let vol = map((blockDist * 0.001), 0, 100, 0.5, 0.0)
+            let vol = map((blockDist * 0.001), 0, 200, 0.5, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -1623,8 +1623,8 @@ class App extends mixin(EventEmitter, Component) {
       closestHeight: this.closestHeight,
       config: this.config,
       maxHeight: this.maxHeight,
-      blockHeightIndexes: new Uint32Array(9),
-      geoBlockHeightIndexes: new Uint32Array(9),
+      blockHeightIndexes: new Int32Array(9).fill(-1),
+      geoBlockHeightIndexes: new Int32Array(9).fill(-1),
 
       scales0: new Float32Array(this.txCountBufferSize),
       scales1: new Float32Array(this.txCountBufferSize),
@@ -2200,10 +2200,10 @@ class App extends mixin(EventEmitter, Component) {
     return true
   }
 
-  async showVRTitleText (text = '') {
+  async showVRTitleText (text = '', fadeTime = 10000) {
     let meshObj = {
       text: '',
-      position: { x: -3.5, y: -2, z: -9 },
+      position: { x: -3.3, y: -2, z: -9 },
       width: 700,
       align: 'center',
       scale: 0.0095,
@@ -2220,7 +2220,7 @@ class App extends mixin(EventEmitter, Component) {
     // fade text out
     let that = this
     new TWEEN.Tween({opacity: 1})
-      .to({opacity: 0}, 10000)
+      .to({opacity: 0}, fadeTime)
       .onUpdate(function () {
         that.introTextMesh.material.uniforms.opacity.value = this.opacity
       })
@@ -2235,9 +2235,9 @@ class App extends mixin(EventEmitter, Component) {
     this.showVRTitleText(this.chapters[this.currentChapter].title)
 
     await this.audioManager.playNarrationFile('genesis', '1')
-    await this.audioManager.playNarrationFile('genesis', '2')
-    await this.audioManager.playNarrationFile('genesis', '3')
-    await this.audioManager.playNarrationFile('genesis', '4')
+    // await this.audioManager.playNarrationFile('genesis', '2')
+    // await this.audioManager.playNarrationFile('genesis', '3')
+    // await this.audioManager.playNarrationFile('genesis', '4')
   }
 
   async advanceToNextChapter () {
@@ -2246,6 +2246,8 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.currentChapter++
+
+    this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
 
     switch (this.currentChapter) {
       case 2:
@@ -2276,13 +2278,18 @@ class App extends mixin(EventEmitter, Component) {
         await this.audioManager.playNarrationFile('latest', '1')
         break
       case 6:
-        let to = new THREE.Vector3(0, 0, 0)
-        this.prepareCamAnim(new THREE.Vector3(to.x, 0, to.z))
+        this.prepareCamNavigation()
+        let to = new THREE.Vector3(10000, 1000, 10000)
+        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         let that = this
         new TWEEN.Tween(this.camera.position)
           .to(to, 50000)
           .onUpdate(function () {
             that.camera.position.set(this.x, this.y, this.z)
+          })
+          .onComplete(async () => {
+            that.showVRTitleText('YOU CAN ACCESS SYMPHONY AT ANY TIME IN A WEB BROWSER AT SYMPHONY.IOHK.IO')
+            await that.audioManager.playNarrationFile('end', '1')
           })
           .easing(this.defaultCamEasing)
           .start()
@@ -2290,14 +2297,12 @@ class App extends mixin(EventEmitter, Component) {
         this.showVRTitleText(this.chapters[6].title)
         await this.audioManager.playNarrationFile('mempool', '1')
         break
-      case 7:
-        this.showVRTitleText('YOU CAN ACCESS SYMPHONY AT ANY TIME IN A WEB BROWSER AT SYMPHONY.IOHK.IO')
-        await this.audioManager.playNarrationFile('end', '1')
-        break
 
       default:
         break
     }
+
+    this.audioManager.masterBus.gain.setTargetAtTime(1.0, this.audioManager.audioContext.currentTime, 2.0)
   }
 
   async startIntro () {
@@ -2311,105 +2316,21 @@ class App extends mixin(EventEmitter, Component) {
       if (this.vrActive) {
         await this.playTutorial()
 
-        let meshObj = {
-          text: '',
-          position: { x: -3.5, y: -2, z: -9 },
-          width: 800,
-          align: 'center',
-          scale: 0.0095,
-          lineHeight: 48
-        }
+        this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
+        await this.audioManager.playNarrationFile('intro', '1', 3000)
 
-        meshObj.text = 'THIS IS THE BITCOIN BLOCKCHAIN'
-        let introTextMesh = await this.textGenerator.create(meshObj)
+        this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
+        await this.audioManager.playNarrationFile('intro', '2', 3000)
 
-        this.cameraMain.remove(this.introTextMesh)
-        this.introTextMesh = introTextMesh
-        this.cameraMain.add(this.introTextMesh)
+        this.showVRTitleText('A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES', 6000)
+        await this.audioManager.playNarrationFile('intro', '3', 3000)
 
-        this.audioManager.playNarrationFile('intro', '1')
+        this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
+        await this.audioManager.playNarrationFile('intro', '4', 3000)
 
-        let that = this
-        new TWEEN.Tween({opacity: 1})
-          .to({opacity: 0}, this.config.scene.introTextTime)
-          .onUpdate(function () {
-            that.introTextMesh.material.uniforms.opacity.value = this.opacity
-          })
-          .onComplete(async () => {
-            meshObj.text = 'BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK'
-            let introTextMesh = await this.textGenerator.create(meshObj)
+        this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
 
-            that.cameraMain.remove(that.introTextMesh)
-            that.introTextMesh = introTextMesh
-            that.cameraMain.add(that.introTextMesh)
-
-            this.audioManager.playNarrationFile('intro', '2')
-
-            new TWEEN.Tween({opacity: 1})
-              .to({opacity: 0}, this.config.scene.introTextTime)
-              .onUpdate(function () {
-                that.introTextMesh.material.uniforms.opacity.value = this.opacity
-              })
-              .onComplete(async () => {
-                meshObj.text = 'A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES'
-                let introTextMesh = await this.textGenerator.create(meshObj)
-
-                that.cameraMain.remove(that.introTextMesh)
-                that.introTextMesh = introTextMesh
-                that.cameraMain.add(that.introTextMesh)
-
-                this.audioManager.playNarrationFile('intro', '3')
-
-                new TWEEN.Tween({opacity: 1})
-                  .to({opacity: 0}, this.config.scene.introTextTime)
-                  .onUpdate(function () {
-                    that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                  })
-                  .onComplete(async () => {
-                    meshObj.text = `THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE`
-                    let introTextMesh = await this.textGenerator.create(meshObj)
-
-                    that.cameraMain.remove(that.introTextMesh)
-                    that.introTextMesh = introTextMesh
-                    that.cameraMain.add(that.introTextMesh)
-
-                    this.audioManager.playNarrationFile('intro', '4')
-
-                    new TWEEN.Tween({opacity: 1})
-                      .to({opacity: 0}, this.config.scene.introTextTime)
-                      .onUpdate(function () {
-                        that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                      })
-                      .onComplete(async () => {
-                        meshObj.text = `THERE ARE ${(that.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`
-                        let introTextMesh = await this.textGenerator.create(meshObj)
-
-                        that.cameraMain.remove(that.introTextMesh)
-                        that.introTextMesh = introTextMesh
-                        that.cameraMain.add(that.introTextMesh)
-
-                        new TWEEN.Tween({opacity: 1})
-                          .to({opacity: 0}, this.config.scene.introTextTime)
-                          .onUpdate(function () {
-                            that.introTextMesh.material.uniforms.opacity.value = this.opacity
-                          })
-                          .onComplete(async () => {
-                            that.startStory()
-                          })
-                          .easing(that.defaultCamEasing)
-                          .start()
-                      })
-                      .easing(that.defaultCamEasing)
-                      .start()
-                  })
-                  .easing(that.defaultCamEasing)
-                  .start()
-              })
-              .easing(that.defaultCamEasing)
-              .start()
-          })
-          .easing(that.defaultCamEasing)
-          .start()
+        this.startStory()
       } else {
         this.setState({
           showIntro: true
@@ -2451,17 +2372,6 @@ class App extends mixin(EventEmitter, Component) {
   addEvents () {
     window.addEventListener('resize', this.resize.bind(this), false)
 
-    // this.on('sceneReady', () => {
-    //   if (this.config.scene.showIntro) {
-    //     // this.startIntro()
-    //   } else {
-    //     // this.switchControls('map')
-
-    //     this.goToBlock()
-    //     // this.goToRandomBlock()
-    //   }
-    // })
-
     this.on('blockChanged', () => {
       this.addClosestBlockDetail()
     })
@@ -2479,6 +2389,9 @@ class App extends mixin(EventEmitter, Component) {
       if (e.target.className !== 'hud' && e.target.className !== 'cockpit-border') {
         return
       }
+      // if (e.button === 2) {
+      //   this.advanceToNextChapter()
+      // }
       if (e.button !== 0) {
         return
       }

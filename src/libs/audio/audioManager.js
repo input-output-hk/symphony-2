@@ -537,34 +537,29 @@ export default class Audio extends EventEmitter {
    * @returns Promise
    */
   async playNarrationFile (group, index, delay = 2000) {
-    return new Promise(async (resolve, reject) => {
-      if (this.narrationPlaying) {
-        reject(new Error('Narration already playing'))
-      }
+    return new Promise(async (resolve) => {
+      if (!this.narrationPlaying) {
+        this.narrationPlaying = true
 
-      this.blockAudioBus.gain.setTargetAtTime(0.1, this.audioContext.currentTime, 0.1)
+        let path = this.narrationFilePath + group + '/' + index + '.mp3'
 
-      this.narrationPlaying = true
+        let response = await window.fetch(path)
+        let arrayBuffer = await response.arrayBuffer()
+        let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
 
-      let path = this.narrationFilePath + group + '/' + index + '.mp3'
+        const source = this.audioContext.createBufferSource()
+        source.buffer = audioBuffer
 
-      let response = await window.fetch(path)
-      let arrayBuffer = await response.arrayBuffer()
-      let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+        source.connect(this.convolver2)
 
-      const source = this.audioContext.createBufferSource()
-      source.buffer = audioBuffer
+        source.start()
 
-      source.connect(this.convolver2)
-
-      source.start()
-
-      source.onended = async (e) => {
-        setTimeout(() => {
-          this.narrationPlaying = false
-          this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.1)
-          resolve(true)
-        }, delay)
+        source.onended = async (e) => {
+          setTimeout(() => {
+            this.narrationPlaying = false
+            resolve(true)
+          }, delay)
+        }
       }
     })
   }
