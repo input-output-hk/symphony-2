@@ -28,6 +28,8 @@ export default class Audio extends EventEmitter {
     this.blockAudioBus = this.audioContext.createGain()
     this.masterBus = this.audioContext.createGain()
 
+    this.masterBus.gain.setTargetAtTime(0.8, this.audioContext.currentTime, 0.0)
+
     this.compressor = this.audioContext.createDynamicsCompressor()
     this.compressor.threshold.setValueAtTime(-10, this.audioContext.currentTime)
     this.compressor.knee.setValueAtTime(0, this.audioContext.currentTime)

@@ -116,6 +116,7 @@ class App extends mixin(EventEmitter, Component) {
     this.OBJLoader = new OBJLoader()
     this.textureLoader = new THREE.TextureLoader()
     this.maxHeight = null
+    this.isNavigating = false
 
     // VR
     this.blockHeightTextMesh = null
@@ -130,6 +131,8 @@ class App extends mixin(EventEmitter, Component) {
     this.viveController2Buttons = new ViveController(1)
     this.viveTriggerPressed1 = false
     this.viveTriggerPressed2 = false
+    this.viveController1MeshGroup = new THREE.Group()
+    this.viveController2MeshGroup = new THREE.Group()
     this.chapters = {
       1: {
         title: 'THE GENESIS BLOCK',
@@ -1855,6 +1858,8 @@ class App extends mixin(EventEmitter, Component) {
 
   async goToBlock (blockHeight = null) {
     return new Promise((resolve) => {
+      this.isNavigating = true
+
       this.prepareCamNavigation()
 
       if (blockHeight !== null) {
@@ -1903,6 +1908,7 @@ class App extends mixin(EventEmitter, Component) {
                     })
                     .onComplete(() => {
                       resolve(true)
+                      this.isNavigating = false
                       this.animatingCamera = false
                     })
                     .easing(TWEEN.Easing.Quadratic.Out)
@@ -1917,7 +1923,7 @@ class App extends mixin(EventEmitter, Component) {
         .easing(this.defaultCamEasing)
         .start()
 
-      this.animateCamRotation(10000)
+      this.animateCamRotation(20000)
     })
   }
 
@@ -2241,7 +2247,8 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async advanceToNextChapter () {
-    if (this.audioManager.narrationPlaying || this.animatingCamera) {
+    // if (this.audioManager.narrationPlaying || this.animatingCamera) {
+    if (this.audioManager.narrationPlaying || this.isNavigating) {
       return
     }
 
@@ -2279,7 +2286,7 @@ class App extends mixin(EventEmitter, Component) {
         break
       case 6:
         this.prepareCamNavigation()
-        let to = new THREE.Vector3(10000, 1000, 10000)
+        let to = new THREE.Vector3(10000, 20000, 10000)
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         let that = this
         new TWEEN.Tween(this.camera.position)
@@ -2302,7 +2309,7 @@ class App extends mixin(EventEmitter, Component) {
         break
     }
 
-    this.audioManager.masterBus.gain.setTargetAtTime(1.0, this.audioManager.audioContext.currentTime, 2.0)
+    this.audioManager.masterBus.gain.setTargetAtTime(0.8, this.audioManager.audioContext.currentTime, 2.0)
   }
 
   async startIntro () {
@@ -2429,11 +2436,11 @@ class App extends mixin(EventEmitter, Component) {
     if (this.viveController1 && !this.VRController1EventsBound) {
       if (typeof this.viveController1.userData.inputSource !== 'undefined') {
         if (this.viveController1.userData.inputSource.handedness === 'right') {
-          this.setupRightViveController(this.viveController1)
+          this.setupRightViveController(this.viveController1, this.viveController1MeshGroup)
         }
 
         if (this.viveController1.userData.inputSource.handedness === 'left') {
-          this.setupLeftViveController(this.viveController1)
+          this.setupLeftViveController(this.viveController1, this.viveController1MeshGroup)
         }
 
         console.log('vive 1 setup')
@@ -2444,11 +2451,11 @@ class App extends mixin(EventEmitter, Component) {
     if (this.viveController2 && !this.VRController2EventsBound) {
       if (typeof this.viveController2.userData.inputSource !== 'undefined') {
         if (this.viveController2.userData.inputSource.handedness === 'right') {
-          this.setupRightViveController(this.viveController2)
+          this.setupRightViveController(this.viveController2, this.viveController2MeshGroup)
         }
 
         if (this.viveController2.userData.inputSource.handedness === 'left') {
-          this.setupLeftViveController(this.viveController2)
+          this.setupLeftViveController(this.viveController2, this.viveController2MeshGroup)
         }
 
         console.log('vive 2 setup')
@@ -2457,7 +2464,7 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  setupRightViveController (viveController) {
+  setupRightViveController (viveController, meshGroup) {
     viveController.addEventListener('select', this.onVRControllerSelect.bind(this))
 
     this.controllerCam = new THREE.PerspectiveCamera(
@@ -2466,7 +2473,7 @@ class App extends mixin(EventEmitter, Component) {
       1.0,
       5000000
     )
-    viveController.add(this.controllerCam)
+    meshGroup.add(this.controllerCam)
 
     let lineGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)
@@ -2479,7 +2486,7 @@ class App extends mixin(EventEmitter, Component) {
     let line = new THREE.Line(lineGeo, lineMat)
     line.scale.z = 5
 
-    viveController.add(line)
+    meshGroup.add(line)
 
     // add buttons
     let buttonGeo = new THREE.PlaneBufferGeometry(0.018, 0.018, 1)
@@ -2498,7 +2505,7 @@ class App extends mixin(EventEmitter, Component) {
     buttonPrevMesh.position.x = -0.015
     buttonPrevMesh.position.y = 0.009
     buttonPrevMesh.position.z = 0.05
-    viveController.add(buttonPrevMesh)
+    meshGroup.add(buttonPrevMesh)
 
     // next button
     let buttonNextMap = this.textureLoader.load('next.png')
@@ -2511,7 +2518,7 @@ class App extends mixin(EventEmitter, Component) {
     buttonNextMesh.position.x = 0.015
     buttonNextMesh.position.y = 0.009
     buttonNextMesh.position.z = 0.05
-    viveController.add(buttonNextMesh)
+    meshGroup.add(buttonNextMesh)
 
     // up button
     let buttonUpMap = this.textureLoader.load('up.png')
@@ -2524,7 +2531,7 @@ class App extends mixin(EventEmitter, Component) {
     let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
     buttonUpMesh.position.y = 0.009
     buttonUpMesh.position.z = 0.035
-    viveController.add(buttonUpMesh)
+    meshGroup.add(buttonUpMesh)
 
     // down button
     let buttonDownMap = this.textureLoader.load('down.png')
@@ -2536,7 +2543,7 @@ class App extends mixin(EventEmitter, Component) {
     let buttonDownMesh = new THREE.Mesh(buttonGeo, buttonDownMat)
     buttonDownMesh.position.y = 0.009
     buttonDownMesh.position.z = 0.065
-    viveController.add(buttonDownMesh)
+    meshGroup.add(buttonDownMesh)
 
     // // info button
     // let buttonInfoMap = this.textureLoader.load('info.png')
@@ -2552,7 +2559,7 @@ class App extends mixin(EventEmitter, Component) {
     // viveController.add(buttonInfoMesh)
   }
 
-  setupLeftViveController (viveController) {
+  setupLeftViveController (viveController, meshGroup) {
     // add buttons
     let buttonGeo = new THREE.PlaneBufferGeometry(0.028, 0.028, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
@@ -2569,7 +2576,7 @@ class App extends mixin(EventEmitter, Component) {
     let buttonNextChapterMesh = new THREE.Mesh(buttonGeo, buttonNextChapterMat)
     buttonNextChapterMesh.position.y = 0.009
     buttonNextChapterMesh.position.z = 0.05
-    viveController.add(buttonNextChapterMesh)
+    meshGroup.add(buttonNextChapterMesh)
   }
 
   bindVRGamepadEvents () {
@@ -3103,8 +3110,22 @@ class App extends mixin(EventEmitter, Component) {
       controller.material.specularMap = this.textureLoader.load('onepointfive_spec.png')
       controller.frustumCulled = false
 
-      this.viveController1.add(controller.clone())
-      this.viveController2.add(controller.clone())
+      controller.renderOrder = -1
+
+      this.viveController1MeshGroup.rotateX((Math.PI / 4.4))
+      this.viveController1MeshGroup.translateZ(-0.08)
+
+      this.viveController2MeshGroup.rotateX((Math.PI / 4.4))
+      this.viveController2MeshGroup.translateZ(-0.08)
+
+      this.viveController1MeshGroup.add(controller.clone())
+      this.viveController2MeshGroup.add(controller.clone())
+
+      this.viveController1.renderOrder = -1
+      this.viveController2.renderOrder = -1
+
+      this.viveController1.add(this.viveController1MeshGroup)
+      this.viveController2.add(this.viveController2MeshGroup)
     }.bind(this))
   }
 

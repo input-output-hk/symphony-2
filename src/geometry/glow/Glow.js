@@ -17,7 +17,7 @@ export default class Glow extends Base {
       blending: THREE.AdditiveBlending,
       transparent: true,
       fog: false,
-      depthTest: false
+      depthWrite: false
     })
   }
 
