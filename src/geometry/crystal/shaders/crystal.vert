@@ -107,8 +107,6 @@ void main() {
 		transformed.y = max(transformed.y, 0.2) * topVertex;
 	}
 
-	
-
 	// transformed.y += (1.0 * isSelected);
 
 	// transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
@@ -125,6 +123,10 @@ void main() {
 	if (uAutoPilot > 0.0) {
 		float camDistSq = dot(distVec, distVec);
 		transformed.y *= smoothstep(0.0, 10000.0, camDistSq);
+
+		if (abs(transformed.y) < 1.0) {
+			transformed.y = sign(transformed.y);
+		}
 	}
 
 	//float randVal = random(offset.x);

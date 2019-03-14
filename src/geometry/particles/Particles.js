@@ -18,21 +18,24 @@ export default class Particles extends Base {
   constructor (args) {
     super(args)
 
-    this.particleCount = 100000
+    this.particleCount = 1000000
 
     this.frame = 0
 
     this.textureHelper = new TextureHelper(args)
     this.textureHelper.setTextureSize(this.particleCount)
 
+    this.map = new THREE.TextureLoader().load('assets/images/textures/matcap.png')
+
     this.material = new ParticlesMaterial({
       color: 0x709eec,
       transparent: true,
+      map: this.map,
       opacity: 1.0,
       fog: false,
+      alphaTest: 0.5,
       blending: THREE.AdditiveBlending,
       depthWrite: false
-      // depthTest: false
     })
 
     this.textureHeight = this.textureHelper.textureHeight

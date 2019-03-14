@@ -46,7 +46,7 @@ self.addEventListener('message', async function (e) {
       if (!shouldCache) {
         console.log('Block data for: ' + data.hash + ' returned from cache')
       } else {
-        blockData = await blockDataHelper.cacheBlockData(data.hash, docRef)
+        blockData = await blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
       }
 
       if (typeof blockData === 'undefined') {

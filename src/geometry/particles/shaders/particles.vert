@@ -31,7 +31,7 @@ void main() {
 	#include <morphtarget_vertex>
 	#include <project_vertex>
 
-	gl_PointSize = 3000.8;
+	gl_PointSize = 1000.0;
 
 	// #ifdef USE_SIZEATTENUATION
 

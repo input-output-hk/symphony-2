@@ -4,10 +4,22 @@ export default class BlockDataHelper {
     this.config = args.config
   }
 
-  async cacheBlockData (hash, docRef) {
+  async cacheBlockData (hash, docRef, height) {
     try {
-      let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
-      let block = await result.json()
+      let block
+
+      try {
+        let result = await fetch('https://blockchain.info/rawblock/' + hash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+        block = await result.json()
+      } catch (error) {
+        console.log('trying different endpoint')
+
+        const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
+        let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+        let blockData = await fetch(url)
+        let blockDataJSON = await blockData.json()
+        block = blockDataJSON.blocks[0]
+      }
 
       block.tx.forEach(function (tx) {
         let txValue = 0

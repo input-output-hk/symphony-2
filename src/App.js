@@ -728,7 +728,7 @@ class App extends mixin(EventEmitter, Component) {
    *
    * @param {string} hash
    */
-  async getBlockData (hash) {
+  async getBlockData (hash, heightToLoad) {
     return new Promise(async (resolve, reject) => {
       const getBlockDataWorker = new GetBlockDataWorker()
       getBlockDataWorker.onmessage = ({ data }) => {
@@ -744,6 +744,7 @@ class App extends mixin(EventEmitter, Component) {
 
       let sendObj = {
         cmd: 'get',
+        heightToLoad: heightToLoad,
         hash: hash,
         config: this.config,
         maxHeight: this.maxHeight,
@@ -771,9 +772,9 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.selectedLight)
   }
 
-  async getGeometry (hash) {
+  async getGeometry (hash, heightToLoad) {
     return new Promise(async (resolve, reject) => {
-      let blockData = await this.getBlockData(hash)
+      let blockData = await this.getBlockData(hash, heightToLoad)
 
       const getGeometryWorker = new GetGeometryWorker()
 
@@ -852,13 +853,15 @@ class App extends mixin(EventEmitter, Component) {
   async initPositions () {
     let timestampToLoad = moment().valueOf() // default to today's date
 
-    try {
-      let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-      let latestBlockDataJSON = await latestBlockData.json()
-      this.maxHeight = latestBlockDataJSON.blocks[0].height
-    } catch (error) {
-      console.log(error)
-    }
+    this.maxHeight = 566610
+
+    // try {
+    //   let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+    //   let latestBlockDataJSON = await latestBlockData.json()
+    //   this.maxHeight = latestBlockDataJSON.blocks[0].height
+    // } catch (error) {
+    //   console.log(error)
+    // }
 
     this.blockPositions = new Float32Array((this.maxHeight * 2) + 2)
 
@@ -899,6 +902,7 @@ class App extends mixin(EventEmitter, Component) {
         let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
         let blockDataJSON = await blockData.json()
         this.blockHashToLoad = blockDataJSON.blocks[0].hash
+        this.blockHeightToLoad = blockDataJSON.blocks[0].height
       } catch (error) {
         console.log(error)
 
@@ -910,6 +914,7 @@ class App extends mixin(EventEmitter, Component) {
             let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
             let blockDataJSON = await blockData.json()
             this.blockHashToLoad = blockDataJSON.blocks[0].hash
+            this.blockHeightToLoad = blockDataJSON.blocks[0].height
           } catch (error) {
             console.log(error)
           }
@@ -917,7 +922,7 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    let blockGeoData = await this.getGeometry(this.blockHashToLoad)
+    let blockGeoData = await this.getGeometry(this.blockHashToLoad, this.blockHeightToLoad)
 
     this.closestHeight = blockGeoData.blockData.height
 
@@ -939,7 +944,7 @@ class App extends mixin(EventEmitter, Component) {
     })
     this.group.add(this.txs)
 
-    this.trees = await this.treeGenerator.init(blockGeoData, 1)
+    this.trees = await this.treeGenerator.init(blockGeoData)
     this.group.add(this.trees)
 
     this.plane = await this.planeGenerator.init(blockGeoData)
@@ -1014,8 +1019,45 @@ class App extends mixin(EventEmitter, Component) {
     this.emit('sceneReady')
 
     // this.unconfirmedLoop()
+    this.offlineUnconfirmedLoop()
 
     return true
+  }
+
+  async offlineUnconfirmedLoop () {
+    let txHeights = []
+
+    for (let height = this.maxHeight - 50; height < this.maxHeight; height++) {
+      if (Math.random() > 0.85) {
+        txHeights.push(height)
+      }
+    }
+
+    for (let height = this.maxHeight - 200; height < this.maxHeight; height++) {
+      if (Math.random() > 0.96) {
+        txHeights.push(height)
+      }
+    }
+
+    for (let height = this.maxHeight - 10000; height < this.maxHeight - 1000; height++) {
+      if (Math.random() > 0.996) {
+        txHeights.push(height)
+      }
+    }
+
+    txHeights.push(Math.floor(Math.random() * this.maxHeight))
+    txHeights.push(Math.floor(Math.random() * this.maxHeight))
+    txHeights.push(Math.floor(Math.random() * this.maxHeight))
+
+    await this.txGenerator.updateGeometry({
+      blockPositions: this.blockPositions,
+      renderer: this.renderer,
+      txHeights: txHeights
+    })
+
+    setTimeout(() => {
+      this.offlineUnconfirmedLoop()
+    }, 5000)
   }
 
   async unconfirmedLoop () {
@@ -1048,7 +1090,7 @@ class App extends mixin(EventEmitter, Component) {
         })
 
         resolve()
-      }, 4000)
+      }, 10000)
     })
   }
 
@@ -1214,6 +1256,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   toggleTopView () {
+    if (this.isNavigating) {
+      return
+    }
+
     this.stopAutoPilotAnimation()
 
     let yPos = this.mapControlsYPos
@@ -1245,6 +1291,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async toggleUndersideView () {
+    if (this.isNavigating) {
+      return
+    }
+
     this.stopAutoPilotAnimation()
 
     let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -300, this.closestBlock.blockData.pos.z - 100)
@@ -1292,7 +1342,7 @@ class App extends mixin(EventEmitter, Component) {
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
           if (typeof this.audioManager.gainNodes[height] !== 'undefined') {
-            let vol = map((blockDist * 0.001), 0, 200, 0.5, 0.0)
+            let vol = map((blockDist * 0.001), 0, 100, 0.5, 0.0)
             if (vol < 0 || !isFinite(vol)) {
               vol = 0
             }
@@ -1937,6 +1987,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   toggleAutoPilotDirection (direction = 'backward') {
+    if (this.isNavigating) {
+      return
+    }
+
     if (typeof this.autoPilotTween !== 'undefined') {
       this.autoPilotTween.stop()
     }
@@ -2267,17 +2321,17 @@ class App extends mixin(EventEmitter, Component) {
         this.toggleUndersideView()
         this.showVRTitleText(this.chapters[3].title)
         await this.audioManager.playNarrationFile('merkle-tree', '1')
-        await this.audioManager.playNarrationFile('merkle-tree', '2')
-        await this.audioManager.playNarrationFile('merkle-tree', '3')
-        await this.audioManager.playNarrationFile('merkle-tree', '4')
+        // await this.audioManager.playNarrationFile('merkle-tree', '2')
+        // await this.audioManager.playNarrationFile('merkle-tree', '3')
+        // await this.audioManager.playNarrationFile('merkle-tree', '4')
         break
       case 4:
         await this.goToBlock(this.chapters[4].height)
         this.showVRTitleText(this.chapters[4].title)
         await this.audioManager.playNarrationFile('congestion', '1')
-        await this.audioManager.playNarrationFile('congestion', '2')
-        await this.audioManager.playNarrationFile('congestion', '3')
-        await this.audioManager.playNarrationFile('congestion', '4')
+        // await this.audioManager.playNarrationFile('congestion', '2')
+        // await this.audioManager.playNarrationFile('congestion', '3')
+        // await this.audioManager.playNarrationFile('congestion', '4')
         break
       case 5:
         await this.goToBlock(this.maxHeight)
@@ -2297,6 +2351,9 @@ class App extends mixin(EventEmitter, Component) {
           .onComplete(async () => {
             that.showVRTitleText('YOU CAN ACCESS SYMPHONY AT ANY TIME IN A WEB BROWSER AT SYMPHONY.IOHK.IO')
             await that.audioManager.playNarrationFile('end', '1')
+
+            // restart
+            window.location.reload()
           })
           .easing(this.defaultCamEasing)
           .start()
@@ -2321,23 +2378,25 @@ class App extends mixin(EventEmitter, Component) {
       this.goToBlock()
     } else {
       if (this.vrActive) {
-        await this.playTutorial()
+        this.goToBlock(this.maxHeight)
 
-        this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
-        await this.audioManager.playNarrationFile('intro', '1', 3000)
+        // await this.playTutorial()
 
-        this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
-        await this.audioManager.playNarrationFile('intro', '2', 3000)
+        // this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
+        // await this.audioManager.playNarrationFile('intro', '1', 3000)
 
-        this.showVRTitleText('A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES', 6000)
-        await this.audioManager.playNarrationFile('intro', '3', 3000)
+        // this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
+        // await this.audioManager.playNarrationFile('intro', '2', 3000)
 
-        this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
-        await this.audioManager.playNarrationFile('intro', '4', 3000)
+        // this.showVRTitleText('A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES', 6000)
+        // await this.audioManager.playNarrationFile('intro', '3', 3000)
 
-        this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
+        // this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
+        // await this.audioManager.playNarrationFile('intro', '4', 3000)
 
-        this.startStory()
+        // this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
+
+        // this.startStory()
       } else {
         this.setState({
           showIntro: true
@@ -2397,7 +2456,7 @@ class App extends mixin(EventEmitter, Component) {
         return
       }
       // if (e.button === 2) {
-      //   this.advanceToNextChapter()
+      //   this.goToRandomBlock()
       // }
       if (e.button !== 0) {
         return
@@ -3628,7 +3687,7 @@ class App extends mixin(EventEmitter, Component) {
           <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
           <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>The mempool sits at the center, unconfirmed transactions gather here</h1>
           <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
-          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={this.goToBlock.bind(this)}>Enter the Blockchain</span></h1>
+          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={() => { this.goToBlock(this.maxHeight) }}>Enter the Blockchain</span></h1>
         </div>
       )
     }

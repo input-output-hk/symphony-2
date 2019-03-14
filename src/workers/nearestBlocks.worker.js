@@ -86,12 +86,12 @@ self.addEventListener('message', async function (e) {
       await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
         if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
           console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
-          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
+          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
         }
 
         if (blockDetails.tx[0].index === 0) {
           console.log('Block: ' + blockDetails.hash + ' data incomplete, re-adding')
-          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef)
+          blockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
         }
 
         blockHeightIndexes[ii] = blockDetails.height

@@ -10,7 +10,7 @@ varying float vLifeAttr;
 
 #include <common>
 #include <color_pars_fragment>
-// #include <map_particle_pars_fragment>
+#include <map_particle_pars_fragment>
 // #include <fog_pars_fragment>
 #include <logdepthbuf_pars_fragment>
 
@@ -22,21 +22,23 @@ void main() {
 	vec4 diffuseColor = vec4( diffuse, opacity );
 
 	#include <logdepthbuf_fragment>
-	// #include <map_particle_fragment>
+	#include <map_particle_fragment>
 	#include <color_fragment>
 	#include <alphatest_fragment>
 
-	// round particles
-	vec2 uv = (  vec3( gl_PointCoord.x, 1.0 - gl_PointCoord.y, 1 ) ).xy;
-	vec2 toCenter = (uv - 0.5) * 2.0;
-	if (length(toCenter) > 1.0) {
-		discard;
-	}
+	outgoingLight = diffuseColor.rgb;
 
-	outgoingLight = vec3(112./255., 158./255., 236./255.);
+	// round particles
+	// vec2 uv = (  vec3( gl_PointCoord.x, 1.0 - gl_PointCoord.y, 1 ) ).xy;
+	// vec2 toCenter = (uv - 0.5) * 2.0;
+	// if (length(toCenter) > 1.0) {
+	// 	discard;
+	// }
+
+	// outgoingLight *= vec3(112./255., 158./255., 236./255.);
 	outgoingLight.r += (vLife / uParticleLifeMax) * 0.3;
 	diffuseColor.a = (vLife / uParticleLifeMax);
-	diffuseColor.a *= 1.0 - (vLife / uParticleLifeMax);
+	// diffuseColor.a *= 1.0 - (vLife / uParticleLifeMax);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
 
