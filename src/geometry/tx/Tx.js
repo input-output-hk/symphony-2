@@ -18,7 +18,7 @@ export default class Tx extends Base {
 
     this.frame = 0
 
-    this.instanceTotal = 500
+    this.instanceTotal = 1000
 
     this.textureHelper = new TextureHelper(args)
     this.textureHelper.setTextureSize(this.instanceTotal)

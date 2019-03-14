@@ -922,7 +922,9 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    let blockGeoData = await this.getGeometry(this.blockHashToLoad, this.blockHeightToLoad)
+    this.blockHashToLoad = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
+
+    let blockGeoData = await this.getGeometry(this.blockHashToLoad, 0)
 
     this.closestHeight = blockGeoData.blockData.height
 
@@ -2378,8 +2380,6 @@ class App extends mixin(EventEmitter, Component) {
       this.goToBlock()
     } else {
       if (this.vrActive) {
-        this.goToBlock(this.maxHeight)
-
         // await this.playTutorial()
 
         // this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
@@ -2396,7 +2396,7 @@ class App extends mixin(EventEmitter, Component) {
 
         // this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
 
-        // this.startStory()
+        this.startStory()
       } else {
         this.setState({
           showIntro: true
