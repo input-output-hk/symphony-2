@@ -1036,13 +1036,13 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     for (let height = this.maxHeight - 200; height < this.maxHeight; height++) {
-      if (Math.random() > 0.96) {
+      if (Math.random() > 0.97) {
         txHeights.push(height)
       }
     }
 
     for (let height = this.maxHeight - 10000; height < this.maxHeight - 1000; height++) {
-      if (Math.random() > 0.996) {
+      if (Math.random() > 0.998) {
         txHeights.push(height)
       }
     }
@@ -2618,7 +2618,7 @@ class App extends mixin(EventEmitter, Component) {
     // viveController.add(buttonInfoMesh)
   }
 
-  setupLeftViveController (viveController, meshGroup) {
+  async setupLeftViveController (viveController, meshGroup) {
     // add buttons
     let buttonGeo = new THREE.PlaneBufferGeometry(0.028, 0.028, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
@@ -2636,6 +2636,22 @@ class App extends mixin(EventEmitter, Component) {
     buttonNextChapterMesh.position.y = 0.009
     buttonNextChapterMesh.position.z = 0.05
     meshGroup.add(buttonNextChapterMesh)
+
+    let textMesh = await this.textGenerator.create({
+      text: 'NEXT CHAPTER',
+      position: {
+        x: 0.025,
+        y: 0.006,
+        z: 0.054
+      },
+      width: 1400,
+      align: 'left',
+      scale: 0.0004,
+      lineHeight: 48
+    })
+    textMesh.rotateX(-(Math.PI / 2))
+    textMesh.renderOrder = 0
+    meshGroup.add(textMesh)
   }
 
   bindVRGamepadEvents () {
