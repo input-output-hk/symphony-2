@@ -2253,7 +2253,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async playTutorial () {
-    await this.audioManager.playNarrationFile('tutorial', '1')
+    // await this.audioManager.playNarrationFile('tutorial', '1')
     await this.audioManager.playNarrationFile('tutorial', '2')
     await this.audioManager.playNarrationFile('tutorial', '3')
     await this.audioManager.playNarrationFile('tutorial', '4')
@@ -2293,13 +2293,19 @@ class App extends mixin(EventEmitter, Component) {
   async startStory () {
     this.currentChapter = 1
 
-    await this.goToBlock(this.chapters[this.currentChapter].height)
-    this.showVRTitleText(this.chapters[this.currentChapter].title)
+    this.advanceToNextChapter()
 
-    await this.audioManager.playNarrationFile('genesis', '1')
-    // await this.audioManager.playNarrationFile('genesis', '2')
-    // await this.audioManager.playNarrationFile('genesis', '3')
+    // await this.goToBlock(this.chapters[this.currentChapter].height)
+    // this.showVRTitleText(this.chapters[this.currentChapter].title)
+
+    // await this.audioManager.playNarrationFile('genesis', '1')
+    // // await this.audioManager.playNarrationFile('genesis', '2')
+    // // await this.audioManager.playNarrationFile('genesis', '3')
     // await this.audioManager.playNarrationFile('genesis', '4')
+
+    // setTimeout(async () => {
+    //   // await this.audioManager.playNarrationFile('hints', '1')
+    // }, 20000)
   }
 
   async advanceToNextChapter () {
@@ -2313,34 +2319,46 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
 
     switch (this.currentChapter) {
+      // case 2:
+      //   await this.goToBlock(this.chapters[2].height)
+      //   this.showVRTitleText(this.chapters[2].title)
+      //   await this.audioManager.playNarrationFile('pizza', '1')
+      //   // setTimeout(async () => {
+      //   //   // await this.audioManager.playNarrationFile('hints', '1')
+      //   // }, 20000)
+      //   break
       case 2:
-        await this.goToBlock(this.chapters[2].height)
-        this.showVRTitleText(this.chapters[2].title)
-        await this.audioManager.playNarrationFile('pizza', '1')
-        break
-      case 3:
         await this.goToBlock(this.chapters[3].height)
         this.toggleUndersideView()
         this.showVRTitleText(this.chapters[3].title)
         await this.audioManager.playNarrationFile('merkle-tree', '1')
-        // await this.audioManager.playNarrationFile('merkle-tree', '2')
+        await this.audioManager.playNarrationFile('merkle-tree', '2')
         // await this.audioManager.playNarrationFile('merkle-tree', '3')
         // await this.audioManager.playNarrationFile('merkle-tree', '4')
+        // setTimeout(async () => {
+        //   // await this.audioManager.playNarrationFile('hints', '1')
+        // }, 20000)
         break
-      case 4:
+      case 3:
         await this.goToBlock(this.chapters[4].height)
         this.showVRTitleText(this.chapters[4].title)
         await this.audioManager.playNarrationFile('congestion', '1')
-        // await this.audioManager.playNarrationFile('congestion', '2')
+        await this.audioManager.playNarrationFile('congestion', '2')
         // await this.audioManager.playNarrationFile('congestion', '3')
         // await this.audioManager.playNarrationFile('congestion', '4')
+        // setTimeout(async () => {
+        //   // await this.audioManager.playNarrationFile('hints', '1')
+        // }, 20000)
         break
-      case 5:
+      case 4:
         await this.goToBlock(this.maxHeight)
         this.showVRTitleText(this.chapters[5].title)
         await this.audioManager.playNarrationFile('latest', '1')
+        // setTimeout(async () => {
+        //   // await this.audioManager.playNarrationFile('hints', '1')
+        // }, 20000)
         break
-      case 6:
+      case 5:
         this.prepareCamNavigation()
         let to = new THREE.Vector3(10000, 20000, 10000)
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
@@ -2380,13 +2398,13 @@ class App extends mixin(EventEmitter, Component) {
       this.goToBlock()
     } else {
       if (this.vrActive) {
-        // await this.playTutorial()
+        await this.playTutorial()
 
-        // this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
-        // await this.audioManager.playNarrationFile('intro', '1', 3000)
+        this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
+        await this.audioManager.playNarrationFile('intro', '1', 3000)
 
-        // this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
-        // await this.audioManager.playNarrationFile('intro', '2', 3000)
+        this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
+        await this.audioManager.playNarrationFile('intro', '2', 3000)
 
         // this.showVRTitleText('A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES', 6000)
         // await this.audioManager.playNarrationFile('intro', '3', 3000)
@@ -3208,7 +3226,7 @@ class App extends mixin(EventEmitter, Component) {
    * Set up camera with defaults
    */
   initCamera (vrActive = false) {
-    this.vrActive = true
+    this.vrActive = vrActive
 
     if (this.camera) {
       this.scene.remove(this.camera)

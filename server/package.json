@@ -1,0 +1,29 @@
+{
+  "name": "symphony-2-server",
+  "version": "1.0.0",
+  "description": "",
+  "author": "Scott Darby <scott.darby@iohk.io>",
+  "license": "ISC",
+  "scripts": {
+    "server": "nodemon server.js"
+  },
+  "dependencies": {
+    "blockchain.info": "^2.12.1",
+    "express": "^4.16.4",
+    "firebase-admin": "^7.1.0",
+    "moment": "^2.24.0",
+    "node-fetch": "^2.3.0",
+    "nodemon": "^1.18.10",
+    "seedrandom": "^3.0.1",
+    "simplex-noise": "^2.4.0",
+    "three": "^0.102.1",
+    "voronoi": "^1.0.0",
+    "ws": "^6.2.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "concurrently": "^4.0.1",
+    "standard": "^11.0.1"
+  }
+}
