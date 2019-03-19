@@ -117,7 +117,7 @@ const saveGeometry = async function (blockData) {
 
   const simplex = new SimplexNoise(blockData.height)
 
-  const voronoi = new Voronoi()
+  voronoi = new Voronoi()
 
   let sites = []
 
@@ -322,6 +322,10 @@ const blockUpdateRoutine = async function () {
       console.log('Error writing document: ', error)
     }
     blockUpdateRoutine()
+  } else {
+    setTimeout(() => {
+      blockUpdateRoutine()
+    }, 10000)
   }
 }
 
