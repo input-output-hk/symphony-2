@@ -53,7 +53,7 @@ void main() {
 
 		transformed.xyz += positionData.xyz;
 
-		float noiseVal = snoise(transformed.xyz * 0.00005) * 1000.0;
+		float noiseVal = snoise(transformed.xyz * 0.000005) * 10000.0;
 
 		transformed.x += noiseVal;
 		transformed.y += noiseVal;
