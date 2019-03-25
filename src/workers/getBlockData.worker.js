@@ -1,6 +1,6 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-// import 'firebase/auth'
+import 'firebase/auth'
 // import 'firebase/storage'
 import moment from 'moment'
 
@@ -20,6 +20,11 @@ self.addEventListener('message', async function (e) {
       firebase.firestore()
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
+
+      firebase.auth().signInAnonymously().catch(function (error) {
+        console.log(error.code)
+        console.log(error.message)
+      })
 
       let blockDataHelper = new BlockDataHelper({
         config: config

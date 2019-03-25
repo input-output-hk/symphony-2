@@ -101,6 +101,11 @@ class DiskMaterial extends THREE.MeshStandardMaterial {
       value: new THREE.Vector2(0.0, 0.0)
     }
 
+    this.uniforms.uSpiralStart = {
+      type: 'f',
+      value: 725000
+    }
+
     this.uniforms.uMaxHeight = {
       type: 'f',
       value: 0.0

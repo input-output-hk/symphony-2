@@ -4,6 +4,10 @@
   padding: 0;
 }
 
+button:focus {
+  outline: none;
+}
+
 a {
   color: #ffffff;
   font-weight: bold;
@@ -170,9 +174,9 @@ canvas#sketchboard {
   z-index: 9;
 }
 
-.cockpit .controls-container {
+/* .cockpit .controls-container {
   display: none;
-}
+} */
 
 .auto-pilot-controls {
   display: inline-block;
@@ -435,16 +439,21 @@ canvas#sketchboard {
 
 .sidebar li span {
   display: block;
-  padding: 0 0 10px 32px;
+  margin: 0 0 10px 32px;
 }
 
 .sidebar.closed ul span {
   opacity: 0.0;
-  
+  visibility: hidden
 }
 
 .sidebar.open ul span {
   opacity: 1.0;
+}
+
+.sidebar.open ul span:hover {
+  text-decoration: underline;
+  color: #fff
 }
 
 .sidebar ul span {
@@ -663,6 +672,7 @@ canvas#sketchboard {
 
 .sidebar.closed .key .sidebar-hide {
   opacity: 0.0;
+  visibility: hidden;
 }
 
 .sidebar.open .key .sidebar-hide {
@@ -910,4 +920,23 @@ canvas#sketchboard {
 
 .not-supported {
   display: none;
+}
+
+.block-navigation-prev {
+  z-index: 9;
+  position: absolute;
+  left: 10%;
+}
+.block-navigation-prev:hover {
+  cursor: pointer;
+}
+
+.block-navigation-next {
+  z-index: 9;
+  position: absolute;
+  right: 10%;
+}
+
+.block-navigation-next:hover {
+  cursor: pointer;
 }

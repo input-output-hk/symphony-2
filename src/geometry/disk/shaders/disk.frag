@@ -4,6 +4,7 @@ uniform vec3 uCamPos;
 uniform float uRadiusMultiplier;
 uniform vec2 uOriginOffset;
 uniform float uMaxHeight;
+uniform float uSpiralStart;
 
 varying vec4 vWorldPosition;
 
@@ -25,7 +26,8 @@ vec2 spiral(vec2 uv, float a, float radius) {
 	ang += ceil(turn) * twoPI;
 	float d = arclength(a, ang) + uOffset;
 	
-	return vec2(d, fract(turn)) * ((1.0 - step(d, 154387.0)) * (step(d, uMaxHeight + 152571.)));
+	// return vec2(d, fract(turn)) * ((1.0 - step(d, 154387.)) * (step(d, uMaxHeight + 152571.)));
+	return vec2(d, fract(turn)) * ((1.0 - step(d, uSpiralStart)) * (step(d, uMaxHeight + 152571.)));
 }
 
 float plane(vec2 uv, vec2 quadUV) {

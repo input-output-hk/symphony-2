@@ -19,7 +19,10 @@ const Config = {
     fogDensity: 0.00025,
     particleLifeMin: 100, // min number of frames a particle can live for
     particleLifeMax: 1000, // max number of frames a particle can live for
-    particleEmitterRadius: 200000 // size of sphere which emits particles
+    particleEmitterRadius: 200000, // size of sphere which emits particles
+    // forceMaxHeight: 566610
+    forceMaxHeight: null, // if blockchain.info API is playing up, get data directly from firebase
+    liveUnconfirmedTX: false
   },
   debug: {
     debugPicker: false,

@@ -126,6 +126,11 @@ export default class BlockDetails extends Component {
             <h3>{ this.props.closestBlock.blockData.hash }</h3>
           </div>
 
+          <div className='block-navigation'>
+            <button onClick={() => this.props.gotoPrevBlock()} className='block-navigation-prev'>Previous Block</button>
+            <button onClick={() => this.props.gotoNextBlock()} className='block-navigation-next'>Next Block</button>
+          </div>
+
           <div className='block-details'>
             <h2 className='block-details-heading'>//BLOCK-{this.props.closestBlock.blockData.height}</h2>
             <div className='block-details-border' />

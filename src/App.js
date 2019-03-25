@@ -6,12 +6,12 @@ import EventEmitter from 'eventemitter3'
 import mixin from 'mixin'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
-// import 'firebase/auth'
+import 'firebase/auth'
 import 'firebase/storage'
 import moment from 'moment'
 import { map } from './utils/math'
 import FlyControls from './libs/FlyControls'
-import MapControls from './libs/MapControls'
+// import MapControls from './libs/MapControls'
 import AudioManager from './libs/audio/audioManager'
 import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
@@ -38,7 +38,7 @@ import {
   ShaderPass,
   RenderPass,
   UnrealBloomPass,
-  SMAAPass,
+  // SMAAPass,
   SSAARenderPass
 } from './libs/post/EffectComposer'
 
@@ -107,7 +107,7 @@ class App extends mixin(EventEmitter, Component) {
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
     this.autoPilot = false
     this.autoPilotDirection = false
-    this.mapControlsYPos = 500
+    this.mapControlsYPos = 400
     this.closestHeight = null
     this.originOffset = new THREE.Vector2(0, 0)
     this.txCountBufferSize = 4000 // buffer size for tx counts
@@ -165,7 +165,7 @@ class App extends mixin(EventEmitter, Component) {
     this.state = {
       loading: true,
       closestBlock: null,
-      controlType: 'map',
+      controlType: 'top',
       txSelected: null,
       sidebarOpen: false,
       txSearchOpen: false,
@@ -705,7 +705,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.firebaseDB = firebase.firestore()
 
-    // this.anonymousSignin()
+    this.anonymousSignin()
 
     // send ready event
     this.emit('ready')
@@ -851,17 +851,18 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initPositions () {
-    let timestampToLoad = moment().valueOf() // default to today's date
-
-    this.maxHeight = 566610
-
-    // try {
-    //   let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-    //   let latestBlockDataJSON = await latestBlockData.json()
-    //   this.maxHeight = latestBlockDataJSON.blocks[0].height
-    // } catch (error) {
-    //   console.log(error)
-    // }
+    if (this.config.scene.forceMaxHeight !== null) {
+      this.maxHeight = this.config.scene.forceMaxHeight
+    } else {
+      let timestampToLoad = moment().valueOf() // default to todays date
+      try {
+        let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+        let latestBlockDataJSON = await latestBlockData.json()
+        this.maxHeight = latestBlockDataJSON.blocks[0].height
+      } catch (error) {
+        console.log(error)
+      }
+    }
 
     this.blockPositions = new Float32Array((this.maxHeight * 2) + 2)
 
@@ -922,7 +923,7 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    this.blockHashToLoad = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
+    // this.blockHashToLoad = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
 
     let blockGeoData = await this.getGeometry(this.blockHashToLoad, 0)
 
@@ -973,6 +974,32 @@ class App extends mixin(EventEmitter, Component) {
     this.group.add(this.undersideL)
     this.group.add(this.undersideR)
 
+    this.addBlockBoundingBox()
+
+    this.blockReady = true
+
+    this.setState({
+      loading: false
+    })
+
+    this.emit('sceneReady')
+
+    return true
+  }
+
+  startUnconfirmed () {
+    if (this.config.scene.liveUnconfirmedTX) {
+      this.unconfirmedLoop()
+    } else {
+      this.offlineUnconfirmedLoop()
+    }
+  }
+
+  startScene () {
+    this.loadSpiralAnim()
+  }
+
+  addBlockBoundingBox () {
     // box occluder
     let planeX = this.plane.geometry.attributes.planeOffset.array[0]
     let planeZ = this.plane.geometry.attributes.planeOffset.array[1]
@@ -1011,19 +1038,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.scene.add(this.boundingBoxObj)
-
-    this.blockReady = true
-
-    this.setState({
-      loading: false
-    })
-
-    this.emit('sceneReady')
-
-    // this.unconfirmedLoop()
-    this.offlineUnconfirmedLoop()
-
-    return true
   }
 
   async offlineUnconfirmedLoop () {
@@ -1097,7 +1111,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   createCubeMap (pos) {
-    // console.time('cubemap')
     this.scene.background = this.crystalGenerator.cubeMap
 
     this.cubeCamera = new THREE.CubeCamera(1, 1500, 256)
@@ -1124,15 +1137,10 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.scene.background = this.cubeMap
-    // console.timeEnd('cubemap')
-  }
-
-  initControls () {
-    this.toggleMapControls()
   }
 
   toggleMapControls (setPos = true, target) {
-    this.switchControls('map')
+    this.switchControls('top')
     if (this.closestBlock) {
       if (setPos) {
         if (target) {
@@ -1181,22 +1189,23 @@ class App extends mixin(EventEmitter, Component) {
     this.animatingCamera = false
 
     switch (type) {
-      case 'map':
-      case 'underside':
-        this.controls = new MapControls(this.cameraMain)
-        this.controls.domElement = this.renderer.domElement
-        this.controls.enableDamping = true
-        this.controls.dampingFactor = 0.25
-        this.controls.screenSpacePanning = true
-        this.controls.minDistance = 0
-        // this.controls.maxDistance = 3000
-        this.controls.maxDistance = 300000
-        this.controls.maxPolarAngle = Math.PI / 2
-        this.controls.rotateSpeed = 0.05
-        this.controls.panSpeed = 0.25
-        this.controls.zoomSpeed = 0.5
+      // case 'map':
+      // case 'underside':
+      //   this.controls = new MapControls(this.cameraMain)
+      //   this.controls.domElement = this.renderer.domElement
+      //   this.controls.enablePan = false
+      //   this.controls.enableDamping = true
+      //   this.controls.dampingFactor = 0.25
+      //   this.controls.screenSpacePanning = true
+      //   this.controls.minDistance = 5
+      //   this.controls.maxDistance = 2000
+      //   // this.controls.maxDistance = 300000
+      //   this.controls.maxPolarAngle = Math.PI / 2
+      //   this.controls.rotateSpeed = 0.05
+      //   this.controls.panSpeed = 0.25
+      //   this.controls.zoomSpeed = 0.5
 
-        break
+      //   break
 
       case 'fly':
         this.controls = new FlyControls(this.cameraMain)
@@ -1219,7 +1228,7 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({controlType: type})
   }
 
-  prepareCamAnim (to, toTarget) {
+  prepareCamAnim (to, toTarget, direction = 'down') {
     this.animatingCamera = true
 
     if (this.controls) {
@@ -1241,7 +1250,17 @@ class App extends mixin(EventEmitter, Component) {
     } else {
       this.camera.lookAt(new THREE.Vector3(0, 0, 0))
       if (!this.vrActive) { // point camera down at block if not in VR
-        this.camera.rotateX(-(Math.PI / 2))
+        switch (direction) {
+          case 'up':
+            this.camera.rotateX((Math.PI / 2))
+            break
+          case 'down':
+            this.camera.rotateX(-(Math.PI / 2))
+            break
+
+          default:
+            break
+        }
       }
     }
 
@@ -1262,6 +1281,8 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    this.setState({controlType: 'top'})
+
     this.stopAutoPilotAnimation()
 
     let yPos = this.mapControlsYPos
@@ -1270,8 +1291,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.prepareCamAnim(
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, yPos, this.closestBlock.blockData.pos.z),
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, yPos, this.closestBlock.blockData.pos.z)
     )
 
     let that = this
@@ -1281,30 +1301,29 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        if (!this.vrActive) {
-          this.toggleMapControls()
-          this.controls.target = this.camPosTarget
-        }
+        this.animatingCamera = false
       })
       .easing(this.defaultCamEasing)
       .start()
 
-    // this.animateCamRotation(5000)
+    if (!this.vrActive) {
+      this.animateCamRotation(5000)
+    }
   }
 
-  async toggleUndersideView () {
+  toggleUndersideView () {
     if (this.isNavigating) {
       return
     }
 
+    this.setState({controlType: 'underside'})
+
     this.stopAutoPilotAnimation()
 
-    let to = new THREE.Vector3(this.closestBlock.blockData.pos.x - 100, -300, this.closestBlock.blockData.pos.z - 100)
-    let toTarget = new THREE.Vector3(this.closestBlock.blockData.pos.x - 90, 0, this.closestBlock.blockData.pos.z - 90)
-
     this.prepareCamAnim(
-      to,
-      toTarget
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, -350, this.closestBlock.blockData.pos.z),
+      null,
+      'up'
     )
 
     let that = this
@@ -1314,13 +1333,14 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        that.toggleUndersideControls()
-        that.controls.target = that.camPosTarget
+        this.animatingCamera = false
       })
       .easing(this.defaultCamEasing)
       .start()
 
-    // this.animateCamRotation(5000)
+    if (!this.vrActive) {
+      this.animateCamRotation(5000)
+    }
   }
 
   getClosestBlock () {
@@ -1830,6 +1850,7 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({
       showIntro: false
     })
+    this.deselectTx()
     this.audioManager.stopNotes()
     this.audioManager.fadeOutBlockAudio()
     this.exitAutoPilot()
@@ -1841,6 +1862,8 @@ class App extends mixin(EventEmitter, Component) {
   goToRandomBlock () {
     this.prepareCamNavigation()
 
+    this.setState({controlType: 'top'})
+
     this.closestHeight = Math.round(Math.random() * this.maxHeight)
 
     this.loadNearestBlocks(true, this.closestHeight)
@@ -1850,7 +1873,7 @@ class App extends mixin(EventEmitter, Component) {
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
 
-    this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
+    this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
 
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
@@ -1912,6 +1935,8 @@ class App extends mixin(EventEmitter, Component) {
     return new Promise((resolve) => {
       this.isNavigating = true
 
+      this.setState({controlType: 'top'})
+
       this.prepareCamNavigation()
 
       if (blockHeight !== null) {
@@ -1927,7 +1952,7 @@ class App extends mixin(EventEmitter, Component) {
 
       let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.prepareCamAnim(new THREE.Vector3(to.x, 500, to.z))
+      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
@@ -2389,10 +2414,27 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager.masterBus.gain.setTargetAtTime(0.8, this.audioManager.audioContext.currentTime, 2.0)
   }
 
+  loadSpiralAnim () {
+    let that = this
+
+    new TWEEN.Tween({uSpiralStart: 725000})
+      .to({uSpiralStart: 154387}, 45000)
+      .onUpdate(function () {
+        that.disk.material.uniforms.uSpiralStart.value = this.uSpiralStart
+      })
+      .onComplete(() => {
+        that.startUnconfirmed()
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+  }
+
   async startIntro () {
     this.setState({
       started: true
     })
+
+    this.startScene()
 
     if (!this.config.scene.showIntro) {
       this.goToBlock()
@@ -3401,6 +3443,10 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.renderer.setPixelRatio(window.devicePixelRatio)
 
+    this.renderer.gammaFactor = 2.2
+    this.renderer.gammaOutPut = true
+    this.renderer.powerPreference = 'high-performance'
+
     this.WebVRLib.setRenderer(this.renderer)
   }
 
@@ -3456,13 +3502,93 @@ class App extends mixin(EventEmitter, Component) {
     e.target.focus()
   }
 
+  gotoPrevBlock () {
+    if (this.animatingCamera) {
+      return
+    }
+
+    if (this.closestHeight - 1 < 0) {
+      return
+    }
+
+    this.prepareCamNavigation()
+
+    this.closestHeight--
+
+    let posX = this.blockPositions[this.closestHeight * 2 + 0]
+    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
+
+    // this.loadNearestBlocks(true, this.closestHeight)
+
+    let to = new THREE.Vector3(posX, 400, posZ)
+
+    if (this.state.controlType === 'underside') {
+      to.y = -350
+      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
+    } else {
+      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+    }
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(new THREE.Vector3(to.x, to.y, to.z), 2500)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        this.animatingCamera = false
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(2500)
+  }
+
+  gotoNextBlock () {
+    if (this.animatingCamera) {
+      return
+    }
+
+    if (this.closestHeight + 1 > this.maxHeight) {
+      return
+    }
+
+    this.prepareCamNavigation()
+
+    this.closestHeight++
+
+    let posX = this.blockPositions[this.closestHeight * 2 + 0]
+    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
+
+    // this.loadNearestBlocks(true, this.closestHeight)
+
+    let to = new THREE.Vector3(posX, 400, posZ)
+    if (this.state.controlType === 'underside') {
+      to.y = -350
+      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
+    } else {
+      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+    }
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(new THREE.Vector3(to.x, to.y, to.z), 2500)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        this.animatingCamera = false
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    this.animateCamRotation(2500)
+  }
+
   async lookupTXFromHash () {
-    this.audioManager.stopNotes()
+    this.prepareCamNavigation()
 
-    this.autoPilot = false
-    this.autoPilotDirection = false
-
-    this.hideMerkleDetail()
+    this.setState({controlType: 'top'})
 
     try {
       let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
@@ -3475,49 +3601,62 @@ class App extends mixin(EventEmitter, Component) {
 
       this.loadNearestBlocks(true, this.closestHeight)
 
-      let to = new THREE.Vector3(posX, 10000, posZ)
-      let toTarget = new THREE.Vector3(posX, 0, posZ)
-      this.prepareCamAnim(
-        to,
-        toTarget
-      )
+      let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.toggleSidebar()
-      this.toggleTxSearch()
+      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
 
+      let blockYDist = this.vrActive ? 20 : 400
+
       let that = this
       new TWEEN.Tween(this.camera.position)
-        .to(aboveStart, 5000)
+        .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
         .onUpdate(function () {
           that.camera.position.set(this.x, this.y, this.z)
         })
         .onComplete(() => {
-          new TWEEN.Tween(that.camera.position)
-            .to(to, 5000)
+          new TWEEN.Tween(this.camera.position)
+            .to(aboveStart, 5000)
             .onUpdate(function () {
               that.camera.position.set(this.x, this.y, this.z)
             })
             .onComplete(() => {
-              new TWEEN.Tween(this.camera.position)
-                .to(new THREE.Vector3(that.camPosTo.x, this.mapControlsYPos, that.camPosTo.z), 5000)
+              new TWEEN.Tween(that.camera.position)
+                .to(to, 5000)
                 .onUpdate(function () {
                   that.camera.position.set(this.x, this.y, this.z)
                 })
                 .onComplete(() => {
-                  if (this.state.searchTXHash) {
-                    let foundTXID = 0
-
-                    this.closestBlock.blockData.tx.forEach((el, i) => {
-                      if (el.hash === this.state.searchTXHash) {
-                        foundTXID = i
-                      }
+                  new TWEEN.Tween(this.camera.position)
+                    .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
+                    .onUpdate(function () {
+                      that.camera.position.set(this.x, this.y, this.z)
                     })
+                    .onComplete(() => {
+                      new TWEEN.Tween(this.camera.position)
+                        .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                        .onUpdate(function () {
+                          that.camera.position.set(this.x, this.y, this.z)
+                        })
+                        .onComplete(() => {
+                          let foundTXID = 0
+                          this.closestBlock.blockData.txIndexes.forEach((index, i) => {
+                            if (index === txDataJSON.tx_index) {
+                              foundTXID = i
+                            }
+                          })
 
-                    this.selectTX(foundTXID, this.state.searchTXHash)
-                  }
+                          this.selectTX(foundTXID, this.state.searchTXHash)
+
+                          this.animatingCamera = false
+                        })
+                        .easing(TWEEN.Easing.Quadratic.Out)
+                        .start()
+                    })
+                    .easing(this.defaultCamEasing)
+                    .start()
                 })
                 .easing(this.defaultCamEasing)
                 .start()
@@ -3528,9 +3667,9 @@ class App extends mixin(EventEmitter, Component) {
         .easing(this.defaultCamEasing)
         .start()
 
-      this.animateCamRotation(10000)
+      this.animateCamRotation(20000)
     } catch (error) {
-
+      console.log(error)
     }
   }
 
@@ -3561,68 +3700,82 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async lookupBlockFromHash () {
-    this.audioManager.stopNotes()
+    this.prepareCamNavigation()
 
-    this.autoPilot = false
-    this.autoPilotDirection = false
+    this.setState({controlType: 'top'})
 
-    this.hideMerkleDetail()
+    try {
+      let blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+      let blockDataJSON = await blockData.json()
 
-    let blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+      let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
+      let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
 
-    let blockDataJSON = await blockData.json()
+      this.closestHeight = blockDataJSON.height
 
-    this.toggleSidebar()
+      this.loadNearestBlocks(true, this.closestHeight)
 
-    this.toggleBlockSearch()
+      let to = new THREE.Vector3(posX, 1000000, posZ)
 
-    let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
-    let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
+      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
 
-    this.closestHeight = blockDataJSON.height
+      let aboveStart = this.camera.position.clone()
+      aboveStart.y = 1000000
 
-    this.loadNearestBlocks(true, this.closestHeight)
+      let blockYDist = this.vrActive ? 20 : 400
 
-    let to = new THREE.Vector3(posX, 1000000, posZ)
-    let toTarget = new THREE.Vector3(posX, 0, posZ)
+      let that = this
+      new TWEEN.Tween(this.camera.position)
+        .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
+        .onUpdate(function () {
+          that.camera.position.set(this.x, this.y, this.z)
+        })
+        .onComplete(() => {
+          new TWEEN.Tween(this.camera.position)
+            .to(aboveStart, 5000)
+            .onUpdate(function () {
+              that.camera.position.set(this.x, this.y, this.z)
+            })
+            .onComplete(() => {
+              new TWEEN.Tween(that.camera.position)
+                .to(to, 5000)
+                .onUpdate(function () {
+                  that.camera.position.set(this.x, this.y, this.z)
+                })
+                .onComplete(() => {
+                  new TWEEN.Tween(this.camera.position)
+                    .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
+                    .onUpdate(function () {
+                      that.camera.position.set(this.x, this.y, this.z)
+                    })
+                    .onComplete(() => {
+                      new TWEEN.Tween(this.camera.position)
+                        .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                        .onUpdate(function () {
+                          that.camera.position.set(this.x, this.y, this.z)
+                        })
+                        .onComplete(() => {
+                          this.animatingCamera = false
+                        })
+                        .easing(TWEEN.Easing.Quadratic.Out)
+                        .start()
+                    })
+                    .easing(this.defaultCamEasing)
+                    .start()
+                })
+                .easing(this.defaultCamEasing)
+                .start()
+            })
+            .easing(this.defaultCamEasing)
+            .start()
+        })
+        .easing(this.defaultCamEasing)
+        .start()
 
-    this.prepareCamAnim(to, toTarget)
+      this.animateCamRotation(20000)
+    } catch (error) {
 
-    let aboveStart = this.camera.position.clone()
-    aboveStart.y = 1000000
-
-    let that = this
-    new TWEEN.Tween(this.camera.position)
-      .to(aboveStart, 5000)
-      .onUpdate(function () {
-        that.camera.position.set(this.x, this.y, this.z)
-      })
-      .onComplete(() => {
-        new TWEEN.Tween(that.camera.position)
-          .to(to, 5000)
-          .onUpdate(function () {
-            that.camera.position.set(this.x, this.y, this.z)
-          })
-          .onComplete(() => {
-            new TWEEN.Tween(this.camera.position)
-              .to(new THREE.Vector3(to.x, this.mapControlsYPos, to.z), 5000)
-              .onUpdate(function () {
-                that.camera.position.set(this.x, this.y, this.z)
-              })
-              .onComplete(() => {
-                this.toggleMapControls(true, toTarget)
-                this.animatingCamera = false
-              })
-              .easing(this.defaultCamEasing)
-              .start()
-          })
-          .easing(this.defaultCamEasing)
-          .start()
-      })
-      .easing(this.defaultCamEasing)
-      .start()
-
-    this.animateCamRotation(10000)
+    }
   }
 
   UITXSearchBox () {
@@ -3676,6 +3829,8 @@ class App extends mixin(EventEmitter, Component) {
           toggleUndersideView={this.toggleUndersideView.bind(this)}
           toggleFlyControls={this.toggleFlyControls.bind(this)}
           stopAutoPilot={this.stopAutoPilot.bind(this)}
+          gotoPrevBlock={this.gotoPrevBlock.bind(this)}
+          gotoNextBlock={this.gotoNextBlock.bind(this)}
         />
 
       </div>

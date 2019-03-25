@@ -161,7 +161,7 @@ export default class Audio extends EventEmitter {
 
       let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * (health * 10.0))) * twoPI
 
-      let currentAngle = currentTime * ANGULAR_FREQUENCY
+      // let currentAngle = currentTime * ANGULAR_FREQUENCY
 
       let currentAngleMod = currentTime * ANGULAR_FREQUENCY_MOD
 
