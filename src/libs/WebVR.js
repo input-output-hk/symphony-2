@@ -23,13 +23,17 @@ export default class WebVR {
 
   setupDevice () {
     if ('xr' in navigator) {
-      navigator.xr.requestDevice().then(function (device) {
-        device.supportsSession({ immersive: true, exclusive: true })
-          .then(function () {
-            this.setMode(device, 'XR')
-          }.bind(this))
-          .catch(this.VRNotFound.bind(this))
-      }.bind(this)).catch(this.VRNotFound.bind(this))
+      try {
+        navigator.xr.requestDevice().then(function (device) {
+          device.supportsSession({ immersive: true, exclusive: true })
+            .then(function () {
+              this.setMode(device, 'XR')
+            }.bind(this))
+            .catch(this.VRNotFound.bind(this))
+        }.bind(this)).catch(this.VRNotFound.bind(this))
+      } catch (error) {
+        console.log(error)
+      }
     } else if ('getVRDisplays' in navigator) {
       window.addEventListener('vrdisplayconnect', function (event) {
         this.setMode(event.display, 'VR')

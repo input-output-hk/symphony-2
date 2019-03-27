@@ -95,8 +95,8 @@ class App extends mixin(EventEmitter, Component) {
     this.closestBlockReadyForUpdate = false
     this.clock = new THREE.Clock()
     this.loadedBaseGeoHeights = []
-    this.mousePos = new THREE.Vector2() // keep track of mouse position
-    this.lastMousePos = new THREE.Vector2()
+    this.mousePos = new THREE.Vector2(0, 0) // keep track of mouse position
+    this.lastMousePos = new THREE.Vector2(0, 0)
     this.camera = null
     this.cameraMain = null
     this.animatingCamera = false
@@ -577,12 +577,8 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  async onMouseUp () {
+  onMouseUp () {
     if (this.animatingCamera) {
-      return
-    }
-
-    if (!this.mousePos) {
       return
     }
 
@@ -2187,7 +2183,7 @@ class App extends mixin(EventEmitter, Component) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
 
-      if (this.frame % 500 === 0) {
+      if (this.frame % 250 === 0) {
         if (this.vrActive) {
           this.bindVRGamepadEvents()
         }
@@ -2512,15 +2508,18 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
-      if (e.target.className !== 'hud' && e.target.className !== 'cockpit-border') {
+      if (
+        e.target.className !== 'hud' &&
+        e.target.className !== 'cockpit-border' &&
+        e.target.className !== 'block-navigation'
+      ) {
         return
       }
-      // if (e.button === 2) {
-      //   this.goToRandomBlock()
-      // }
+
       if (e.button !== 0) {
         return
       }
+
       this.onMouseUp()
     })
 
@@ -3507,18 +3506,16 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.closestHeight - 1 < 0) {
+    this.loadNearestBlocks()
+
+    if (this.closestBlock.blockData.height - 1 < 0) {
       return
     }
 
     this.prepareCamNavigation()
 
-    this.closestHeight--
-
-    let posX = this.blockPositions[this.closestHeight * 2 + 0]
-    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
-
-    // this.loadNearestBlocks(true, this.closestHeight)
+    let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
+    let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
 
     let to = new THREE.Vector3(posX, 400, posZ)
 
@@ -3549,18 +3546,16 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.closestHeight + 1 > this.maxHeight) {
+    this.loadNearestBlocks()
+
+    if (this.closestBlock.blockData.height + 1 > this.maxHeight) {
       return
     }
 
     this.prepareCamNavigation()
 
-    this.closestHeight++
-
-    let posX = this.blockPositions[this.closestHeight * 2 + 0]
-    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
-
-    // this.loadNearestBlocks(true, this.closestHeight)
+    let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
+    let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
 
     let to = new THREE.Vector3(posX, 400, posZ)
     if (this.state.controlType === 'underside') {
@@ -3831,6 +3826,7 @@ class App extends mixin(EventEmitter, Component) {
           stopAutoPilot={this.stopAutoPilot.bind(this)}
           gotoPrevBlock={this.gotoPrevBlock.bind(this)}
           gotoNextBlock={this.gotoNextBlock.bind(this)}
+          maxHeight={this.maxHeight}
         />
 
       </div>

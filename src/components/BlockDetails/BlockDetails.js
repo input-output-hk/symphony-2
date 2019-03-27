@@ -105,6 +105,22 @@ export default class BlockDetails extends Component {
         className += ' cockpit'
       }
 
+      let nextButtonClassName = 'block-navigation-next'
+      if (
+        this.props.closestBlock.blockData.height === this.props.maxHeight ||
+        this.props.controlType === 'fly'
+      ) {
+        nextButtonClassName += ' hide'
+      }
+
+      let prevButtonClassName = 'block-navigation-prev'
+      if (
+        this.props.closestBlock.blockData.height === 0 ||
+        this.props.controlType === 'fly'
+      ) {
+        prevButtonClassName += ' hide'
+      }
+
       return (
         <div className={className}>
 
@@ -114,9 +130,9 @@ export default class BlockDetails extends Component {
 
           <div className='controls-container'>
             <div className='auto-pilot-controls'>
-              <span title='Auto Pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
               <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
-              <span title='Auto Pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
             </div>
             {this.UIUndersideButton()}
           </div>
@@ -127,8 +143,8 @@ export default class BlockDetails extends Component {
           </div>
 
           <div className='block-navigation'>
-            <button onClick={() => this.props.gotoPrevBlock()} className='block-navigation-prev'>Previous Block</button>
-            <button onClick={() => this.props.gotoNextBlock()} className='block-navigation-next'>Next Block</button>
+            <button title='Previous Block' onClick={() => this.props.gotoPrevBlock()} className={prevButtonClassName}>Previous Block</button>
+            <button title='Next Block' onClick={() => this.props.gotoNextBlock()} className={nextButtonClassName}>Next Block</button>
           </div>
 
           <div className='block-details'>
