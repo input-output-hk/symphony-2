@@ -85,10 +85,47 @@ export default class BlockDetails extends Component {
     }
   }
 
+  UICockpitInfoOverlay () {
+    if (this.props.flyControlsInteractionCount < 2) {
+      return (
+        <div className='free-explore-info-overlay'>
+          <p>
+            Free Explore lets you fly around the Blockchain and listen to the sounds of each block
+            <br />
+            <br />
+            Move your mouse to tilt the camera
+          </p>
+          <div className='free-explore-keys'>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>Q</div> <p className='key-q'>Rotate left</p>
+            </div>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>W</div> <p className='key-w'>Move forward</p>
+            </div>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>E</div> <p className='key-e'>Rotate right</p>
+            </div>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>A</div><p className='key-a'>Move left</p>
+            </div>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>S</div> <p className='key-s'>Move backward</p>
+            </div>
+            <div className='free-explore-key-container'>
+              <div className='free-explore-key'>D</div> <p className='key-d'>Move right</p>
+            </div>
+          </div>
+          <button className='go-button' onClick={this.props.closeFlyInfo.bind(this)}>GO</button>
+        </div>
+      )
+    }
+  }
+
   UICockpit () {
     if (this.props.controlType === 'fly') {
       return (
         <div className='hud'>
+          {this.UICockpitInfoOverlay()}
           <div className='coords'>
             <div className='posX'>X: { this.props.posX }</div>
             <div className='posY'>Y: { this.props.posY }</div>

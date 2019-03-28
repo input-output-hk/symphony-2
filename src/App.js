@@ -178,7 +178,8 @@ class App extends mixin(EventEmitter, Component) {
       posY: 0,
       posZ: 0,
       sceneReady: false,
-      started: false // if the experience has started
+      started: false, // if the experience has started
+      flyControlsInteractionCount: 0
     }
 
     this.setTimestampToLoad()
@@ -1196,6 +1197,9 @@ class App extends mixin(EventEmitter, Component) {
       //   break
 
       case 'fly':
+
+        this.setState({flyControlsInteractionCount: this.state.flyControlsInteractionCount + 1})
+
         this.controls = new FlyControls(this.cameraMain)
         this.controls.movementSpeed = 70
         this.controls.domElement = this.renderer.domElement
@@ -2436,7 +2440,7 @@ class App extends mixin(EventEmitter, Component) {
         this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
         await this.audioManager.playNarrationFile('intro', '2', 3000)
 
-        // this.showVRTitleText('A NEW BLOCK IS CREATED ROUGHLY EVERY 10 MINUTES', 6000)
+        // this.showVRTitleText('A NEW BLOCK IS CREATED AROUIND EVERY 10 MINUTES', 6000)
         // await this.audioManager.playNarrationFile('intro', '3', 3000)
 
         // this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
@@ -3825,10 +3829,19 @@ class App extends mixin(EventEmitter, Component) {
           gotoPrevBlock={this.gotoPrevBlock.bind(this)}
           gotoNextBlock={this.gotoNextBlock.bind(this)}
           maxHeight={this.maxHeight}
+          flyControlsInteractionCount={this.state.flyControlsInteractionCount}
+          closeFlyInfo={this.closeFlyInfo.bind(this)}
         />
 
       </div>
     )
+  }
+
+  closeFlyInfo () {
+    console.log('closeFlyInfo')
+    this.setState({
+      flyControlsInteractionCount: this.state.flyControlsInteractionCount + 1
+    })
   }
 
   UILoadingScreen () {
@@ -3867,7 +3880,7 @@ class App extends mixin(EventEmitter, Component) {
         <div className='intro-container'>
           <h1 className={(this.state.activeIntro === 1 ? 'show' : '')}>This is the bitcoin blockchain</h1>
           <h1 className={(this.state.activeIntro === 2 ? 'show' : '')}>Blocks spiral outward from the center, starting with the latest block</h1>
-          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
+          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created around every 10 minutes</h1>
           <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>The mempool sits at the center, unconfirmed transactions gather here</h1>
           <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
           <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={() => { this.goToBlock(this.maxHeight) }}>Enter the Blockchain</span></h1>
