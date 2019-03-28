@@ -15,7 +15,7 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    this.instanceTotal = 10 * 3000
+    this.instanceTotal = 10 * 4000
     this.txCount = 0
     this.txIndexOffsets = {}
 

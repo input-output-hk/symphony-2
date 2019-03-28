@@ -23,11 +23,15 @@ export default class Circuit extends EventEmitter {
       this.offscreenMode = true
     }
 
+    this.textureLoader = new THREE.TextureLoader()
+
     this.canvas = null
   }
 
   async draw (nTX, closestBlock, closestBlockOffsets) {
     return new Promise((resolve, reject) => {
+      let that = this
+
       if (!this.offscreenMode) {
         if (this.canvas && this.canvas.parentNode) {
           this.canvas.parentNode.removeChild(this.canvas)
@@ -44,17 +48,15 @@ export default class Circuit extends EventEmitter {
 
       // Create a reference from a Google Cloud Storage URI
       existingCanvasRef.getDownloadURL().then(function (url) {
-        let texture = new THREE.TextureLoader().load(url)
-        resolve(texture)
+        that.textureLoader.load(url, resolve)
       }).catch(function () {
         if (this.offscreenMode) {
           const circuitWorker = new CircuitWorker()
           circuitWorker.onmessage = async ({ data }) => {
             if (typeof data.complete !== 'undefined' && data.complete === true) {
               existingCanvasRef.getDownloadURL().then(function (url) {
-                let texture = new THREE.TextureLoader().load(url)
                 circuitWorker.terminate()
-                resolve(texture)
+                that.textureLoader.load(url, resolve)
               })
             }
           }
@@ -74,9 +76,7 @@ export default class Circuit extends EventEmitter {
             let canvasRef = this.FBStorageCircuitRef.child(closestBlock.blockData.hash + '.png')
             try {
               canvasRef.put(blob).then(function (snapshot) {
-                let texture = new THREE.Texture(this.canvas)
-
-                resolve(texture)
+                that.textureLoader.load(this.canvas, resolve)
               }.bind(this))
             } catch (error) {
               console.log(error)

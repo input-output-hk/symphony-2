@@ -1,3 +1,6 @@
+import firebase from 'firebase/app'
+import 'firebase/firestore'
+import 'firebase/auth'
 
 let retryCount = 0
 const retryMax = 3
@@ -10,21 +13,20 @@ self.addEventListener('message', async function (e) {
       const config = data.config
       const height = data.height
 
-      let blockDataJSON = await getBlockData(height, config)
+      let blockHash = await getBlockData(height, config)
 
       let returnData
 
-      if (blockDataJSON === null || typeof blockDataJSON === 'undefined') {
-        self.postMessage({error: 'Failed to get blockdata from API'})
-
+      if (blockHash === '') {
         returnData = {
-          error: 'Failed to get blockdata from API'
+          error: 'Height not found in db'
         }
       } else {
         returnData = {
-          hash: blockDataJSON.blocks[0].hash
+          hash: blockHash
         }
       }
+
       self.postMessage(returnData)
       break
     case 'stop':
@@ -37,28 +39,28 @@ self.addEventListener('message', async function (e) {
 }, false)
 
 const getBlockData = async function (height, config) {
-  const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-  let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + config.blockchainInfo.apiCode)
+  firebase.initializeApp(config.fireBase)
+  firebase.firestore()
+  const firebaseDB = firebase.firestore()
+  const docRef = firebaseDB.collection('bitcoin_blocks')
+  firebase.auth().signInAnonymously().catch(function (error) {
+    console.log(error.code)
+    console.log(error.message)
+  })
 
-  if (retryCount > 0) {
-    console.log('Retrying with different endpoint...')
-    url = 'https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + height + '?cors=true&format=json&apiCode=' + config.blockchainInfo.apiCode
-  }
+  // try firebase first
+  let blockData = docRef
+    .where('height', '==', height)
+    .limit(1)
 
-  try {
-    let blockData = await fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-    let blockDataJSON = await blockData.json()
+  let snapshot = await blockData.get()
 
-    return blockDataJSON
-  } catch (error) {
-    retryCount++
+  let blockHash = ''
 
-    if (retryCount > retryMax) {
-      return null
-    }
+  snapshot.forEach(snapshot => {
+    let data = snapshot.data()
+    blockHash = data.hash
+  })
 
-    let returnVal = await getBlockData(height, config)
-
-    return returnVal
-  }
+  return blockHash
 }

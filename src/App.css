@@ -119,8 +119,8 @@ canvas#sketchboard {
 .block-details {
   pointer-events: auto;
   position: absolute;
-  right: 81px;
-  top: 300px;
+  right: 20px;
+  top: 130px;
   width: 222px;
   z-index: 9;
   background: rgba(0, 0, 0, 0.25);
@@ -128,6 +128,7 @@ canvas#sketchboard {
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
+  opacity: 1.0;
 }
 
 .block-details-heading {
@@ -177,48 +178,6 @@ canvas#sketchboard {
 /* .cockpit .controls-container {
   display: none;
 } */
-
-.auto-pilot-controls {
-  display: inline-block;
-  width: 77px;
-  pointer-events: auto;
-  background: rgba(18,23,38,0.9);
-  padding: 9px;
-  -webkit-transition: opacity .5s;
-  -moz-transition: opacity .5s;
-  -o-transition: opacity .5s;
-  transition: opacity .5s;
-  height: 38px;
-  border: 1px solid #153453;
-  border-radius: 50px;
-  margin: 0 20px 0 0;
-}
-
-.auto-pilot-controls span {
-  display: inline-block;
-  width: 8px;
-  height: 17px;
-}
-
-.auto-pilot-controls span:hover {
-  cursor: pointer;
-}
-
-.auto-pilot-controls span.backward {
-  background: url(./assets/images/contract.svg) no-repeat;
-}
-
-.auto-pilot-controls span.forward {
-  background: url(./assets/images/expand.svg) no-repeat;
-}
-
-.auto-pilot-controls span.stop {
-  width: 15px;
-  height: 16px;
-  border: 1px solid #1fc1c3;
-  margin: 0 12px;
-}
-
 .cockpit-border {
   background: url(./assets/images/vignette2.png) no-repeat;
   position: absolute;
@@ -232,18 +191,55 @@ canvas#sketchboard {
   display: inline-block;
 }
 
-.toggle-cockpit-controls {
+.explore-container {
   position: absolute;
   z-index: 1;
-  right: 20px;
+  left: 50%;
   top: 20px;
-  background: url(./assets/images/cockpit.png);
+  display: block;
+  text-align: center;
+}
+
+.cancel {
+  display: block;
+  width: 45px;
+  height: 38px;
+  background: url(./assets/images/cancel.svg) no-repeat;
+  border: none;
+  opacity: 0.4;
+  position: absolute;
+  top: 0;
+  left: 5px;
+}
+
+.cancel:hover {
+  cursor: pointer;
+}
+
+.toggle-cockpit-controls {
+  background: url(./assets/images/cockpit.png) no-repeat;
+  background-size: contain;
   border: none;
   width: 58px;
   height: 41px;
+  opacity: 0.7;
+  transition: opacity 0.5s;
   display: block;
+  position: absolute;
 }
 
+.toggle-cockpit-controls.leave {
+  position: absolute;
+  width: 32px;
+  height: 41px;
+  opacity: 0.7;
+  left: 8px;
+  top: 9px;
+}
+
+.toggle-cockpit-controls:hover {
+  opacity: 1.0;
+}
 
 .toggle-cockpit-controls:hover {
   cursor: pointer;
@@ -253,7 +249,10 @@ canvas#sketchboard {
   background: #1b2238;
   padding: 11px;
   border-radius: 50px;
-  display: inline-block;
+  display: block;
+  position: absolute;
+  left: 45%;
+  top: 20px;
 }
 
 .flip-view {
@@ -269,6 +268,7 @@ canvas#sketchboard {
   cursor: pointer;
   opacity: 1.0;
 }
+
 
 .tx-details {
   background: rgba(0, 0, 0, 0.35);
@@ -365,12 +365,12 @@ canvas#sketchboard {
 }
 
 .sidebar {
-  background: rgba(18,23,38,0.9);
+  background: rgba(0, 0, 0, 0.7);
   height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
-  border-right: 1px solid #153453;
+  border-right: 1px solid rgba(255,255,255, 0.1);
   z-index: 10;
   padding: 17px;
   transition: width 0.5s;
@@ -382,7 +382,7 @@ canvas#sketchboard {
 }
 
 .sidebar.open {
-  width: 270px;
+  width: 230px;
 }
 
 .search {
@@ -418,7 +418,7 @@ canvas#sketchboard {
 .sidebar .section {
   padding: 10px 0;
   margin: 0 0 15px;
-  border-bottom: 1px solid #2d4061
+  border-bottom: 1px solid rgba(255, 255,255, 0.3)
 }
 
 .sidebar ul span {
@@ -462,7 +462,7 @@ canvas#sketchboard {
 
 .sidebar h1 {
   overflow: hidden;
-  color: #719bf1;
+  color: #fff;
   text-transform: uppercase;
   font-size: 15px;
   letter-spacing: 2px;
@@ -582,10 +582,6 @@ canvas#sketchboard {
   cursor: pointer;
 }
 
-.autopilot-container {
-  position: absolute;
-  z-index: 10;
-}
 
 .blockchain-selector {
   font-weight: normal;
@@ -644,7 +640,7 @@ canvas#sketchboard {
 }
 
 .sidebar-footer-inner {
-  border-top: 1px solid #2d4061;
+  border-top: 1px solid rgba(255,255,255, 0.3);
   margin: 0 15px;
 }
 
@@ -722,8 +718,8 @@ canvas#sketchboard {
 
 .coords {
   position: absolute;
-  top: 164px;
-  right: 199px;
+  bottom: 43px;
+  right: 127px;
   width: 103px;
 }
 
@@ -981,3 +977,81 @@ canvas#sketchboard {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.grad-left {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  background: linear-gradient(to right, rgba(0,0,0,0.6) 0%,rgba(0,0,0,0) 40%);
+}
+.grad-right {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  background: linear-gradient(to left, rgba(0,0,0,0.6) 0%,rgba(0,0,0,0) 40%);
+}
+
+.autopilot-controls {
+  position: absolute;
+  right: 20px;
+  top: 560px;
+  width: 222px;
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 12px 10px;
+  -webkit-transition: opacity .5s;
+  -o-transition: opacity .5s;
+  transition: opacity .5s;
+  opacity: 1.0;
+  height: 60px;
+}
+
+.autopilot-inner {
+  text-align: center;
+}
+
+.autopilot-controls-border {
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  height: 270px;
+  width: 42px;
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  opacity: 0.3;
+  height: 62px;
+}
+
+.autopilot-controls-heading {
+  position: absolute;
+  left: 0;
+  top: -29px;
+}
+
+.autopilot-controls span {
+  display: inline-block;
+  width: 10px;
+  height: 19px;
+  margin: 10px 25px;
+}
+
+.autopilot-controls span:hover {
+  cursor: pointer;
+}
+
+.autopilot-controls span.backward {
+  background: url(./assets/images/contract.svg) no-repeat;
+}
+
+.autopilot-controls span.forward {
+  background: url(./assets/images/expand.svg) no-repeat;
+}
+
+.autopilot-controls span.stop {
+  width: 17px;
+  height: 19px;
+  border: 1px solid #ffffff;
+}
+
+

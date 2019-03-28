@@ -71,11 +71,16 @@ export default class BlockDetails extends Component {
   UICockpitButton () {
     if (this.props.controlType === 'fly') {
       return (
-        <button title='Toggle Cockpit Controls' onClick={this.props.toggleTopView} className='toggle-cockpit-controls enter' />
+        <div className='explore-container'>
+          <button title='Exit Free Explore' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
+          <span title='Exit Free Explore' className='cancel' onClick={this.props.toggleTopView} />
+        </div>
       )
     } else {
       return (
-        <button title='Toggle Cockpit Controls' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls leave' />
+        <div className='explore-container'>
+          <button title='Free Explore' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
+        </div>
       )
     }
   }
@@ -101,7 +106,9 @@ export default class BlockDetails extends Component {
 
       let className = 'block-details-container'
 
+      let gradClass = ''
       if (this.props.controlType === 'fly') {
+        gradClass = 'hide'
         className += ' cockpit'
       }
 
@@ -128,14 +135,10 @@ export default class BlockDetails extends Component {
           {this.UICockpit()}
           {this.UICockpitButton()}
 
-          <div className='controls-container'>
-            <div className='auto-pilot-controls'>
-              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
-              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
-              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
-            </div>
-            {this.UIUndersideButton()}
-          </div>
+          <div className={'grad-left' + gradClass} />
+          <div className={'grad-right' + gradClass} />
+
+          {this.UIUndersideButton()}
           {this.UITXDetails()}
           <div className='block-hash'>
             <h2>//BLOCK-{ this.props.closestBlock.blockData.height }</h2>
@@ -175,6 +178,16 @@ export default class BlockDetails extends Component {
               <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
             <Scope />
+          </div>
+
+          <div className='autopilot-controls'>
+            <h2 className='autopilot-controls-heading'>//AUTOPILOT</h2>
+            <div className='autopilot-controls-border' />
+            <div className='autopilot-inner'>
+              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
+              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+            </div>
           </div>
 
         </div>

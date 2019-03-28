@@ -463,93 +463,97 @@ class App extends mixin(EventEmitter, Component) {
 
     // this.audioManager.playNote(this.closestBlock.blockData, index + 1)
 
-    // get tx data
-    let txData = await window.fetch('https://blockchain.info/rawtx/' + TXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-    let txDataJSON = await txData.json()
+    try {
+      // get tx data
+      let txData = await window.fetch('https://blockchain.info/rawtx/' + TXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      let txDataJSON = await txData.json()
 
-    let outTotal = 0
-    let inTotal = 0
+      let outTotal = 0
+      let inTotal = 0
 
-    let outputsSpent = 0
-    txDataJSON.out.forEach((output) => {
-      outTotal += output.value
-      outputsSpent += output.spent ? 1 : 0
-    })
+      let outputsSpent = 0
+      txDataJSON.out.forEach((output) => {
+        outTotal += output.value
+        outputsSpent += output.spent ? 1 : 0
+      })
 
-    txDataJSON.spentRatio = 1
-    if (outputsSpent !== 0) {
-      txDataJSON.spentRatio = outputsSpent / txDataJSON.out.length
-    } else {
-      txDataJSON.spentRatio = 0.0
-    }
-
-    txDataJSON.inputs.forEach((input, i) => {
-      if (typeof input.prev_out !== 'undefined') {
-        inTotal += input.prev_out.value
-      }
-    })
-
-    txDataJSON.inTotal = inTotal / 100000000
-    txDataJSON.outTotal = outTotal / 100000000
-    txDataJSON.fee = (inTotal - outTotal) / 100000000
-    if (txDataJSON.fee < 0) {
-      txDataJSON.fee = 0
-    }
-
-    this.setState({
-      txSelected: txDataJSON
-    })
-
-    // update isSelected attribute
-    let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
-    if (index !== -1) {
-      const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
-
-      let selectedPosX = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0] - this.originOffset.x
-      let selectedPosY = 50 + (this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 1])
-      let selectedPosZ = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2] - this.originOffset.y
-
-      this.selectedLight.position.x = selectedPosX
-      this.selectedLight.position.z = selectedPosZ
-
-      this.addTXDetailsVRText(txDataJSON)
-
-      if (animateCam) {
-        let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
-        let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
-
-        this.prepareCamAnim(
-          to,
-          toTarget
-        )
-
-        let that = this
-        new TWEEN.Tween(this.camera.position)
-          .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
-          .onUpdate(function () {
-            that.camera.position.set(this.x, this.y, this.z)
-          })
-          .onComplete(() => {
-            that.toggleMapControls(false)
-            this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
-            this.camera.position.x = to.x
-            this.camera.position.z = to.z
-
-            this.setState({searchTXHash: ''})
-
-            this.animatingCamera = false
-          })
-          .easing(this.defaultCamEasing)
-          .start()
-
-        this.animateCamRotation(2000)
+      txDataJSON.spentRatio = 1
+      if (outputsSpent !== 0) {
+        txDataJSON.spentRatio = outputsSpent / txDataJSON.out.length
+      } else {
+        txDataJSON.spentRatio = 0.0
       }
 
-      selectedArray[index + txIndexOffset] = 1.0
-    }
+      txDataJSON.inputs.forEach((input, i) => {
+        if (typeof input.prev_out !== 'undefined') {
+          inTotal += input.prev_out.value
+        }
+      })
 
-    this.crystal.geometry.attributes.isSelected.array = selectedArray
-    this.crystal.geometry.attributes.isSelected.needsUpdate = true
+      txDataJSON.inTotal = inTotal / 100000000
+      txDataJSON.outTotal = outTotal / 100000000
+      txDataJSON.fee = (inTotal - outTotal) / 100000000
+      if (txDataJSON.fee < 0) {
+        txDataJSON.fee = 0
+      }
+
+      this.setState({
+        txSelected: txDataJSON
+      })
+
+      // update isSelected attribute
+      let selectedArray = new Float32Array(this.crystalGenerator.instanceTotal)
+      if (index !== -1) {
+        const txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
+
+        let selectedPosX = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 0] - this.originOffset.x
+        let selectedPosY = 50 + (this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 1])
+        let selectedPosZ = this.crystal.geometry.attributes.offset.array[(index + txIndexOffset) * 3 + 2] - this.originOffset.y
+
+        this.selectedLight.position.x = selectedPosX
+        this.selectedLight.position.z = selectedPosZ
+
+        this.addTXDetailsVRText(txDataJSON)
+
+        if (animateCam) {
+          let to = new THREE.Vector3(this.camera.position.x, selectedPosY, this.camera.position.z)
+          let toTarget = new THREE.Vector3(selectedPosX + this.originOffset.x, 0, selectedPosZ + this.originOffset.y)
+
+          this.prepareCamAnim(
+            to,
+            toTarget
+          )
+
+          let that = this
+          new TWEEN.Tween(this.camera.position)
+            .to(new THREE.Vector3(to.x, to.y, to.z), 2000)
+            .onUpdate(function () {
+              that.camera.position.set(this.x, this.y, this.z)
+            })
+            .onComplete(() => {
+              that.toggleMapControls(false)
+              this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
+              this.camera.position.x = to.x
+              this.camera.position.z = to.z
+
+              this.setState({searchTXHash: ''})
+
+              this.animatingCamera = false
+            })
+            .easing(this.defaultCamEasing)
+            .start()
+
+          this.animateCamRotation(2000)
+        }
+
+        selectedArray[index + txIndexOffset] = 1.0
+      }
+
+      this.crystal.geometry.attributes.isSelected.array = selectedArray
+      this.crystal.geometry.attributes.isSelected.needsUpdate = true
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   deselectTx () {
@@ -693,13 +697,13 @@ class App extends mixin(EventEmitter, Component) {
 
       this.FBStorageCircuitRef = this.FBStorageRef.child('bitcoin_circuits')
       this.FBStorageAudioRef = this.FBStorageRef.child('bitcoin_block_audio')
-
-      // await firebase.firestore().enablePersistence()
     } catch (error) {
       console.log(error)
     }
 
     this.firebaseDB = firebase.firestore()
+    this.FBDocRefData = this.firebaseDB.collection('bitcoin_blocks')
+    this.FBDocRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
 
     this.anonymousSignin()
 
@@ -759,7 +763,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initLights () {
     // this.sunLight = new THREE.DirectionalLight(0xffffff, 1.0)
-    this.sunLight = new THREE.PointLight(0xb1cdff, 2.0)
+    this.sunLight = new THREE.PointLight(0xb1cdff, 2.8)
     this.sunLight.position.set(0, 5000, 0)
     this.scene.add(this.sunLight)
 
@@ -850,14 +854,16 @@ class App extends mixin(EventEmitter, Component) {
     if (this.config.scene.forceMaxHeight !== null) {
       this.maxHeight = this.config.scene.forceMaxHeight
     } else {
-      let timestampToLoad = moment().valueOf() // default to todays date
-      try {
-        let latestBlockData = await window.fetch('https://blockchain.info/blocks/' + timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-        let latestBlockDataJSON = await latestBlockData.json()
-        this.maxHeight = latestBlockDataJSON.blocks[0].height
-      } catch (error) {
-        console.log(error)
-      }
+      let blockData = this.FBDocRefData
+        .orderBy('height', 'desc')
+        .limit(1)
+
+      let snapshot = await blockData.get()
+
+      snapshot.forEach(snapshot => {
+        let data = snapshot.data()
+        this.maxHeight = data.height
+      })
     }
 
     this.blockPositions = new Float32Array((this.maxHeight * 2) + 2)
@@ -887,39 +893,25 @@ class App extends mixin(EventEmitter, Component) {
 
   async initGeometry () {
     if (!this.blockHashToLoad) {
-      let url
+      let snapshot
+      let blockData
       if (this.heightToLoad !== null) {
-        const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-        url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + this.heightToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+        blockData = this.FBDocRefData
+          .where('height', '==', this.heightToLoad)
+          .limit(1)
       } else {
-        url = 'https://blockchain.info/blocks/' + this.timestampToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode
+        blockData = this.FBDocRefData
+          .orderBy('height', 'desc')
+          .limit(1)
       }
 
-      try {
-        let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-        let blockDataJSON = await blockData.json()
-        this.blockHashToLoad = blockDataJSON.blocks[0].hash
-        this.blockHeightToLoad = blockDataJSON.blocks[0].height
-      } catch (error) {
-        console.log(error)
+      snapshot = await blockData.get()
 
-        if (this.heightToLoad !== null) {
-          console.log('Retrying from different endpoint...')
-          url = 'https://cors-anywhere.herokuapp.com/https://blockchain.info/block-height/' + this.heightToLoad + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode
-
-          try {
-            let blockData = await window.fetch(url, {headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-            let blockDataJSON = await blockData.json()
-            this.blockHashToLoad = blockDataJSON.blocks[0].hash
-            this.blockHeightToLoad = blockDataJSON.blocks[0].height
-          } catch (error) {
-            console.log(error)
-          }
-        }
-      }
+      snapshot.forEach(snapshot => {
+        let data = snapshot.data()
+        this.blockHashToLoad = data.hash
+      })
     }
-
-    // this.blockHashToLoad = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
 
     let blockGeoData = await this.getGeometry(this.blockHashToLoad, 0)
 
@@ -1340,7 +1332,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   getClosestBlock () {
-    if (this.camera.position.y >= 2000) {
+    if (this.camera.position.y >= 600) {
       if (this.state.closestBlock !== null) {
         this.setState({closestBlock: null})
       }
@@ -1351,11 +1343,9 @@ class App extends mixin(EventEmitter, Component) {
     this.prevClosestBlock = this.closestBlock
     if (Object.keys(this.blockGeoDataObject).length > 0) {
       let closestDist = Number.MAX_SAFE_INTEGER
-
       for (const height in this.blockGeoDataObject) {
         if (this.blockGeoDataObject.hasOwnProperty(height)) {
           const blockGeoData = this.blockGeoDataObject[height]
-
           const blockPos = new THREE.Vector3(blockGeoData.blockData.pos.x, 0, blockGeoData.blockData.pos.z)
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
@@ -2246,11 +2236,13 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    // this.setState({
-    //   posX: this.camera.position.x.toFixed(3),
-    //   posY: this.camera.position.y.toFixed(3),
-    //   posZ: this.camera.position.z.toFixed(3)
-    // })
+    if (this.state.controlType === 'fly') {
+      this.setState({
+        posX: this.camera.position.x.toFixed(3),
+        posY: this.camera.position.y.toFixed(3),
+        posZ: this.camera.position.z.toFixed(3)
+      })
+    }
 
     // this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
@@ -2912,6 +2904,9 @@ class App extends mixin(EventEmitter, Component) {
 
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
+    console.log({txIndexOffset})
+    console.log(this.closestBlock.blockData.height)
+
     // get rotation
     let quat = new THREE.Quaternion(
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 0],
@@ -3005,16 +3000,16 @@ class App extends mixin(EventEmitter, Component) {
     this.updateOriginOffsets()
 
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      setTimeout(() => {
-        this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
-      }, 500)
+      console.log(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
+
+      this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
     }
 
     let undersideTexture1 = null
-    let undersideTexture2 = null
-    let undersideTexture3 = null
+    // let undersideTexture2 = null
+    // let undersideTexture3 = null
 
     let prevBlock = this.blockGeoDataObject[this.closestBlock.blockData.height - 1]
     let nextBlock = this.blockGeoDataObject[this.closestBlock.blockData.height + 1]
@@ -3052,13 +3047,13 @@ class App extends mixin(EventEmitter, Component) {
       this.updateMerkleDetail(this.closestBlock, 0, undersideTexture1)
     }
 
-    if (undersideTexture2) {
-      this.updateMerkleDetail(prevBlock, 1, undersideTexture2)
-    }
+    // if (undersideTexture2) {
+    //   this.updateMerkleDetail(prevBlock, 1, undersideTexture2)
+    // }
 
-    if (undersideTexture3) {
-      this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
-    }
+    // if (undersideTexture3) {
+    //   this.updateMerkleDetail(nextBlock, 2, undersideTexture3)
+    // }
   }
 
   updateOriginOffsets () {
@@ -3127,7 +3122,7 @@ class App extends mixin(EventEmitter, Component) {
     this.trees.geometry.attributes.display.needsUpdate = true
   }
 
-  async updateMerkleDetail (blockGeoData, circuitIndex, texture) {
+  updateMerkleDetail (blockGeoData, circuitIndex, texture) {
     // if (typeof texture.image === 'undefined') {
     //   return
     // }
@@ -3512,6 +3507,8 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    this.hideMerkleDetail()
+
     this.prepareCamNavigation()
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
@@ -3552,6 +3549,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
+    this.hideMerkleDetail()
     this.prepareCamNavigation()
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
@@ -3853,7 +3851,7 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.state.loading && !this.state.started) {
       return (
         <div className='start-container'>
-          <h1 onClick={this.startIntro.bind(this)}>START</h1>
+          <h1 onClick={this.startIntro.bind(this)}>ENTER</h1>
         </div>
       )
     } else {
