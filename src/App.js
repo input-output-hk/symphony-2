@@ -117,6 +117,7 @@ class App extends mixin(EventEmitter, Component) {
     this.textureLoader = new THREE.TextureLoader()
     this.maxHeight = null
     this.isNavigating = false
+    this.closestDist = 0
 
     // VR
     this.blockHeightTextMesh = null
@@ -1022,8 +1023,11 @@ class App extends mixin(EventEmitter, Component) {
     inverseBox.applyMatrix(this.boxMatrixInverse)
     this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
+    this.boundingBoxOuter = this.boundingBox.clone()
+    this.boundingBoxOuter.expandByVector(new THREE.Vector3(100, 100, 500))
+
     this.on('controlsEnabled', () => {
-      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
+      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse, this.boundingBoxOuter)
     })
 
     this.scene.add(this.boundingBoxObj)
@@ -1363,6 +1367,7 @@ class App extends mixin(EventEmitter, Component) {
 
           if (blockDist < closestDist) {
             closestDist = blockDist
+            this.closestDist = closestDist
             this.closestBlock = blockGeoData
           }
         }
@@ -2163,7 +2168,7 @@ class App extends mixin(EventEmitter, Component) {
     TWEEN.update()
 
     if (this.controls) {
-      this.controls.update(delta)
+      this.controls.update(delta, this.closestDist)
     }
 
     if (this.picker) {
@@ -2908,8 +2913,8 @@ class App extends mixin(EventEmitter, Component) {
 
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
-    console.log({txIndexOffset})
-    console.log(this.closestBlock.blockData.height)
+    // console.log({txIndexOffset})
+    // console.log(this.closestBlock.blockData.height)
 
     // get rotation
     let quat = new THREE.Quaternion(
@@ -2970,8 +2975,11 @@ class App extends mixin(EventEmitter, Component) {
     inverseBox.applyMatrix(this.boxMatrixInverse)
     this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
+    this.boundingBoxOuter = this.boundingBox.clone()
+    this.boundingBoxOuter.expandByVector(new THREE.Vector3(100, 100, 500))
+
     if (this.controls) {
-      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse)
+      this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse, this.boundingBoxOuter)
     }
 
     for (const height in this.audioManager.audioSources) {
@@ -3004,7 +3012,7 @@ class App extends mixin(EventEmitter, Component) {
     this.updateOriginOffsets()
 
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      console.log(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
+      // console.log(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
 
       this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)

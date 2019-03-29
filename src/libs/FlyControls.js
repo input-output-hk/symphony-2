@@ -59,8 +59,9 @@ export default class FlyControls {
     this.updateRotationVector()
   }
 
-  updateClosestBlockBBox (BBox, boxMatrixInverse) {
+  updateClosestBlockBBox (BBox, boxMatrixInverse, BBoxOuter) {
     this.BBox = BBox
+    this.BBoxOuter = BBoxOuter
     this.boxMatrixInverse = boxMatrixInverse
   }
 
@@ -202,6 +203,14 @@ export default class FlyControls {
     if (this.BBox) {
       let inversePoint = this.object.position.clone()
       inversePoint.applyMatrix4(this.boxMatrixInverse)
+
+      if (this.BBoxOuter) {
+        if (!this.BBoxOuter.containsPoint(inversePoint)) {
+          this.object.position.x = this.prevCamPos.x
+          this.object.position.y = this.prevCamPos.y
+          this.object.position.z = this.prevCamPos.z
+        }
+      }
 
       if (this.BBox.containsPoint(inversePoint)) {
         this.object.position.x = this.prevCamPos.x
