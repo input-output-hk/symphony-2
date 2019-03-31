@@ -117,7 +117,6 @@ class App extends mixin(EventEmitter, Component) {
     this.textureLoader = new THREE.TextureLoader()
     this.maxHeight = null
     this.isNavigating = false
-    this.closestDist = 0
 
     // VR
     this.blockHeightTextMesh = null
@@ -533,7 +532,7 @@ class App extends mixin(EventEmitter, Component) {
               that.camera.position.set(this.x, this.y, this.z)
             })
             .onComplete(() => {
-              that.toggleMapControls(false)
+
               this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
               this.camera.position.x = to.x
               this.camera.position.z = to.z
@@ -1132,25 +1131,6 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.background = this.cubeMap
   }
 
-  toggleMapControls (setPos = true, target) {
-    this.switchControls('top')
-    if (this.closestBlock) {
-      if (setPos) {
-        if (target) {
-          this.controls.target = target
-          this.camera.position.x = target.x
-          this.camera.position.y = this.mapControlsYPos
-          this.camera.position.z = target.z
-        } else {
-          this.controls.target = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
-          this.camera.position.x = this.closestBlock.blockData.pos.x
-          this.camera.position.y = this.mapControlsYPos
-          this.camera.position.z = this.closestBlock.blockData.pos.z
-        }
-      }
-    }
-  }
-
   stopAutoPilotAnimation () {
     if (typeof this.autoPilotTween !== 'undefined') {
       this.autoPilotTween.stop()
@@ -1163,16 +1143,7 @@ class App extends mixin(EventEmitter, Component) {
     this.autoPilot = false
   }
 
-  toggleUndersideControls () {
-    this.switchControls('underside')
-    this.controls.maxPolarAngle = Math.PI * 2
-  }
-
   toggleFlyControls () {
-    this.switchControls('fly')
-  }
-
-  switchControls (type) {
     this.stopAutoPilotAnimation()
     if (this.controls) {
       this.controls.dispose()
@@ -1181,47 +1152,44 @@ class App extends mixin(EventEmitter, Component) {
 
     this.animatingCamera = false
 
-    switch (type) {
-      // case 'map':
-      // case 'underside':
-      //   this.controls = new MapControls(this.cameraMain)
-      //   this.controls.domElement = this.renderer.domElement
-      //   this.controls.enablePan = false
-      //   this.controls.enableDamping = true
-      //   this.controls.dampingFactor = 0.25
-      //   this.controls.screenSpacePanning = true
-      //   this.controls.minDistance = 5
-      //   this.controls.maxDistance = 2000
-      //   // this.controls.maxDistance = 300000
-      //   this.controls.maxPolarAngle = Math.PI / 2
-      //   this.controls.rotateSpeed = 0.05
-      //   this.controls.panSpeed = 0.25
-      //   this.controls.zoomSpeed = 0.5
+    let target = new THREE.Vector3(0, 50, 0)
 
-      //   break
+    target.x = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
+    target.z = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
 
-      case 'fly':
+    this.prepareCamAnim(
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, 50, this.closestBlock.blockData.pos.z),
+      target
+    )
 
-        this.setState({flyControlsInteractionCount: this.state.flyControlsInteractionCount + 1})
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(this.camPosTo, 6000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        that.animatingCamera = false
 
-        this.controls = new FlyControls(this.cameraMain)
-        this.controls.movementSpeed = 70
-        this.controls.domElement = this.renderer.domElement
-        this.controls.rollSpeed = Math.PI / 24
-        this.controls.autoForward = false
-        this.controls.dragToLook = false
+        that.setState({flyControlsInteractionCount: that.state.flyControlsInteractionCount + 1})
 
-        this.deselectTx()
+        that.controls = new FlyControls(that.cameraMain)
+        that.controls.movementSpeed = 70
+        that.controls.domElement = that.renderer.domElement
+        that.controls.rollSpeed = Math.PI / 24
+        that.controls.autoForward = false
+        that.controls.dragToLook = false
 
-        break
+        that.deselectTx()
 
-      default:
-        break
-    }
+        that.emit('controlsEnabled')
 
-    this.emit('controlsEnabled')
+        that.setState({controlType: 'fly'})
+      })
+      .easing(this.defaultCamEasing)
+      .start()
 
-    this.setState({controlType: type})
+    this.animateCamRotation(5000)
   }
 
   prepareCamAnim (to, toTarget, direction = 'down') {
@@ -1354,7 +1322,17 @@ class App extends mixin(EventEmitter, Component) {
       for (const height in this.blockGeoDataObject) {
         if (this.blockGeoDataObject.hasOwnProperty(height)) {
           const blockGeoData = this.blockGeoDataObject[height]
-          const blockPos = new THREE.Vector3(blockGeoData.blockData.pos.x, 0, blockGeoData.blockData.pos.z)
+
+          let blockPos = new THREE.Vector3(blockGeoData.blockData.pos.x, 0, blockGeoData.blockData.pos.z)
+
+          if (this.state.controlType === 'top') {
+            blockPos.y += 400
+          }
+
+          if (this.state.controlType === 'underside') {
+            blockPos.y -= 400
+          }
+
           const blockDist = blockPos.distanceToSquared(this.camera.position)
 
           if (typeof this.audioManager.gainNodes[height] !== 'undefined') {
@@ -1367,8 +1345,8 @@ class App extends mixin(EventEmitter, Component) {
 
           if (blockDist < closestDist) {
             closestDist = blockDist
-            this.closestDist = closestDist
             this.closestBlock = blockGeoData
+            this.closestHeight = height
           }
         }
       }
@@ -1841,13 +1819,15 @@ class App extends mixin(EventEmitter, Component) {
     this.undersideR.position.z = 0
   }
 
-  prepareCamNavigation () {
+  prepareCamNavigation (args = {stopAudio: true}) {
     this.setState({
       showIntro: false
     })
     this.deselectTx()
-    this.audioManager.stopNotes()
-    this.audioManager.fadeOutBlockAudio()
+    if (args.stopAudio === true) {
+      this.audioManager.stopNotes()
+      this.audioManager.fadeOutBlockAudio()
+    }
     this.exitAutoPilot()
     this.hideMerkleDetail()
     this.hideVRText()
@@ -2168,7 +2148,7 @@ class App extends mixin(EventEmitter, Component) {
     TWEEN.update()
 
     if (this.controls) {
-      this.controls.update(delta, this.closestDist)
+      this.controls.update(delta)
     }
 
     if (this.picker) {
@@ -2896,7 +2876,6 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.closestBlock) {
       return
     }
-
     this.setState({
       closestBlock: this.closestBlock
     })
@@ -2912,9 +2891,6 @@ class App extends mixin(EventEmitter, Component) {
     )
 
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
-
-    // console.log({txIndexOffset})
-    // console.log(this.closestBlock.blockData.height)
 
     // get rotation
     let quat = new THREE.Quaternion(
@@ -2992,7 +2968,7 @@ class App extends mixin(EventEmitter, Component) {
           delete this.audioManager.audioSources[height]
           delete this.audioManager.buffers[height]
           delete this.audioManager.gainNodes[height]
-          // console.log('stopped audio at height: ' + height)
+          console.log('stopped audio at height: ' + height)
         }
 
         clearTimeout(this.audioManager.loops[height])
@@ -3012,8 +2988,6 @@ class App extends mixin(EventEmitter, Component) {
     this.updateOriginOffsets()
 
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
-      // console.log(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
-
       this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
       this.crystalAOGenerator.updateBlockStartTimes(this.closestBlock.blockData)
@@ -3520,8 +3494,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.hideMerkleDetail()
-
-    this.prepareCamNavigation()
+    this.prepareCamNavigation({stopAudio: false})
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
@@ -3562,7 +3535,7 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     this.hideMerkleDetail()
-    this.prepareCamNavigation()
+    this.prepareCamNavigation({stopAudio: false})
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
@@ -3846,7 +3819,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   closeFlyInfo () {
-    console.log('closeFlyInfo')
     this.setState({
       flyControlsInteractionCount: this.state.flyControlsInteractionCount + 1
     })

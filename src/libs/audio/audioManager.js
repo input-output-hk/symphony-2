@@ -54,11 +54,6 @@ export default class Audio extends EventEmitter {
     this.highShelf.gain.setValueAtTime(-7.0, this.audioContext.currentTime)
     this.highShelf.frequency.setValueAtTime(1200, this.audioContext.currentTime)
 
-    // this.lowShelf = this.audioContext.createBiquadFilter()
-    // this.lowShelf.type = 'lowshelf'
-    // this.lowShelf.frequency.setValueAtTime(250, this.audioContext.currentTime)
-    // this.lowShelf.gain.setValueAtTime(6.0, this.audioContext.currentTime)
-
     const getImpulseBuffer = (audioContext, impulseUrl) => {
       return window.fetch(impulseUrl)
         .then(response => response.arrayBuffer())
@@ -78,12 +73,10 @@ export default class Audio extends EventEmitter {
       let feedback = audioContext.createGain()
       let wetLevel = audioContext.createGain()
 
-      // set some decent values
       delay.delayTime.value = 1.0
       feedback.gain.value = 0.4
       wetLevel.gain.value = 0.4
 
-      // set up the routing
       this.input.connect(delay)
       this.input.connect(output)
       delay.connect(feedback)
@@ -252,31 +245,6 @@ export default class Audio extends EventEmitter {
         'G',
         'A#'
       ]
-      // 'phrygian': [
-      //   'E',
-      //   'G',
-      //   'B'
-      // ],
-      // 'lydian': [
-      //   'A',
-      //   'C',
-      //   'E'
-      // ],
-      // 'mixolydian': [
-      //   'G',
-      //   'B',
-      //   'D'
-      // ],
-      // 'aeolian': [
-      //   'D',
-      //   'F',
-      //   'A'
-      // ],
-      // 'locrian': [
-      //   'B',
-      //   'D',
-      //   'F'
-      // ]
       // 'ionian': [
       //   'C',
       //   'D',
@@ -356,8 +324,6 @@ export default class Audio extends EventEmitter {
     this.loops = {}
 
     this.blockAudioData = {}
-
-    // this.times = []
 
     // use OffscreenCanvas if available
     if (typeof window.OffscreenCanvas !== 'undefined') {
