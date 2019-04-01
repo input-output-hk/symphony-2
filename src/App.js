@@ -1350,7 +1350,7 @@ class App extends mixin(EventEmitter, Component) {
           if (blockDist < closestDist) {
             closestDist = blockDist
             this.closestBlock = blockGeoData
-            this.closestHeight = height
+          
           }
         }
       }
