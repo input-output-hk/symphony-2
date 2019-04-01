@@ -302,7 +302,7 @@ export default class Crystal extends Base {
     this.geometry.attributes.blockLoadTime.needsUpdate = true
   }
 
-  async updateGeometry (blockGeoData) {
+  updateGeometry (blockGeoData) {
     if (this.txCount + blockGeoData.blockData.n_tx > this.instanceTotal) {
       this.txCount = 0
     }

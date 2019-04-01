@@ -253,6 +253,7 @@ canvas#sketchboard {
   position: absolute;
   left: 45%;
   top: 20px;
+  z-index: 2;
 }
 
 .flip-view {
@@ -280,6 +281,7 @@ canvas#sketchboard {
   margin-left: -300px;
   text-align: center;
   bottom: 50px;
+  z-index: 2;
 }
 
 
@@ -362,6 +364,11 @@ canvas#sketchboard {
   margin-left: -25px;
   margin-top: -25px;
   opacity: 0.8;
+}
+
+.sidebar-container {
+  position: absolute;
+  z-index: 2;
 }
 
 .sidebar {
@@ -999,12 +1006,11 @@ canvas#sketchboard {
   width: 222px;
   z-index: 9;
   background: rgba(0, 0, 0, 0.25);
-  padding: 10px 12px 10px;
+  padding: 0 12px;
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
   transition: opacity .5s;
   opacity: 1.0;
-  height: 60px;
 }
 
 .autopilot-inner {
@@ -1021,7 +1027,7 @@ canvas#sketchboard {
   left: -1px;
   top: -1px;
   opacity: 0.3;
-  height: 62px;
+  height: 45px;
 }
 
 .autopilot-controls-heading {
@@ -1034,7 +1040,7 @@ canvas#sketchboard {
   display: inline-block;
   width: 10px;
   height: 19px;
-  margin: 10px 25px;
+  margin: 10px 10px;
 }
 
 .autopilot-controls span:hover {

@@ -41,8 +41,9 @@ self.addEventListener('message', async function (e) {
         shouldCache = true
       } else {
         blockData = snapshot.data()
-        // check if block was cached more than a week ago
-        if (moment().valueOf() - blockData.cacheTime.toMillis() > 604800000) {
+        // check if block was cached more than a month ago
+        // if (moment().valueOf() - blockData.cacheTime.toMillis() > 2419200000) {
+        if (moment().valueOf() - blockData.cacheTime.toMillis() > 200) {
           console.log('Block: ' + data.hash + ' is out of date, re-adding')
           shouldCache = true
         }

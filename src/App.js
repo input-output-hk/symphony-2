@@ -532,7 +532,6 @@ class App extends mixin(EventEmitter, Component) {
               that.camera.position.set(this.x, this.y, this.z)
             })
             .onComplete(() => {
-
               this.controls.target = new THREE.Vector3(toTarget.x, 0, toTarget.z)
               this.camera.position.x = to.x
               this.camera.position.z = to.z
@@ -1023,7 +1022,7 @@ class App extends mixin(EventEmitter, Component) {
     this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
     this.boundingBoxOuter = this.boundingBox.clone()
-    this.boundingBoxOuter.expandByVector(new THREE.Vector3(100, 100, 500))
+    this.boundingBoxOuter.expandByVector(new THREE.Vector3(250, 250, 500))
 
     this.on('controlsEnabled', () => {
       this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse, this.boundingBoxOuter)
@@ -1150,12 +1149,17 @@ class App extends mixin(EventEmitter, Component) {
       this.controls = null
     }
 
-    this.animatingCamera = false
+    // this.animatingCamera = false
 
     let target = new THREE.Vector3(0, 50, 0)
 
-    target.x = this.blockPositions[this.closestBlock.blockData.height * 2 + 0]
-    target.z = this.blockPositions[this.closestBlock.blockData.height * 2 + 1]
+    let nextHeight = this.closestBlock.blockData.height + 1
+    if (nextHeight > this.maxHeight) {
+      nextHeight = this.closestBlock.blockData.height - 1
+    }
+
+    target.x = this.blockPositions[nextHeight * 2 + 0]
+    target.z = this.blockPositions[nextHeight * 2 + 1]
 
     this.prepareCamAnim(
       new THREE.Vector3(this.closestBlock.blockData.pos.x, 50, this.closestBlock.blockData.pos.z),

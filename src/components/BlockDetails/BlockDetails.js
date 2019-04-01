@@ -136,6 +136,34 @@ export default class BlockDetails extends Component {
     }
   }
 
+  UIBlockNavigation () {
+    let nextButtonClassName = 'block-navigation-next'
+    if (
+      this.props.closestBlock.blockData.height === this.props.maxHeight ||
+      this.props.controlType === 'fly'
+    ) {
+      nextButtonClassName += ' hide'
+    }
+
+    let prevButtonClassName = 'block-navigation-prev'
+    if (
+      this.props.closestBlock.blockData.height === 0 ||
+      this.props.controlType === 'fly'
+    ) {
+      prevButtonClassName += ' hide'
+    }
+
+    if (this.props.controlType === 'underside' || this.props.controlType === 'top') {
+      return (
+        <div className='block-navigation'>
+          <button title='Previous Block' onClick={() => this.props.gotoPrevBlock()} className={prevButtonClassName}>Previous Block</button>
+          <button title='Next Block' onClick={() => this.props.gotoNextBlock()} className={nextButtonClassName}>Next Block</button>
+        </div>
+
+      )
+    }
+  }
+
   render () {
     if (this.props.closestBlock) {
       const health = this.props.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.props.closestBlock.blockData.healthRatio
@@ -147,22 +175,6 @@ export default class BlockDetails extends Component {
       if (this.props.controlType === 'fly') {
         gradClass = 'hide'
         className += ' cockpit'
-      }
-
-      let nextButtonClassName = 'block-navigation-next'
-      if (
-        this.props.closestBlock.blockData.height === this.props.maxHeight ||
-        this.props.controlType === 'fly'
-      ) {
-        nextButtonClassName += ' hide'
-      }
-
-      let prevButtonClassName = 'block-navigation-prev'
-      if (
-        this.props.closestBlock.blockData.height === 0 ||
-        this.props.controlType === 'fly'
-      ) {
-        prevButtonClassName += ' hide'
       }
 
       return (
@@ -182,10 +194,7 @@ export default class BlockDetails extends Component {
             <h3>{ this.props.closestBlock.blockData.hash }</h3>
           </div>
 
-          <div className='block-navigation'>
-            <button title='Previous Block' onClick={() => this.props.gotoPrevBlock()} className={prevButtonClassName}>Previous Block</button>
-            <button title='Next Block' onClick={() => this.props.gotoNextBlock()} className={nextButtonClassName}>Next Block</button>
-          </div>
+          {this.UIBlockNavigation()}
 
           <div className='block-details'>
             <h2 className='block-details-heading'>//BLOCK-{this.props.closestBlock.blockData.height}</h2>
