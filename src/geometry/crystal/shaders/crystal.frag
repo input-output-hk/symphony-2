@@ -258,8 +258,8 @@ void main() {
 	outgoingLight.g += (tileNoiseColor * (1.0 - vTopVertex) * (1.0 - vBottomVertex) ) * 0.3;
 
 	outgoingLight += smoothstep(0.7, 1.0, edgeAmount) * 0.05;
-	outgoingLight += (pow(vTopVertex, 5.0) * vEnvelope) * 0.2;
-	outgoingLight += (pow(vBottomVertex, 5.0) * vEnvelope) * 0.2;
+	outgoingLight += (pow(vTopVertex, 5.0) * vEnvelope) * 0.3;
+	outgoingLight += (pow(vBottomVertex, 5.0) * vEnvelope) * 0.3;
 
 	outgoingLight += vIsHovered * (edgeAmount * 0.5);
 	outgoingLight += vIsSelected * (edgeAmount * 0.5);

@@ -84,23 +84,21 @@ self.addEventListener('message', async function (e) {
 
       let ii = 0
       await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
-        let updatedBlockDetails = null
-
-        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
+        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 2419200000) {
           console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
-          updatedBlockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
+          blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
         }
 
         if (blockDetails.tx[0].index === 0) {
           console.log('Block: ' + blockDetails.hash + ' data incomplete, re-adding')
-          updatedBlockDetails = await blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
+          blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
         }
 
         blockHeightIndexes[ii] = blockDetails.height
 
-        if (updatedBlockDetails !== null) {
-          blockDetails = updatedBlockDetails
-        }
+        // if (updatedBlockDetails !== null) {
+        //   blockDetails = updatedBlockDetails
+        // }
 
         blockDetails.tx.forEach((tx, index) => {
           data['txValues' + ii][index] = tx.value

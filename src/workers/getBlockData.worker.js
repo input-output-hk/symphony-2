@@ -38,12 +38,13 @@ self.addEventListener('message', async function (e) {
       let shouldCache = false
 
       if (!snapshot.exists) {
+        console.log('Block data not in db')
         shouldCache = true
       } else {
         blockData = snapshot.data()
         // check if block was cached more than a month ago
         // if (moment().valueOf() - blockData.cacheTime.toMillis() > 2419200000) {
-        if (moment().valueOf() - blockData.cacheTime.toMillis() > 200) {
+        if (moment().valueOf() - blockData.cacheTime.toMillis() > 2419200000) {
           console.log('Block: ' + data.hash + ' is out of date, re-adding')
           shouldCache = true
         }
@@ -52,7 +53,8 @@ self.addEventListener('message', async function (e) {
       if (!shouldCache) {
         console.log('Block data for: ' + data.hash + ' returned from cache')
       } else {
-        blockData = await blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
+        // blockData = await blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
+        blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
       }
 
       if (typeof blockData === 'undefined') {

@@ -1149,6 +1149,8 @@ class App extends mixin(EventEmitter, Component) {
       this.controls = null
     }
 
+    this.setState({controlType: 'fly'})
+
     // this.animatingCamera = false
 
     let target = new THREE.Vector3(0, 50, 0)
@@ -1187,8 +1189,6 @@ class App extends mixin(EventEmitter, Component) {
         that.deselectTx()
 
         that.emit('controlsEnabled')
-
-        that.setState({controlType: 'fly'})
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1602,6 +1602,14 @@ class App extends mixin(EventEmitter, Component) {
           }
         }
 
+        this.heightsToLoad.forEach((height, index) => {
+          if (height > this.closestHeight + 10 ||
+          height < this.closestHeight - 10) {
+            console.log('removed ' + height + ' from heightsToLoad')
+            delete this.heightsToLoad[index]
+          }
+        })
+
         this.heightsToLoad.forEach(async (height) => {
           if (this.loadingMutex.indexOf(height) === -1) {
             this.loadingMutex.push(height)
@@ -1629,10 +1637,10 @@ class App extends mixin(EventEmitter, Component) {
                   }
 
                   if (blockGeoData) {
-                    if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
-                      this.crystalGenerator.updateGeometry(blockGeoData)
-                      this.crystalAOGenerator.updateGeometry(blockGeoData)
-                    }
+                    // if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+                    this.crystalGenerator.updateGeometry(blockGeoData)
+                    this.crystalAOGenerator.updateGeometry(blockGeoData)
+                    // }
                   }
 
                   let heightIndex = this.heightsToLoad.indexOf(height)
@@ -2896,6 +2904,11 @@ class App extends mixin(EventEmitter, Component) {
 
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
+    if (typeof txIndexOffset === 'undefined') {
+      console.log({txIndexOffset})
+      return
+    }
+
     // get rotation
     let quat = new THREE.Quaternion(
       this.crystal.geometry.attributes.quaternion.array[txIndexOffset * 4 + 0],
@@ -2965,14 +2978,14 @@ class App extends mixin(EventEmitter, Component) {
     for (const height in this.audioManager.audioSources) {
       if (this.audioManager.audioSources.hasOwnProperty(height)) {
         if (
-          height < this.closestBlock.blockData.height - 10 ||
-          height > this.closestBlock.blockData.height + 10
+          height < this.closestBlock.blockData.height - 3 ||
+          height > this.closestBlock.blockData.height + 3
         ) {
           this.audioManager.audioSources[height].stop()
           delete this.audioManager.audioSources[height]
           delete this.audioManager.buffers[height]
           delete this.audioManager.gainNodes[height]
-          console.log('stopped audio at height: ' + height)
+          // console.log('stopped audio at height: ' + height)
         }
 
         clearTimeout(this.audioManager.loops[height])
@@ -3686,9 +3699,24 @@ class App extends mixin(EventEmitter, Component) {
 
     this.setState({controlType: 'top'})
 
+    let isHash = true
+    if (this.state.searchBlockHash.length !== 32) {
+      isHash = false
+    }
+
     try {
-      let blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
-      let blockDataJSON = await blockData.json()
+      let blockData
+      let blockDataJSON
+      if (isHash) {
+        blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
+        blockDataJSON = await blockData.json()
+      } else {
+        const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
+        let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + this.state.searchBlockHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+        blockData = await window.fetch(url)
+        blockDataJSON = await blockData.json()
+        blockDataJSON = blockDataJSON.blocks[0]
+      }
 
       let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
       let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
@@ -3777,7 +3805,7 @@ class App extends mixin(EventEmitter, Component) {
     if (this.state.blockSearchOpen) {
       return (
         <div className='search-container'>
-          <h2>Enter Block Hash</h2>
+          <h2>Enter Block Hash/Height</h2>
           <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
           <input className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupBlockFromHash.bind(this)} />
