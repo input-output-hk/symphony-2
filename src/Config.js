@@ -51,7 +51,7 @@ const Config = {
     initTarget: new THREE.Vector3(0.0, 0.0, 0.0)
   },
   VR: {
-    interactionTimeout: 1000 // (ms)
+    interactionTimeout: 200 // (ms)
   },
   floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
 }

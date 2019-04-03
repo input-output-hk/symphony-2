@@ -12,7 +12,7 @@ export default class Occlusion extends Base {
   constructor (args) {
     super(args)
 
-    this.instanceTotal = 100
+    this.instanceTotal = 200
     this.blockHeightIndex = {}
     this.material = new OcclusionMaterial({
       transparent: true

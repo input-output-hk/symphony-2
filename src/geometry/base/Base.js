@@ -49,16 +49,16 @@ export default class Base {
   ) {
     let blockPosition = blockGeoData.blockData.pos
 
-    for (const height in this.txIndexOffsets) {
-      if (this.txIndexOffsets.hasOwnProperty(height)) {
-        if (
-          height > blockGeoData.blockData.height + 10 ||
-          height < blockGeoData.blockData.height - 10
-        ) {
-          delete this.txIndexOffsets[height]
-        }
-      }
-    }
+    // for (const height in this.txIndexOffsets) {
+    //   if (this.txIndexOffsets.hasOwnProperty(height)) {
+    //     if (
+    //       height > blockGeoData.blockData.height + 10 ||
+    //       height < blockGeoData.blockData.height - 10
+    //     ) {
+    //       delete this.txIndexOffsets[height]
+    //     }
+    //   }
+    // }
 
     this.txIndexOffsets[blockGeoData.blockData.height] = this.txCount
 

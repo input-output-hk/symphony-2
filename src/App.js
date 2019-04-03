@@ -1329,12 +1329,14 @@ class App extends mixin(EventEmitter, Component) {
 
           let blockPos = new THREE.Vector3(blockGeoData.blockData.pos.x, 0, blockGeoData.blockData.pos.z)
 
-          if (this.state.controlType === 'top') {
-            blockPos.y += 400
-          }
+          if (!this.vrActive) {
+            if (this.state.controlType === 'top') {
+              blockPos.y += 400
+            }
 
-          if (this.state.controlType === 'underside') {
-            blockPos.y -= 400
+            if (this.state.controlType === 'underside') {
+              blockPos.y -= 400
+            }
           }
 
           const blockDist = blockPos.distanceToSquared(this.camera.position)
@@ -1350,7 +1352,6 @@ class App extends mixin(EventEmitter, Component) {
           if (blockDist < closestDist) {
             closestDist = blockDist
             this.closestBlock = blockGeoData
-          
           }
         }
       }
@@ -2133,7 +2134,7 @@ class App extends mixin(EventEmitter, Component) {
     let that = this
 
     this.autoPilotTween = new TWEEN.Tween(camPos)
-      .to(to, 30000)
+      .to(to, 20000)
       .onUpdate(function () {
         if (!that.autoPilot) {
           return
@@ -2267,12 +2268,12 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async playTutorial () {
-    // await this.audioManager.playNarrationFile('tutorial', '1')
-    await this.audioManager.playNarrationFile('tutorial', '2')
-    await this.audioManager.playNarrationFile('tutorial', '3')
-    await this.audioManager.playNarrationFile('tutorial', '4')
-    await this.audioManager.playNarrationFile('tutorial', '5')
-    await this.audioManager.playNarrationFile('tutorial', '6')
+    await this.audioManager.playNarrationFile('tutorial', '1')
+    // await this.audioManager.playNarrationFile('tutorial', '2')
+    // await this.audioManager.playNarrationFile('tutorial', '3')
+    // await this.audioManager.playNarrationFile('tutorial', '4')
+    // await this.audioManager.playNarrationFile('tutorial', '5')
+    // await this.audioManager.playNarrationFile('tutorial', '6')
     return true
   }
 
@@ -2445,7 +2446,9 @@ class App extends mixin(EventEmitter, Component) {
 
         // this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
 
-        this.startStory()
+        // this.startStory()
+
+        this.goToBlock()
       } else {
         this.setState({
           showIntro: true
@@ -2548,14 +2551,15 @@ class App extends mixin(EventEmitter, Component) {
       if (typeof this.viveController1.userData.inputSource !== 'undefined') {
         if (this.viveController1.userData.inputSource.handedness === 'right') {
           this.setupRightViveController(this.viveController1, this.viveController1MeshGroup)
+          console.log('vive 1 setup')
+          this.VRController1EventsBound = true
         }
 
         if (this.viveController1.userData.inputSource.handedness === 'left') {
           this.setupLeftViveController(this.viveController1, this.viveController1MeshGroup)
+          console.log('vive 1 setup')
+          this.VRController1EventsBound = true
         }
-
-        console.log('vive 1 setup')
-        this.VRController1EventsBound = true
       }
     }
 
@@ -2563,14 +2567,15 @@ class App extends mixin(EventEmitter, Component) {
       if (typeof this.viveController2.userData.inputSource !== 'undefined') {
         if (this.viveController2.userData.inputSource.handedness === 'right') {
           this.setupRightViveController(this.viveController2, this.viveController2MeshGroup)
+          console.log('vive 2 setup')
+          this.VRController2EventsBound = true
         }
 
         if (this.viveController2.userData.inputSource.handedness === 'left') {
           this.setupLeftViveController(this.viveController2, this.viveController2MeshGroup)
+          console.log('vive 2 setup')
+          this.VRController2EventsBound = true
         }
-
-        console.log('vive 2 setup')
-        this.VRController2EventsBound = true
       }
     }
   }
@@ -2604,9 +2609,9 @@ class App extends mixin(EventEmitter, Component) {
     buttonGeo.rotateX(-(Math.PI / 2))
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
-    let buttonPrevMap = this.textureLoader.load('prev.png')
 
     // prev button
+    let buttonPrevMap = this.textureLoader.load('prev.png')
     let buttonPrevMat = new THREE.MeshBasicMaterial({
       map: buttonPrevMap,
       transparent: true,
@@ -2657,53 +2662,78 @@ class App extends mixin(EventEmitter, Component) {
     meshGroup.add(buttonDownMesh)
 
     // // info button
-    // let buttonInfoMap = this.textureLoader.load('info.png')
-    // let buttonInfoMat = new THREE.MeshBasicMaterial({
-    //   map: buttonInfoMap,
-    //   transparent: true,
-    //   alphaTest: 0.5
-    // })
+    let buttonInfoMap = this.textureLoader.load('info.png')
+    let buttonInfoMat = new THREE.MeshBasicMaterial({
+      map: buttonInfoMap,
+      transparent: true,
+      alphaTest: 0.5
+    })
 
-    // let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
-    // buttonInfoMesh.position.y = 0.009
-    // buttonInfoMesh.position.z = 0.0
-    // viveController.add(buttonInfoMesh)
+    let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
+    buttonInfoMesh.position.y = 0.009
+    buttonInfoMesh.position.z = 0.01
+    meshGroup.add(buttonInfoMesh)
   }
 
   async setupLeftViveController (viveController, meshGroup) {
     // add buttons
-    let buttonGeo = new THREE.PlaneBufferGeometry(0.028, 0.028, 1)
+    let buttonGeo = new THREE.PlaneBufferGeometry(0.018, 0.018, 1)
     buttonGeo.rotateX(-(Math.PI / 2))
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
 
-    // next chapter button
-    let buttonNextChapterMap = this.textureLoader.load('next-chapter.png')
-    let buttonNextChapterMat = new THREE.MeshBasicMaterial({
-      map: buttonNextChapterMap,
+    // latest button
+    let buttonUpMap = this.textureLoader.load('latest.png')
+    let buttonUpMat = new THREE.MeshBasicMaterial({
+      map: buttonUpMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonNextChapterMesh = new THREE.Mesh(buttonGeo, buttonNextChapterMat)
-    buttonNextChapterMesh.position.y = 0.009
-    buttonNextChapterMesh.position.z = 0.05
-    meshGroup.add(buttonNextChapterMesh)
 
-    let textMesh = await this.textGenerator.create({
-      text: 'NEXT CHAPTER',
-      position: {
-        x: 0.025,
-        y: 0.006,
-        z: 0.054
-      },
-      width: 1400,
-      align: 'left',
-      scale: 0.0004,
-      lineHeight: 48
+    let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
+    buttonUpMesh.position.y = 0.009
+    buttonUpMesh.position.z = 0.035
+    meshGroup.add(buttonUpMesh)
+
+    // random button
+    let buttonDownMap = this.textureLoader.load('random.png')
+    let buttonDownMat = new THREE.MeshBasicMaterial({
+      map: buttonDownMap,
+      transparent: true,
+      alphaTest: 0.5
     })
-    textMesh.rotateX(-(Math.PI / 2))
-    textMesh.renderOrder = 0
-    meshGroup.add(textMesh)
+    let buttonDownMesh = new THREE.Mesh(buttonGeo, buttonDownMat)
+    buttonDownMesh.position.y = 0.009
+    buttonDownMesh.position.z = 0.065
+    meshGroup.add(buttonDownMesh)
+
+    // // next chapter button
+    // let buttonNextChapterMap = this.textureLoader.load('next-chapter.png')
+    // let buttonNextChapterMat = new THREE.MeshBasicMaterial({
+    //   map: buttonNextChapterMap,
+    //   transparent: true,
+    //   alphaTest: 0.5
+    // })
+    // let buttonNextChapterMesh = new THREE.Mesh(buttonGeo, buttonNextChapterMat)
+    // buttonNextChapterMesh.position.y = 0.009
+    // buttonNextChapterMesh.position.z = 0.05
+    // meshGroup.add(buttonNextChapterMesh)
+
+    // let textMesh = await this.textGenerator.create({
+    //   text: 'NEXT CHAPTER',
+    //   position: {
+    //     x: 0.025,
+    //     y: 0.006,
+    //     z: 0.054
+    //   },
+    //   width: 1400,
+    //   align: 'left',
+    //   scale: 0.0004,
+    //   lineHeight: 48
+    // })
+    // textMesh.rotateX(-(Math.PI / 2))
+    // textMesh.renderOrder = 0
+    // meshGroup.add(textMesh)
   }
 
   bindVRGamepadEvents () {
@@ -2721,6 +2751,7 @@ class App extends mixin(EventEmitter, Component) {
 
         this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
           this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+            console.log(this.viveController1Buttons.gamepad.hand)
             switch (this.viveController1Buttons.gamepad.hand) {
               case 'right':
                 this.viveControllerRightDPadEvents(e)
@@ -2738,6 +2769,8 @@ class App extends mixin(EventEmitter, Component) {
         this.viveController1Buttons.addEventListener('menudown', function (e) {
           console.log('menudown')
           this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+            console.log(this.viveController1Buttons.gamepad.hand)
+
             switch (this.viveController1Buttons.gamepad.hand) {
               case 'right':
                 this.viveControllerRightMenuEvents(e)
@@ -2772,6 +2805,8 @@ class App extends mixin(EventEmitter, Component) {
 
         this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
           this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+            console.log(this.viveController2Buttons.gamepad.hand)
+
             switch (this.viveController2Buttons.gamepad.hand) {
               case 'right':
                 this.viveControllerRightDPadEvents(e)
@@ -2789,6 +2824,8 @@ class App extends mixin(EventEmitter, Component) {
         this.viveController2Buttons.addEventListener('menudown', function (e) {
           console.log('menudown')
           this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+            console.log(this.viveController2Buttons.gamepad.hand)
+
             switch (this.viveController2Buttons.gamepad.hand) {
               case 'right':
                 this.viveControllerRightMenuEvents(e)
@@ -2839,7 +2876,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerLeftDPadEvents (e) {
-    this.advanceToNextChapter()
+    //    this.advanceToNextChapter()
 
     // // left dpad
     // if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
@@ -2852,25 +2889,42 @@ class App extends mixin(EventEmitter, Component) {
     // }
 
     // // top dpad
-    // if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-    //   this.goToBlock()
-    // }
+    if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.goToBlock()
+    }
 
     // // bottom dpad
-    // if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-    //   this.goToRandomBlock()
-    // }
+    if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.goToRandomBlock()
+    }
   }
 
-  viveControllerLeftMenuEvents () {
+  async viveControllerLeftMenuEvents () {
 
   }
 
-  viveControllerRightMenuEvents () {
-    // Merkle Tree Narration
-    // if (this.camera.position.y < 0) {
-    //   this.audioManager.playNarrationFile('merkle-tree', '1')
-    // }
+  async viveControllerRightMenuEvents () {
+    this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
+
+    switch (this.state.controlType) {
+      case 'underside':
+        await this.audioManager.playNarrationFile('merkle-tree', '1')
+        await this.audioManager.playNarrationFile('merkle-tree', '2')
+        break
+
+      case 'top':
+
+        if (this.closestHeight === this.maxHeight) {
+          await this.audioManager.playNarrationFile('latest', '1')
+        }
+
+        break
+
+      default:
+        break
+    }
+
+    this.audioManager.masterBus.gain.setTargetAtTime(0.8, this.audioManager.audioContext.currentTime, 2.0)
   }
 
   sendWsMessage (message) {
@@ -2969,7 +3023,7 @@ class App extends mixin(EventEmitter, Component) {
     this.boundingBox = new THREE.Box3().setFromObject(inverseBox)
 
     this.boundingBoxOuter = this.boundingBox.clone()
-    this.boundingBoxOuter.expandByVector(new THREE.Vector3(100, 100, 500))
+    this.boundingBoxOuter.expandByVector(new THREE.Vector3(100, 300, 500))
 
     if (this.controls) {
       this.controls.updateClosestBlockBBox(this.boundingBox, this.boxMatrixInverse, this.boundingBoxOuter)
