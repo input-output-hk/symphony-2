@@ -119,6 +119,9 @@ class App extends mixin(EventEmitter, Component) {
     this.isNavigating = false
 
     // VR
+
+
+    this.VRInteractionReady = false
     this.blockHeightTextMesh = null
     this.blockDetailsTextMesh = null
     this.txDetailsTextMesh = null
@@ -1972,9 +1975,11 @@ class App extends mixin(EventEmitter, Component) {
                       that.camera.position.set(this.x, this.y, this.z)
                     })
                     .onComplete(() => {
-                      resolve(true)
+                      this.VRInteractionReady = true
+
                       this.isNavigating = false
                       this.animatingCamera = false
+                      resolve(true)
                     })
                     .easing(TWEEN.Easing.Quadratic.Out)
                     .start()
@@ -2610,66 +2615,77 @@ class App extends mixin(EventEmitter, Component) {
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
 
+    this.buttonPrevMap = this.textureLoader.load('prev.png')
+    this.buttonPrevMapPressed = this.textureLoader.load('prev-pressed.png')
+
+    this.buttonNextMap = this.textureLoader.load('next.png')
+    this.buttonNextMapPressed = this.textureLoader.load('next-pressed.png')
+
+    this.buttonUpMap = this.textureLoader.load('up.png')
+    this.buttonUpMapPressed = this.textureLoader.load('up-pressed.png')
+
+    this.buttonDownMap = this.textureLoader.load('down.png')
+    this.buttonDownMapPressed = this.textureLoader.load('down-pressed.png')
+
+    this.buttonInfoMap = this.textureLoader.load('info.png')
+    this.buttonInfoMapPressed = this.textureLoader.load('info-pressed.png')
+
     // prev button
-    let buttonPrevMap = this.textureLoader.load('prev.png')
-    let buttonPrevMat = new THREE.MeshBasicMaterial({
-      map: buttonPrevMap,
+    this.buttonPrevMat = new THREE.MeshBasicMaterial({
+      map: this.buttonPrevMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonPrevMesh = new THREE.Mesh(buttonGeo, buttonPrevMat)
+    let buttonPrevMesh = new THREE.Mesh(buttonGeo, this.buttonPrevMat)
     buttonPrevMesh.position.x = -0.015
     buttonPrevMesh.position.y = 0.009
     buttonPrevMesh.position.z = 0.05
     meshGroup.add(buttonPrevMesh)
 
     // next button
-    let buttonNextMap = this.textureLoader.load('next.png')
-    let buttonNextMat = new THREE.MeshBasicMaterial({
-      map: buttonNextMap,
+    this.buttonNextMat = new THREE.MeshBasicMaterial({
+      map: this.buttonNextMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonNextMesh = new THREE.Mesh(buttonGeo, buttonNextMat)
+    let buttonNextMesh = new THREE.Mesh(buttonGeo, this.buttonNextMat)
     buttonNextMesh.position.x = 0.015
     buttonNextMesh.position.y = 0.009
     buttonNextMesh.position.z = 0.05
     meshGroup.add(buttonNextMesh)
 
     // up button
-    let buttonUpMap = this.textureLoader.load('up.png')
-    let buttonUpMat = new THREE.MeshBasicMaterial({
-      map: buttonUpMap,
+    this.buttonUpMat = new THREE.MeshBasicMaterial({
+      map: this.buttonUpMap,
       transparent: true,
-      alphaTest: 0.5
+      alphaTest: 0.5,
+      color: new THREE.Color(0xffffff)
     })
 
-    let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
+    let buttonUpMesh = new THREE.Mesh(buttonGeo, this.buttonUpMat)
     buttonUpMesh.position.y = 0.009
     buttonUpMesh.position.z = 0.035
     meshGroup.add(buttonUpMesh)
 
     // down button
-    let buttonDownMap = this.textureLoader.load('down.png')
-    let buttonDownMat = new THREE.MeshBasicMaterial({
-      map: buttonDownMap,
+    this.buttonDownMat = new THREE.MeshBasicMaterial({
+      map: this.buttonDownMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonDownMesh = new THREE.Mesh(buttonGeo, buttonDownMat)
+    let buttonDownMesh = new THREE.Mesh(buttonGeo, this.buttonDownMat)
     buttonDownMesh.position.y = 0.009
     buttonDownMesh.position.z = 0.065
     meshGroup.add(buttonDownMesh)
 
     // // info button
-    let buttonInfoMap = this.textureLoader.load('info.png')
-    let buttonInfoMat = new THREE.MeshBasicMaterial({
-      map: buttonInfoMap,
+    this.buttonInfoMat = new THREE.MeshBasicMaterial({
+      map: this.buttonInfoMap,
       transparent: true,
       alphaTest: 0.5
     })
 
-    let buttonInfoMesh = new THREE.Mesh(buttonGeo, buttonInfoMat)
+    let buttonInfoMesh = new THREE.Mesh(buttonGeo, this.buttonInfoMat)
     buttonInfoMesh.position.y = 0.009
     buttonInfoMesh.position.z = 0.01
     meshGroup.add(buttonInfoMesh)
@@ -2682,30 +2698,35 @@ class App extends mixin(EventEmitter, Component) {
 
     this.textureLoader.setPath('assets/images/textures/vr-ui/')
 
+    this.buttonRandomMap = this.textureLoader.load('random.png')
+    this.buttonRandomMapPressed = this.textureLoader.load('random-pressed.png')
+
+    this.buttonLatestMap = this.textureLoader.load('latest.png')
+    this.buttonLatestMapPressed = this.textureLoader.load('latest-pressed.png')
+
     // latest button
-    let buttonUpMap = this.textureLoader.load('latest.png')
-    let buttonUpMat = new THREE.MeshBasicMaterial({
-      map: buttonUpMap,
+    this.buttonLatestMat = new THREE.MeshBasicMaterial({
+      map: this.buttonLatestMap,
       transparent: true,
       alphaTest: 0.5
     })
 
-    let buttonUpMesh = new THREE.Mesh(buttonGeo, buttonUpMat)
-    buttonUpMesh.position.y = 0.009
-    buttonUpMesh.position.z = 0.035
-    meshGroup.add(buttonUpMesh)
+    let buttonLatestMesh = new THREE.Mesh(buttonGeo, this.buttonLatestMat)
+    buttonLatestMesh.position.y = 0.009
+    buttonLatestMesh.position.z = 0.035
+    meshGroup.add(buttonLatestMesh)
 
     // random button
-    let buttonDownMap = this.textureLoader.load('random.png')
-    let buttonDownMat = new THREE.MeshBasicMaterial({
-      map: buttonDownMap,
+
+    this.buttonRandomMat = new THREE.MeshBasicMaterial({
+      map: this.buttonRandomMap,
       transparent: true,
       alphaTest: 0.5
     })
-    let buttonDownMesh = new THREE.Mesh(buttonGeo, buttonDownMat)
-    buttonDownMesh.position.y = 0.009
-    buttonDownMesh.position.z = 0.065
-    meshGroup.add(buttonDownMesh)
+    let buttonRandomMesh = new THREE.Mesh(buttonGeo, this.buttonRandomMat)
+    buttonRandomMesh.position.y = 0.009
+    buttonRandomMesh.position.z = 0.065
+    meshGroup.add(buttonRandomMesh)
 
     // // next chapter button
     // let buttonNextChapterMap = this.textureLoader.load('next-chapter.png')
@@ -2741,117 +2762,204 @@ class App extends mixin(EventEmitter, Component) {
 
     if (!this.VRGamepad1EventsBound) {
       if (this.viveController1Buttons.gamepad) {
-        this.viveController1Buttons.addEventListener('triggerdown', function (e) {
-          this.viveTriggerPressed1 = true
-        }.bind(this))
+        if (this.viveController1Buttons.gamepad.hand === 'left' || this.viveController1Buttons.gamepad.hand === 'right') {
+          this.viveController1Buttons.addEventListener('triggerdown', function (e) {
+            this.viveTriggerPressed1 = true
+          }.bind(this))
 
-        this.viveController1Buttons.addEventListener('triggerup', function (e) {
-          this.viveTriggerPressed1 = false
-        }.bind(this))
+          this.viveController1Buttons.addEventListener('triggerup', function (e) {
+            this.viveTriggerPressed1 = false
+          }.bind(this))
 
-        this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
-          this.viveController1Buttons.interactionTimeout = setTimeout(() => {
-            console.log(this.viveController1Buttons.gamepad.hand)
+          this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
             switch (this.viveController1Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightDPadEvents(e)
+                this.viveControllerRightDPadEventsUp(e)
                 break
               case 'left':
-                this.viveControllerLeftDPadEvents(e)
+                this.viveControllerLeftDPadEventsUp(e)
                 break
 
               default:
                 break
             }
-          }, this.config.VR.interactionTimeout)
-        }.bind(this))
+          }.bind(this))
 
-        this.viveController1Buttons.addEventListener('menudown', function (e) {
-          console.log('menudown')
-          this.viveController1Buttons.interactionTimeout = setTimeout(() => {
-            console.log(this.viveController1Buttons.gamepad.hand)
+          this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
+            this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+              console.log(this.viveController1Buttons.gamepad.hand)
+              switch (this.viveController1Buttons.gamepad.hand) {
+                case 'right':
+                  this.viveControllerRightDPadEvents(e)
+                  break
+                case 'left':
+                  this.viveControllerLeftDPadEvents(e)
+                  break
 
+                default:
+                  break
+              }
+            }, this.config.VR.interactionTimeout)
+          }.bind(this))
+
+          this.viveController1Buttons.addEventListener('menuup', function (e) {
             switch (this.viveController1Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightMenuEvents(e)
+                this.viveControllerRightMenuEventsUp(e)
                 break
               case 'left':
-                this.viveControllerLeftMenuEvents(e)
+                this.viveControllerLeftMenuEventsUp(e)
                 break
 
               default:
                 break
             }
-          }, this.config.VR.interactionTimeout)
-        }.bind(this))
+          }.bind(this))
 
-        this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
-          clearTimeout(this.viveController1Buttons.interactionTimeout)
-        }.bind(this))
+          this.viveController1Buttons.addEventListener('menudown', function (e) {
+            console.log('menudown')
+            this.viveController1Buttons.interactionTimeout = setTimeout(() => {
+              console.log(this.viveController1Buttons.gamepad.hand)
 
-        this.VRGamepad1EventsBound = true
+              switch (this.viveController1Buttons.gamepad.hand) {
+                case 'right':
+                  this.viveControllerRightMenuEvents(e)
+                  break
+                case 'left':
+                  this.viveControllerLeftMenuEvents(e)
+                  break
+
+                default:
+                  break
+              }
+            }, this.config.VR.interactionTimeout)
+          }.bind(this))
+
+          this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+            clearTimeout(this.viveController1Buttons.interactionTimeout)
+          }.bind(this))
+
+          this.VRGamepad1EventsBound = true
+        }
       }
     }
 
     if (!this.VRGamepad2EventsBound) {
       if (this.viveController2Buttons.gamepad) {
-        this.viveController2Buttons.addEventListener('triggerdown', function (e) {
-          this.viveTriggerPressed2 = true
-        }.bind(this))
+        if (this.viveController2Buttons.gamepad.hand === 'left' || this.viveController2Buttons.gamepad.hand === 'right') {
+          this.viveController2Buttons.addEventListener('triggerdown', function (e) {
+            this.viveTriggerPressed2 = true
+          }.bind(this))
 
-        this.viveController2Buttons.addEventListener('triggerup', function (e) {
-          this.viveTriggerPressed2 = false
-        }.bind(this))
+          this.viveController2Buttons.addEventListener('triggerup', function (e) {
+            this.viveTriggerPressed2 = false
+          }.bind(this))
 
-        this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
-          this.viveController2Buttons.interactionTimeout = setTimeout(() => {
-            console.log(this.viveController2Buttons.gamepad.hand)
-
+          this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
             switch (this.viveController2Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightDPadEvents(e)
+                this.viveControllerRightDPadEventsUp(e)
                 break
               case 'left':
-                this.viveControllerLeftDPadEvents(e)
+                this.viveControllerLeftDPadEventsUp(e)
                 break
 
               default:
                 break
             }
-          }, this.config.VR.interactionTimeout)
-        }.bind(this))
+          }.bind(this))
 
-        this.viveController2Buttons.addEventListener('menudown', function (e) {
-          console.log('menudown')
-          this.viveController2Buttons.interactionTimeout = setTimeout(() => {
-            console.log(this.viveController2Buttons.gamepad.hand)
+          this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
+            this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+              console.log(this.viveController2Buttons.gamepad.hand)
 
+              switch (this.viveController2Buttons.gamepad.hand) {
+                case 'right':
+                  this.viveControllerRightDPadEvents(e)
+                  break
+                case 'left':
+                  this.viveControllerLeftDPadEvents(e)
+                  break
+
+                default:
+                  break
+              }
+            }, this.config.VR.interactionTimeout)
+          }.bind(this))
+
+          this.viveController2Buttons.addEventListener('menuup', function (e) {
             switch (this.viveController2Buttons.gamepad.hand) {
               case 'right':
-                this.viveControllerRightMenuEvents(e)
+                this.viveControllerRightMenuEventsUp(e)
                 break
               case 'left':
-                this.viveControllerLeftMenuEvents(e)
+                this.viveControllerLeftMenuEventsUp(e)
                 break
 
               default:
                 break
             }
-          }, this.config.VR.interactionTimeout)
-        }.bind(this))
+          }.bind(this))
 
-        this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
-          clearTimeout(this.viveController2Buttons.interactionTimeout)
-        }.bind(this))
+          this.viveController2Buttons.addEventListener('menudown', function (e) {
+            console.log('menudown')
+            this.viveController2Buttons.interactionTimeout = setTimeout(() => {
+              console.log(this.viveController2Buttons.gamepad.hand)
 
-        this.VRGamepad2EventsBound = true
+              switch (this.viveController2Buttons.gamepad.hand) {
+                case 'right':
+                  this.viveControllerRightMenuEvents(e)
+                  break
+                case 'left':
+                  this.viveControllerLeftMenuEvents(e)
+                  break
+
+                default:
+                  break
+              }
+            }, this.config.VR.interactionTimeout)
+          }.bind(this))
+
+          this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+            clearTimeout(this.viveController2Buttons.interactionTimeout)
+          }.bind(this))
+
+          this.VRGamepad2EventsBound = true
+        }
       }
     }
+  }
+
+  viveControllerRightDPadEventsUp (e) {
+    this.buttonPrevMat.map = this.buttonPrevMap
+    this.buttonPrevMat.needsUpdate = true
+
+    this.buttonNextMat.map = this.buttonNextMap
+    this.buttonNextMat.needsUpdate = true
+
+    this.buttonUpMat.map = this.buttonUpMap
+    this.buttonUpMat.needsUpdate = true
+
+    this.buttonDownMat.map = this.buttonDownMap
+    this.buttonDownMat.needsUpdate = true
+
+    this.buttonInfoMat.map = this.buttonInfoMap
+    this.buttonInfoMat.needsUpdate = true
+  }
+
+  viveControllerLeftDPadEventsUp (e) {
+    this.buttonLatestMat.map = this.buttonLatestMap
+    this.buttonLatestMat.needsUpdate = true
+
+    this.buttonRandomMat.map = this.buttonRandomMap
+    this.buttonRandomMat.needsUpdate = true
   }
 
   viveControllerRightDPadEvents (e) {
     // left dpad
     if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+      this.buttonPrevMat.map = this.buttonPrevMapPressed
+      this.buttonPrevMat.needsUpdate = true
       if (this.closestBlock) {
         this.toggleAutoPilotDirection('backward')
       }
@@ -2859,6 +2967,8 @@ class App extends mixin(EventEmitter, Component) {
 
     // right dpad
     if (e.axes[0] > 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
+      this.buttonNextMat.map = this.buttonNextMapPressed
+      this.buttonNextMat.needsUpdate = true
       if (this.closestBlock) {
         this.toggleAutoPilotDirection('forward')
       }
@@ -2866,11 +2976,17 @@ class App extends mixin(EventEmitter, Component) {
 
     // top dpad
     if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.buttonUpMat.map = this.buttonUpMapPressed
+      this.buttonUpMat.needsUpdate = true
+
       this.toggleTopView()
     }
 
     // bottom dpad
     if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.buttonDownMat.map = this.buttonDownMapPressed
+      this.buttonDownMat.needsUpdate = true
+
       this.toggleUndersideView()
     }
   }
@@ -2890,13 +3006,26 @@ class App extends mixin(EventEmitter, Component) {
 
     // // top dpad
     if (e.axes[1] > 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
-      this.goToBlock()
+      this.buttonLatestMat.map = this.buttonLatestMapPressed
+      this.buttonLatestMat.needsUpdate = true
+      this.goToBlock(this.maxHeight)
     }
 
     // // bottom dpad
     if (e.axes[1] < 0 && e.axes[0] < 0.5 && e.axes[0] > -0.5) {
+      this.buttonRandomMat.map = this.buttonRandomMapPressed
+      this.buttonRandomMat.needsUpdate = true
       this.goToRandomBlock()
     }
+  }
+
+  viveControllerRightMenuEventsUp (e) {
+    this.buttonInfoMat.map = this.buttonInfoMap
+    this.buttonInfoMat.needsUpdate = true
+  }
+
+  viveControllerLeftMenuEventsUp (e) {
+
   }
 
   async viveControllerLeftMenuEvents () {
@@ -2905,6 +3034,9 @@ class App extends mixin(EventEmitter, Component) {
 
   async viveControllerRightMenuEvents () {
     this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
+
+    this.buttonInfoMat.map = this.buttonInfoMapPressed
+    this.buttonInfoMat.needsUpdate = true
 
     switch (this.state.controlType) {
       case 'underside':
