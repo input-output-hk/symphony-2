@@ -119,8 +119,6 @@ class App extends mixin(EventEmitter, Component) {
     this.isNavigating = false
 
     // VR
-
-
     this.VRInteractionReady = false
     this.blockHeightTextMesh = null
     this.blockDetailsTextMesh = null
@@ -136,6 +134,7 @@ class App extends mixin(EventEmitter, Component) {
     this.viveTriggerPressed2 = false
     this.viveController1MeshGroup = new THREE.Group()
     this.viveController2MeshGroup = new THREE.Group()
+    this.VRReadyToEnd = false
     this.chapters = {
       1: {
         title: 'THE GENESIS BLOCK',
@@ -766,7 +765,7 @@ class App extends mixin(EventEmitter, Component) {
 
   initLights () {
     // this.sunLight = new THREE.DirectionalLight(0xffffff, 1.0)
-    this.sunLight = new THREE.PointLight(0xb1cdff, 2.8)
+    this.sunLight = new THREE.PointLight(0xb1cdff, 3.0)
     this.sunLight.position.set(0, 5000, 0)
     this.scene.add(this.sunLight)
 
@@ -2183,6 +2182,36 @@ class App extends mixin(EventEmitter, Component) {
       if (this.frame % 250 === 0) {
         if (this.vrActive) {
           this.bindVRGamepadEvents()
+
+          if (this.VRReadyToEnd === true && this.animatingCamera === false) {
+            let that = this
+
+            that.showVRTitleText('... AUTOPILOT ENGAGED, INITIATING FLIGHT SEQUENCE TO MEMPOOL ...')
+
+            setTimeout(() => {
+              that.prepareCamNavigation()
+              let to = new THREE.Vector3(10000, 20000, 10000)
+              that.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+
+              new TWEEN.Tween(that.camera.position)
+                .to(to, 50000)
+                .onUpdate(function () {
+                  that.camera.position.set(this.x, this.y, this.z)
+                })
+                .onComplete(async () => {
+                  that.showVRTitleText('YOU CAN ACCESS SYMPHONY AT ANY TIME IN A WEB BROWSER AT SYMPHONY.IOHK.IO')
+                  await that.audioManager.playNarrationFile('end', '1')
+
+                  // restart
+                  window.location.reload()
+                })
+                .easing(that.defaultCamEasing)
+                .start()
+
+              // that.showVRTitleText(that.chapters[6].title)
+              that.audioManager.playNarrationFile('mempool', '1')
+            }, 4000)
+          }
         }
 
         this.loadNearestBlocks()
@@ -2274,11 +2303,14 @@ class App extends mixin(EventEmitter, Component) {
 
   async playTutorial () {
     await this.audioManager.playNarrationFile('tutorial', '1')
-    // await this.audioManager.playNarrationFile('tutorial', '2')
-    // await this.audioManager.playNarrationFile('tutorial', '3')
-    // await this.audioManager.playNarrationFile('tutorial', '4')
-    // await this.audioManager.playNarrationFile('tutorial', '5')
-    // await this.audioManager.playNarrationFile('tutorial', '6')
+    await this.audioManager.playNarrationFile('tutorial', '2')
+    await this.audioManager.playNarrationFile('tutorial', '3')
+    await this.audioManager.playNarrationFile('tutorial', '4')
+    await this.audioManager.playNarrationFile('tutorial', '5')
+    await this.audioManager.playNarrationFile('tutorial', '6')
+    await this.audioManager.playNarrationFile('tutorial', '7')
+    await this.audioManager.playNarrationFile('tutorial', '8')
+    await this.audioManager.playNarrationFile('tutorial', '9')
     return true
   }
 
@@ -2435,7 +2467,9 @@ class App extends mixin(EventEmitter, Component) {
       this.goToBlock()
     } else {
       if (this.vrActive) {
-        await this.playTutorial()
+        // await this.playTutorial()
+
+        this.goToBlock()
 
         this.showVRTitleText('THIS IS THE BITCOIN BLOCKCHAIN', 5000)
         await this.audioManager.playNarrationFile('intro', '1', 3000)
@@ -2443,17 +2477,19 @@ class App extends mixin(EventEmitter, Component) {
         this.showVRTitleText('BLOCKS SPIRAL OUTWARD FROM THE CENTER, STARTING WITH THE LATEST BLOCK', 6000)
         await this.audioManager.playNarrationFile('intro', '2', 3000)
 
-        // this.showVRTitleText('A NEW BLOCK IS CREATED AROUIND EVERY 10 MINUTES', 6000)
-        // await this.audioManager.playNarrationFile('intro', '3', 3000)
+        this.showVRTitleText('A NEW BLOCK IS CREATED AROUND EVERY 10 MINUTES', 6000)
+        await this.audioManager.playNarrationFile('intro', '3', 3000)
 
-        // this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
-        // await this.audioManager.playNarrationFile('intro', '4', 3000)
+        this.showVRTitleText('THE MEMPOOL SITS AT THE CENTER, UNCONFIRMED TRANSACTIONS GATHER HERE', 6000)
+        await this.audioManager.playNarrationFile('intro', '4', 3000)
 
-        // this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
+        this.showVRTitleText(`THERE ARE ${(this.maxHeight).toLocaleString('en')} BLOCKS SO FAR...`, 6000)
 
         // this.startStory()
 
-        this.goToBlock()
+        setTimeout(async function () {
+          this.VRReadyToEnd = true
+        }.bind(this), this.config.VR.experienceLength)
       } else {
         this.setState({
           showIntro: true
@@ -2931,6 +2967,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerRightDPadEventsUp (e) {
+    if (!this.VRInteractionReady) {
+      return
+    }
+
     this.buttonPrevMat.map = this.buttonPrevMap
     this.buttonPrevMat.needsUpdate = true
 
@@ -2948,6 +2988,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerLeftDPadEventsUp (e) {
+    if (!this.VRInteractionReady) {
+      return
+    }
     this.buttonLatestMat.map = this.buttonLatestMap
     this.buttonLatestMat.needsUpdate = true
 
@@ -2956,6 +2999,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerRightDPadEvents (e) {
+    if (!this.VRInteractionReady) {
+      return
+    }
     // left dpad
     if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
       this.buttonPrevMat.map = this.buttonPrevMapPressed
@@ -2992,6 +3038,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerLeftDPadEvents (e) {
+    if (!this.VRInteractionReady) {
+      return
+    }
     //    this.advanceToNextChapter()
 
     // // left dpad
@@ -3020,6 +3069,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   viveControllerRightMenuEventsUp (e) {
+    if (!this.VRInteractionReady) {
+      return
+    }
     this.buttonInfoMat.map = this.buttonInfoMap
     this.buttonInfoMat.needsUpdate = true
   }
@@ -3033,6 +3085,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async viveControllerRightMenuEvents () {
+    if (!this.VRInteractionReady) {
+      return
+    }
     this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
 
     this.buttonInfoMat.map = this.buttonInfoMapPressed

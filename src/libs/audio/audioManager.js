@@ -518,7 +518,9 @@ export default class Audio extends EventEmitter {
         const source = this.audioContext.createBufferSource()
         source.buffer = audioBuffer
 
-        source.connect(this.convolver2)
+        // source.connect(this.convolver2)
+
+        source.connect(this.audioContext.destination)
 
         source.start()
 
