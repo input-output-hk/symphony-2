@@ -125,6 +125,8 @@ class App extends mixin(EventEmitter, Component) {
     this.txDetailsTextMesh = null
     this.WebVRLib = new WebVR() // WebVR lib
     this.vrActive = false
+    this.VRRightControllerSetup = false
+    this.VRLeftControllerSetup = false
     this.viveController1 = null
     this.controllerCam = null
     this.viveController2 = null
@@ -2183,7 +2185,7 @@ class App extends mixin(EventEmitter, Component) {
         if (this.vrActive) {
           this.bindVRGamepadEvents()
 
-          if (this.VRReadyToEnd === true && this.animatingCamera === false) {
+          if (this.VRReadyToEnd === true && this.animatingCamera === false && this.audioManager.narrationPlaying === false) {
             let that = this
 
             that.showVRTitleText('... AUTOPILOT ENGAGED, INITIATING FLIGHT SEQUENCE TO MEMPOOL ...')
@@ -2310,7 +2312,7 @@ class App extends mixin(EventEmitter, Component) {
     await this.audioManager.playNarrationFile('tutorial', '6')
     await this.audioManager.playNarrationFile('tutorial', '7')
     await this.audioManager.playNarrationFile('tutorial', '8')
-    await this.audioManager.playNarrationFile('tutorial', '9')
+    // await this.audioManager.playNarrationFile('tutorial', '9')
     return true
   }
 
@@ -2487,9 +2489,9 @@ class App extends mixin(EventEmitter, Component) {
 
         // this.startStory()
 
-        setTimeout(async function () {
+        setTimeout(() => {
           this.VRReadyToEnd = true
-        }.bind(this), this.config.VR.experienceLength)
+        }, this.config.VR.experienceLength)
       } else {
         this.setState({
           showIntro: true
@@ -2591,13 +2593,28 @@ class App extends mixin(EventEmitter, Component) {
     if (this.viveController1 && !this.VRController1EventsBound) {
       if (typeof this.viveController1.userData.inputSource !== 'undefined') {
         if (this.viveController1.userData.inputSource.handedness === 'right') {
-          this.setupRightViveController(this.viveController1, this.viveController1MeshGroup)
+          // right controller already congfigured, treat this as left controller
+          if (this.VRRightControllerSetup) {
+            this.setupLeftViveController(this.viveController1, this.viveController1MeshGroup)
+            this.VRLeftControllerSetup = true
+          } else {
+            this.setupRightViveController(this.viveController1, this.viveController1MeshGroup)
+            this.VRRightControllerSetup = true
+          }
+
           console.log('vive 1 setup')
           this.VRController1EventsBound = true
         }
 
         if (this.viveController1.userData.inputSource.handedness === 'left') {
-          this.setupLeftViveController(this.viveController1, this.viveController1MeshGroup)
+          // left controller already congfigured, treat this as right controller
+          if (this.VRLeftControllerSetup) {
+            this.setupRightViveController(this.viveController1, this.viveController1MeshGroup)
+            this.VRRightControllerSetup = true
+          } else {
+            this.setupLeftViveController(this.viveController1, this.viveController1MeshGroup)
+            this.VRLeftControllerSetup = true
+          }
           console.log('vive 1 setup')
           this.VRController1EventsBound = true
         }
@@ -2607,13 +2624,29 @@ class App extends mixin(EventEmitter, Component) {
     if (this.viveController2 && !this.VRController2EventsBound) {
       if (typeof this.viveController2.userData.inputSource !== 'undefined') {
         if (this.viveController2.userData.inputSource.handedness === 'right') {
-          this.setupRightViveController(this.viveController2, this.viveController2MeshGroup)
+          // right controller already congfigured, treat this as left controller
+          if (this.VRRightControllerSetup) {
+            this.setupLeftViveController(this.viveController2, this.viveController2MeshGroup)
+            this.VRLeftControllerSetup = true
+          } else {
+            this.setupRightViveController(this.viveController2, this.viveController2MeshGroup)
+            this.VRRightControllerSetup = true
+          }
+
           console.log('vive 2 setup')
           this.VRController2EventsBound = true
         }
 
         if (this.viveController2.userData.inputSource.handedness === 'left') {
-          this.setupLeftViveController(this.viveController2, this.viveController2MeshGroup)
+          // left controller already congfigured, treat this as right controller
+          if (this.VRLeftControllerSetup) {
+            this.setupRightViveController(this.viveController2, this.viveController2MeshGroup)
+            this.VRRightControllerSetup = true
+          } else {
+            this.setupLeftViveController(this.viveController2, this.viveController2MeshGroup)
+            this.VRLeftControllerSetup = true
+          }
+
           console.log('vive 2 setup')
           this.VRController2EventsBound = true
         }
@@ -3002,6 +3035,11 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.VRInteractionReady) {
       return
     }
+
+    if (this.animatingCamera) {
+      return
+    }
+
     // left dpad
     if (e.axes[0] < 0 && e.axes[1] < 0.5 && e.axes[1] > -0.5) {
       this.buttonPrevMat.map = this.buttonPrevMapPressed
@@ -3041,6 +3079,11 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.VRInteractionReady) {
       return
     }
+
+    if (this.animatingCamera) {
+      return
+    }
+
     //    this.advanceToNextChapter()
 
     // // left dpad
@@ -3088,30 +3131,44 @@ class App extends mixin(EventEmitter, Component) {
     if (!this.VRInteractionReady) {
       return
     }
-    this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
 
-    this.buttonInfoMat.map = this.buttonInfoMapPressed
-    this.buttonInfoMat.needsUpdate = true
-
-    switch (this.state.controlType) {
-      case 'underside':
-        await this.audioManager.playNarrationFile('merkle-tree', '1')
-        await this.audioManager.playNarrationFile('merkle-tree', '2')
-        break
-
-      case 'top':
-
-        if (this.closestHeight === this.maxHeight) {
-          await this.audioManager.playNarrationFile('latest', '1')
-        }
-
-        break
-
-      default:
-        break
+    if (this.animatingCamera) {
+      return
     }
 
-    this.audioManager.masterBus.gain.setTargetAtTime(0.8, this.audioManager.audioContext.currentTime, 2.0)
+    if (this.audioManager.narrationPlaying) {
+      this.audioManager.stopNarration()
+    } else {
+      this.audioManager.masterBus.gain.setTargetAtTime(0.1, this.audioManager.audioContext.currentTime, 2.0)
+
+      this.buttonInfoMat.map = this.buttonInfoMapPressed
+      this.buttonInfoMat.needsUpdate = true
+
+      switch (this.state.controlType) {
+        case 'underside':
+          await this.audioManager.playNarrationFile('merkle-tree', '1')
+          await this.audioManager.playNarrationFile('merkle-tree', '2')
+          break
+
+        case 'top':
+
+          if (this.closestHeight === this.maxHeight) {
+            await this.audioManager.playNarrationFile('latest', '1')
+          } else {
+            await this.audioManager.playNarrationFile('transactions', '1')
+            await this.audioManager.playNarrationFile('transactions', '2')
+            await this.audioManager.playNarrationFile('transactions', '3')
+            await this.audioManager.playNarrationFile('transactions', '4')
+          }
+
+          break
+
+        default:
+          break
+      }
+
+      this.audioManager.masterBus.gain.setTargetAtTime(0.8, this.audioManager.audioContext.currentTime, 2.0)
+    }
   }
 
   sendWsMessage (message) {

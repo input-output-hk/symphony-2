@@ -331,6 +331,7 @@ export default class Audio extends EventEmitter {
     }
 
     this.narrationFilePath = 'assets/sounds/narration/'
+    this.narrationSource = null
   }
 
   startAudio (blockData, arrayBuffers) {
@@ -515,16 +516,16 @@ export default class Audio extends EventEmitter {
         let arrayBuffer = await response.arrayBuffer()
         let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
 
-        const source = this.audioContext.createBufferSource()
-        source.buffer = audioBuffer
+        this.narrationSource = this.audioContext.createBufferSource()
+        this.narrationSource.buffer = audioBuffer
 
         // source.connect(this.convolver2)
 
-        source.connect(this.audioContext.destination)
+        this.narrationSource.connect(this.audioContext.destination)
 
-        source.start()
+        this.narrationSource.start()
 
-        source.onended = async (e) => {
+        this.narrationSource.onended = async (e) => {
           setTimeout(() => {
             this.narrationPlaying = false
             resolve(true)
@@ -532,5 +533,13 @@ export default class Audio extends EventEmitter {
         }
       }
     })
+  }
+
+  stopNarration () {
+    if (!this.narrationPlaying) {
+      return
+    }
+
+    this.narrationSource.stop()
   }
 }
