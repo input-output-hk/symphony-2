@@ -2469,7 +2469,7 @@ class App extends mixin(EventEmitter, Component) {
       this.goToBlock()
     } else {
       if (this.vrActive) {
-        // await this.playTutorial()
+        await this.playTutorial()
 
         this.goToBlock()
 
@@ -2830,170 +2830,200 @@ class App extends mixin(EventEmitter, Component) {
     this.setupViveControllers()
 
     if (!this.VRGamepad1EventsBound) {
-      if (this.viveController1Buttons.gamepad) {
-        if (this.viveController1Buttons.gamepad.hand === 'left' || this.viveController1Buttons.gamepad.hand === 'right') {
-          this.viveController1Buttons.addEventListener('triggerdown', function (e) {
-            this.viveTriggerPressed1 = true
-          }.bind(this))
+      let that = this
+      if (that.viveController1Buttons.gamepad) {
+        if (that.viveController1Buttons.gamepad.hand === 'left' || that.viveController1Buttons.gamepad.hand === 'right') {
+          that.viveController1Buttons.addEventListener('triggerdown', function (e) {
+            that.viveTriggerPressed1 = true
+          })
 
-          this.viveController1Buttons.addEventListener('triggerup', function (e) {
-            this.viveTriggerPressed1 = false
-          }.bind(this))
+          that.viveController1Buttons.addEventListener('triggerup', function (e) {
+            that.viveTriggerPressed1 = false
+          })
 
-          this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
-            switch (this.viveController1Buttons.gamepad.hand) {
-              case 'right':
-                this.viveControllerRightDPadEventsUp(e)
-                break
-              case 'left':
-                this.viveControllerLeftDPadEventsUp(e)
-                break
+          switch (that.viveController1Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+                that.viveControllerRightDPadEventsUp(e)
+              })
+              break
+            case 'left':
+              that.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+                that.viveControllerLeftDPadEventsUp(e)
+              })
+              break
 
-              default:
-                break
-            }
-          }.bind(this))
+            default:
+              break
+          }
 
-          this.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
-            this.viveController1Buttons.interactionTimeout = setTimeout(() => {
-              console.log(this.viveController1Buttons.gamepad.hand)
-              switch (this.viveController1Buttons.gamepad.hand) {
-                case 'right':
-                  this.viveControllerRightDPadEvents(e)
-                  break
-                case 'left':
-                  this.viveControllerLeftDPadEvents(e)
-                  break
+          switch (that.viveController1Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
+                that.viveController1Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController1Buttons.gamepad.hand)
+                  that.viveControllerRightDPadEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
+            case 'left':
+              that.viveController1Buttons.addEventListener('thumbpaddown', function (e) {
+                that.viveController1Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController1Buttons.gamepad.hand)
+                  that.viveControllerLeftDPadEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
 
-                default:
-                  break
-              }
-            }, this.config.VR.interactionTimeout)
-          }.bind(this))
+              break
 
-          this.viveController1Buttons.addEventListener('menuup', function (e) {
-            switch (this.viveController1Buttons.gamepad.hand) {
-              case 'right':
-                this.viveControllerRightMenuEventsUp(e)
-                break
-              case 'left':
-                this.viveControllerLeftMenuEventsUp(e)
-                break
+            default:
+              break
+          }
 
-              default:
-                break
-            }
-          }.bind(this))
+          switch (that.viveController1Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController1Buttons.addEventListener('menuup', function (e) {
+                that.viveControllerRightMenuEventsUp(e)
+              })
+              break
+            case 'left':
+              that.viveController1Buttons.addEventListener('menuup', function (e) {
+                that.viveControllerLeftMenuEventsUp(e)
+              })
+              break
 
-          this.viveController1Buttons.addEventListener('menudown', function (e) {
-            console.log('menudown')
-            this.viveController1Buttons.interactionTimeout = setTimeout(() => {
-              console.log(this.viveController1Buttons.gamepad.hand)
+            default:
+              break
+          }
 
-              switch (this.viveController1Buttons.gamepad.hand) {
-                case 'right':
-                  this.viveControllerRightMenuEvents(e)
-                  break
-                case 'left':
-                  this.viveControllerLeftMenuEvents(e)
-                  break
+          switch (that.viveController1Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController1Buttons.addEventListener('menudown', function (e) {
+                console.log('menudown')
+                that.viveController1Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController1Buttons.gamepad.hand)
+                  that.viveControllerRightMenuEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
+            case 'left':
+              that.viveController1Buttons.addEventListener('menudown', function (e) {
+                console.log('menudown')
+                that.viveController1Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController1Buttons.gamepad.hand)
+                  that.viveControllerLeftMenuEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
 
-                default:
-                  break
-              }
-            }, this.config.VR.interactionTimeout)
-          }.bind(this))
+            default:
+              break
+          }
 
-          this.viveController1Buttons.addEventListener('thumbpadup', function (e) {
-            clearTimeout(this.viveController1Buttons.interactionTimeout)
-          }.bind(this))
+          that.viveController1Buttons.addEventListener('thumbpadup', function (e) {
+            clearTimeout(that.viveController1Buttons.interactionTimeout)
+          })
 
-          this.VRGamepad1EventsBound = true
+          that.VRGamepad1EventsBound = true
         }
       }
     }
 
     if (!this.VRGamepad2EventsBound) {
-      if (this.viveController2Buttons.gamepad) {
-        if (this.viveController2Buttons.gamepad.hand === 'left' || this.viveController2Buttons.gamepad.hand === 'right') {
-          this.viveController2Buttons.addEventListener('triggerdown', function (e) {
-            this.viveTriggerPressed2 = true
-          }.bind(this))
+      let that = this
+      if (that.viveController2Buttons.gamepad) {
+        if (that.viveController2Buttons.gamepad.hand === 'left' || that.viveController2Buttons.gamepad.hand === 'right') {
+          that.viveController2Buttons.addEventListener('triggerdown', function (e) {
+            that.viveTriggerPressed2 = true
+          })
 
-          this.viveController2Buttons.addEventListener('triggerup', function (e) {
-            this.viveTriggerPressed2 = false
-          }.bind(this))
+          that.viveController2Buttons.addEventListener('triggerup', function (e) {
+            that.viveTriggerPressed2 = false
+          })
 
-          this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
-            switch (this.viveController2Buttons.gamepad.hand) {
-              case 'right':
-                this.viveControllerRightDPadEventsUp(e)
-                break
-              case 'left':
-                this.viveControllerLeftDPadEventsUp(e)
-                break
+          switch (that.viveController2Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+                that.viveControllerRightDPadEventsUp(e)
+              })
+              break
+            case 'left':
+              that.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+                that.viveControllerLeftDPadEventsUp(e)
+              })
+              break
 
-              default:
-                break
-            }
-          }.bind(this))
+            default:
+              break
+          }
 
-          this.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
-            this.viveController2Buttons.interactionTimeout = setTimeout(() => {
-              console.log(this.viveController2Buttons.gamepad.hand)
+          switch (that.viveController2Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
+                that.viveController2Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController2Buttons.gamepad.hand)
+                  that.viveControllerRightDPadEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
+            case 'left':
+              that.viveController2Buttons.addEventListener('thumbpaddown', function (e) {
+                that.viveController2Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController2Buttons.gamepad.hand)
+                  that.viveControllerLeftDPadEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
 
-              switch (this.viveController2Buttons.gamepad.hand) {
-                case 'right':
-                  this.viveControllerRightDPadEvents(e)
-                  break
-                case 'left':
-                  this.viveControllerLeftDPadEvents(e)
-                  break
+            default:
+              break
+          }
 
-                default:
-                  break
-              }
-            }, this.config.VR.interactionTimeout)
-          }.bind(this))
+          switch (that.viveController2Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController2Buttons.addEventListener('menuup', function (e) {
+                that.viveControllerRightMenuEventsUp(e)
+              })
+              break
+            case 'left':
+              that.viveController2Buttons.addEventListener('menuup', function (e) {
+                that.viveControllerLeftMenuEventsUp(e)
+              })
+              break
 
-          this.viveController2Buttons.addEventListener('menuup', function (e) {
-            switch (this.viveController2Buttons.gamepad.hand) {
-              case 'right':
-                this.viveControllerRightMenuEventsUp(e)
-                break
-              case 'left':
-                this.viveControllerLeftMenuEventsUp(e)
-                break
+            default:
+              break
+          }
 
-              default:
-                break
-            }
-          }.bind(this))
+          switch (that.viveController2Buttons.gamepad.hand) {
+            case 'right':
+              that.viveController2Buttons.addEventListener('menudown', function (e) {
+                console.log('menudown')
+                that.viveController2Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController2Buttons.gamepad.hand)
+                  that.viveControllerRightMenuEvents(e)
+                }, that.config.VR.interactionTimeout)
+              })
+              break
+            case 'left':
+              that.viveController2Buttons.addEventListener('menudown', function (e) {
+                console.log('menudown')
+                that.viveController2Buttons.interactionTimeout = setTimeout(() => {
+                  console.log(that.viveController2Buttons.gamepad.hand)
+                }, that.config.VR.interactionTimeout)
+                that.viveControllerLeftMenuEvents(e)
+              })
+              break
 
-          this.viveController2Buttons.addEventListener('menudown', function (e) {
-            console.log('menudown')
-            this.viveController2Buttons.interactionTimeout = setTimeout(() => {
-              console.log(this.viveController2Buttons.gamepad.hand)
+            default:
+              break
+          }
 
-              switch (this.viveController2Buttons.gamepad.hand) {
-                case 'right':
-                  this.viveControllerRightMenuEvents(e)
-                  break
-                case 'left':
-                  this.viveControllerLeftMenuEvents(e)
-                  break
+          that.viveController2Buttons.addEventListener('thumbpadup', function (e) {
+            clearTimeout(that.viveController2Buttons.interactionTimeout)
+          })
 
-                default:
-                  break
-              }
-            }, this.config.VR.interactionTimeout)
-          }.bind(this))
-
-          this.viveController2Buttons.addEventListener('thumbpadup', function (e) {
-            clearTimeout(this.viveController2Buttons.interactionTimeout)
-          }.bind(this))
-
-          this.VRGamepad2EventsBound = true
+          that.VRGamepad2EventsBound = true
         }
       }
     }
