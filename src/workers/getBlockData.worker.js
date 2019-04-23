@@ -62,7 +62,9 @@ self.addEventListener('message', async function (e) {
         if (heightsToUpdate.indexOf(data.height) === -1) {
           heightsToUpdate.push(data.height)
         }
-        await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+        if (heightsToUpdate.length > 0) {
+          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+        }
       }
 
       if (typeof blockData === 'undefined') {

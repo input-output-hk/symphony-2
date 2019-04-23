@@ -97,7 +97,9 @@ self.addEventListener('message', async function (e) {
           if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
             heightsToUpdate.push(blockDetails.height)
           }
-          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          if (heightsToUpdate.length > 0) {
+            await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          }
         }
 
         if (blockDetails.tx[0].index === 0) {
@@ -111,7 +113,9 @@ self.addEventListener('message', async function (e) {
           if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
             heightsToUpdate.push(blockDetails.height)
           }
-          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          if (heightsToUpdate.length > 0) {
+            await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          }
         }
 
         blockHeightIndexes[ii] = blockDetails.height

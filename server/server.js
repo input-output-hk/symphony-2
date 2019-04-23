@@ -9,6 +9,7 @@ const Seedrandom = require('seedrandom')
 const THREE = require('three')
 
 const config = require('./config')
+const merkleTools = require('./utils/merkleTools')
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -19,7 +20,8 @@ const admin = require('firebase-admin')
 const serviceAccount = require('./auth/' + config.FBFilename)
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: 'webgl-gource-1da99.appspot.com'
 })
 
 const firebaseDB = admin.firestore()
@@ -305,7 +307,7 @@ const blockUpdateRoutine = async function () {
       let snapshotGeo = await blockRefGeo.get()
 
       if (!snapshotGeo.exists) {
-        let blockGeoData = await saveGeometry(blockData)
+        saveGeometry(blockData)
       }
     } catch (error) {
       console.log(error)
@@ -326,7 +328,7 @@ const blockUpdateRoutine = async function () {
   } else {
     setTimeout(() => {
       blockUpdateRoutine()
-    }, 10000)
+    }, 100000)
   }
 }
 
@@ -337,14 +339,14 @@ const asyncForEach = async function (array, callback) {
 }
 
 // script to run periodically to update the db with latest blocks
-app.get('/api/updateDB', (req, res) => {
+app.get('/api2/updateDB', (req, res) => {
   blockUpdateRoutine()
 
   res.send({ express: 'Updating...' })
 })
 
 // script to run periodically to update historical block data
-app.get('/api/updateChangedBlocks', async (req, res) => {
+app.get('/api2/updateChangedBlocks', async (req, res) => {
   // get array of blocks to update
   let ref = docRefUpdate.limit(1)
   let snapshots = await ref.get()
@@ -358,6 +360,30 @@ app.get('/api/updateChangedBlocks', async (req, res) => {
   await docRefUpdate.doc('heights').set({heights: []}, { merge: false })
 
   res.send({ express: 'Updating...' })
+})
+
+app.get('/api2/canvas', async (req, res) => {
+  let canvasSize = 1024
+  const { createCanvas } = require('canvas')
+  const canvas = createCanvas(canvasSize, canvasSize)
+
+  let hash = '000000000000000000c6cc460157d3a1193476d2e5af69fe45f6c6003dbbffa3'
+
+  let bucket = admin.storage().bucket('bitcoin_circuits_TEST')
+
+  let blockRef = docRef.doc(hash)
+  let snapshot = await blockRef.get()
+  let blockData = snapshot.data()
+
+  let blockRefGeo = docRefGeo.doc(hash)
+  let snapshotGeo = await blockRefGeo.get()
+  let blockOffsets = JSON.parse(snapshotGeo.data().offsets)
+
+  merkleTools.drawMerkleCanvas(canvas, blockData, blockData.n_tx, canvasSize, blockOffsets)
+
+  let dataUrl = canvas.toDataURL()
+
+  res.send('<img src="' + dataUrl + '" />')
 })
 
 app.listen(port, () => console.log(`Listening on port ${port}`))
