@@ -20,6 +20,7 @@ self.addEventListener('message', async function (e) {
       firebase.firestore()
       const firebaseDB = firebase.firestore()
       const docRef = firebaseDB.collection('bitcoin_blocks')
+      const docRefUpdate = firebaseDB.collection('bitcoin_update')
 
       firebase.auth().signInAnonymously().catch(function (error) {
         console.log(error.code)
@@ -42,10 +43,9 @@ self.addEventListener('message', async function (e) {
         shouldCache = true
       } else {
         blockData = snapshot.data()
-        // check if block was cached more than a month ago
-        // if (moment().valueOf() - blockData.cacheTime.toMillis() > 2419200000) {
-        if (moment().valueOf() - blockData.cacheTime.toMillis() > 2419200000) {
-          console.log('Block: ' + data.hash + ' is out of date, re-adding')
+        // check if block was cached more than a week ago
+        if (moment().valueOf() - blockData.cacheTime.toMillis() > 604800000) {
+          // console.log('Block: ' + data.hash + ' is out of date, marked for update')
           shouldCache = true
         }
       }
@@ -53,8 +53,16 @@ self.addEventListener('message', async function (e) {
       if (!shouldCache) {
         console.log('Block data for: ' + data.hash + ' returned from cache')
       } else {
-        // blockData = await blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
-        blockDataHelper.cacheBlockData(data.hash, docRef, data.heightToLoad)
+        let snapshots = await docRefUpdate.get()
+        let heightsToUpdate = []
+        snapshots.forEach(snapshot => {
+          let updateDataArr = snapshot.data()
+          heightsToUpdate = updateDataArr.heights
+        })
+        if (heightsToUpdate.indexOf(data.height) === -1) {
+          heightsToUpdate.push(data.height)
+        }
+        await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
       }
 
       if (typeof blockData === 'undefined') {

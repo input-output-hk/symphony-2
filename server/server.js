@@ -26,6 +26,7 @@ const firebaseDB = admin.firestore()
 const docRef = firebaseDB.collection('bitcoin_blocks')
 const docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
 const docRefProgress = firebaseDB.collection('bitcoin_progress')
+const docRefUpdate = firebaseDB.collection('bitcoin_update')
 
 const planeSize = 500
 
@@ -335,9 +336,26 @@ const asyncForEach = async function (array, callback) {
   }
 }
 
-// script to run periodically to update the db with latest commits
+// script to run periodically to update the db with latest blocks
 app.get('/api/updateDB', (req, res) => {
   blockUpdateRoutine()
+
+  res.send({ express: 'Updating...' })
+})
+
+// script to run periodically to update historical block data
+app.get('/api/updateChangedBlocks', async (req, res) => {
+  // get array of blocks to update
+  let ref = docRefUpdate.limit(1)
+  let snapshots = await ref.get()
+  snapshots.forEach(async snapshot => {
+    let heights = snapshot.data().heights
+    await asyncForEach(heights, async (height) => {
+      await cacheBlockData(height)
+    })
+  })
+
+  await docRefUpdate.doc('heights').set({heights: []}, { merge: false })
 
   res.send({ express: 'Updating...' })
 })

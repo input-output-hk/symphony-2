@@ -11,6 +11,7 @@ import BlockDataHelper from '../helpers/BlockDataHelper'
 let firebaseDB
 let docRef
 let docRefGeo
+let docRefUpdate
 
 self.addEventListener('message', async function (e) {
   let data = e.data
@@ -26,6 +27,7 @@ self.addEventListener('message', async function (e) {
       firebaseDB = firebase.firestore()
       docRef = firebaseDB.collection('bitcoin_blocks')
       docRefGeo = firebaseDB.collection('bitcoin_blocks_geometry')
+      docRefUpdate = firebaseDB.collection('bitcoin_update')
 
       firebase.auth().signInAnonymously().catch(function (error) {
         console.log(error.code)
@@ -84,14 +86,32 @@ self.addEventListener('message', async function (e) {
 
       let ii = 0
       await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
-        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 2419200000) {
-          console.log('Block: ' + blockDetails.hash + ' is out of date, re-adding')
-          blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
+        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
+          // console.log('Block: ' + blockDetails.hash + ' is out of date, marked for update')
+          let snapshots = await docRefUpdate.get()
+          let heightsToUpdate = []
+          snapshots.forEach(snapshot => {
+            let updateDataArr = snapshot.data()
+            heightsToUpdate = updateDataArr.heights
+          })
+          if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
+            heightsToUpdate.push(blockDetails.height)
+          }
+          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
         }
 
         if (blockDetails.tx[0].index === 0) {
-          console.log('Block: ' + blockDetails.hash + ' data incomplete, re-adding')
-          blockDataHelper.cacheBlockData(blockDetails.hash, docRef, blockDetails.height)
+          // console.log('Block: ' + blockDetails.hash + ' data incomplete, marked for update')
+          let snapshots = await docRefUpdate.get()
+          let heightsToUpdate = []
+          snapshots.forEach(snapshot => {
+            let updateDataArr = snapshot.data()
+            heightsToUpdate = updateDataArr.heights
+          })
+          if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
+            heightsToUpdate.push(blockDetails.height)
+          }
+          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
         }
 
         blockHeightIndexes[ii] = blockDetails.height
