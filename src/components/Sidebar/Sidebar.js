@@ -43,10 +43,7 @@ export default class WebVRButton extends Component {
               <span onClick={this.props.toggleBlockSearch}>Locate Block</span>
               <span onClick={this.props.toggleTxSearch}>Locate Transaction</span>
               <span onClick={this.props.goToRandomBlock}>Random Block</span>
-            </li>
-            <li>
-              <button className='calendar' onClick={this.props.toggleSidebar} />
-              <span onClick={this.props.toggleDateSearch}>Jump to Date</span>
+              <span onClick={() => { this.props.goToBlock(this.props.maxHeight) }}>Latest Block</span>
             </li>
           </ul>
         </div>

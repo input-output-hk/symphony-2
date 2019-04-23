@@ -4151,7 +4151,9 @@ class App extends mixin(EventEmitter, Component) {
           toggleTxSearch={this.toggleTxSearch.bind(this)}
           goToRandomBlock={this.goToRandomBlock.bind(this)}
           toggleDateSearch={this.toggleDateSearch.bind(this)}
+          goToBlock={this.goToBlock.bind(this)}
           sidebarOpen={this.state.sidebarOpen}
+          maxHeight={this.maxHeight}
         />
         {this.UITXSearchBox()}
         {this.UIBlockSearchBox()}
