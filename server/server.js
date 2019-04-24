@@ -105,7 +105,6 @@ const cacheBlockData = async function (height) {
     try {
       await docRef.doc(block.hash).set(block, { merge: false })
       console.log('Block data for: ' + block.hash + ' successfully written!')
-      await createMerkleCircuit(block.hash)
     } catch (error) {
       console.log(error)
     }
@@ -116,144 +115,147 @@ const cacheBlockData = async function (height) {
 }
 
 const saveGeometry = async function (blockData) {
-  console.log('Block geo data: ' + blockData.hash + ' does not exist in the db, adding...')
-  let pointCount = Math.max(blockData.n_tx, 4)
+  return new Promise(async (resolve, reject) => {
+    console.log('Block geo data: ' + blockData.hash + ' does not exist in the db, adding...')
+    let pointCount = Math.max(blockData.n_tx, 4)
 
-  const simplex = new SimplexNoise(blockData.height)
+    const simplex = new SimplexNoise(blockData.height)
 
-  voronoi = new Voronoi()
+    voronoi = new Voronoi()
 
-  let sites = []
+    let sites = []
 
-  let prng = new Seedrandom(blockData.height)
+    let prng = new Seedrandom(blockData.height)
 
-  for (let index = 0; index < pointCount; index++) {
-    let found = false
-    let x = 0
-    let y = 0
+    for (let index = 0; index < pointCount; index++) {
+      let found = false
+      let x = 0
+      let y = 0
 
-    while (found === false) {
-      x = Math.floor(prng() * planeSize - (planeSize / 2))
-      y = Math.floor(prng() * planeSize - (planeSize / 2))
+      while (found === false) {
+        x = Math.floor(prng() * planeSize - (planeSize / 2))
+        y = Math.floor(prng() * planeSize - (planeSize / 2))
 
-      let noiseVal = simplex.noise2D(x / 300, y / 300)
+        let noiseVal = simplex.noise2D(x / 300, y / 300)
 
-      if (((prng() * 5) * noiseVal) > -0.3) {
-        let exists = false
-        for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
-          const site = sites[existsIndex]
-          if (site.x === x && site.y === y) {
-            exists = true
-            break
+        if (((prng() * 5) * noiseVal) > -0.3) {
+          let exists = false
+          for (let existsIndex = 0; existsIndex < sites.length; existsIndex++) {
+            const site = sites[existsIndex]
+            if (site.x === x && site.y === y) {
+              exists = true
+              break
+            }
+          }
+          if (!exists) {
+            found = true
           }
         }
-        if (!exists) {
-          found = true
+      }
+      sites.push({x: x, y: y})
+    }
+
+    let voronoiDiagram = voronoi.compute(sites, {
+      xl: -planeSize / 2,
+      xr: planeSize / 2,
+      yt: -planeSize / 2,
+      yb: planeSize / 2
+    })
+
+    // work out network health
+    let feeToValueRatio = 0
+    if (blockData.outputTotal !== 0) {
+      feeToValueRatio = blockData.fee / blockData.outputTotal
+    }
+
+    let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
+    if (blockHealth < 0) {
+      blockHealth = 0
+    }
+
+    let relaxIterations = Math.round(blockHealth)
+
+    if (blockData.n_tx > 1) {
+      for (let index = 0; index < relaxIterations; index++) {
+        try {
+          voronoiDiagram = relaxSites(voronoiDiagram)
+        } catch (error) {
+          console.log(error)
         }
       }
     }
-    sites.push({x: x, y: y})
-  }
 
-  let voronoiDiagram = voronoi.compute(sites, {
-    xl: -planeSize / 2,
-    xr: planeSize / 2,
-    yt: -planeSize / 2,
-    yb: planeSize / 2
-  })
+    let offsets = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx * 2), 2)
+    let scales = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx), 1)
 
-  // work out network health
-  let feeToValueRatio = 0
-  if (blockData.outputTotal !== 0) {
-    feeToValueRatio = blockData.fee / blockData.outputTotal
-  }
-
-  let blockHealth = map(feeToValueRatio, 0, 0.0001, 20, 0)
-  if (blockHealth < 0) {
-    blockHealth = 0
-  }
-
-  let relaxIterations = Math.round(blockHealth)
-
-  if (blockData.n_tx > 1) {
-    for (let index = 0; index < relaxIterations; index++) {
-      try {
-        voronoiDiagram = relaxSites(voronoiDiagram)
-      } catch (error) {
-        console.log(error)
-      }
-    }
-  }
-
-  let offsets = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx * 2), 2)
-  let scales = new THREE.InstancedBufferAttribute(new Float32Array(blockData.n_tx), 1)
-
-  for (let i = 0; i < blockData.n_tx; i++) {
+    for (let i = 0; i < blockData.n_tx; i++) {
     // if (typeof blockData.tx[i] === 'undefined') {
     //   continue
     // }
-    let cell = voronoiDiagram.cells[i]
+      let cell = voronoiDiagram.cells[i]
 
-    let site = new THREE.Vector2(cell.site.x, cell.site.y)
+      let site = new THREE.Vector2(cell.site.x, cell.site.y)
 
-    // look at all adjacent cells and get the closest site to this site
-    let minDistToSite = Number.MAX_SAFE_INTEGER
+      // look at all adjacent cells and get the closest site to this site
+      let minDistToSite = Number.MAX_SAFE_INTEGER
 
-    cell.halfedges.forEach((halfEdge) => {
-      if (halfEdge.edge.rSite !== null) {
-        let distanceToSiteSq = new THREE.Vector2(halfEdge.edge.rSite.x, halfEdge.edge.rSite.y).distanceToSquared(site)
-        if (distanceToSiteSq > 0) {
-          minDistToSite = Math.min(minDistToSite, distanceToSiteSq)
+      cell.halfedges.forEach((halfEdge) => {
+        if (halfEdge.edge.rSite !== null) {
+          let distanceToSiteSq = new THREE.Vector2(halfEdge.edge.rSite.x, halfEdge.edge.rSite.y).distanceToSquared(site)
+          if (distanceToSiteSq > 0) {
+            minDistToSite = Math.min(minDistToSite, distanceToSiteSq)
+          }
         }
-      }
-      if (halfEdge.edge.lSite !== null) {
-        let distanceToSiteSq = new THREE.Vector2(halfEdge.edge.lSite.x, halfEdge.edge.lSite.y).distanceToSquared(site)
-        if (distanceToSiteSq > 0) {
-          minDistToSite = Math.min(minDistToSite, distanceToSiteSq)
+        if (halfEdge.edge.lSite !== null) {
+          let distanceToSiteSq = new THREE.Vector2(halfEdge.edge.lSite.x, halfEdge.edge.lSite.y).distanceToSquared(site)
+          if (distanceToSiteSq > 0) {
+            minDistToSite = Math.min(minDistToSite, distanceToSiteSq)
+          }
         }
+      })
+
+      let radius = Math.sqrt(minDistToSite) * 0.5
+
+      let planeXEdgeDist = (planeSize / 2) - Math.abs(site.x)
+      let planeYEdgeDist = (planeSize / 2) - Math.abs(site.y)
+
+      if (planeXEdgeDist < radius) {
+        radius = planeXEdgeDist
       }
-    })
+      if (planeYEdgeDist < radius) {
+        radius = planeYEdgeDist
+      }
 
-    let radius = Math.sqrt(minDistToSite) * 0.5
+      offsets.setXY(
+        i,
+        site.x,
+        site.y
+      )
 
-    let planeXEdgeDist = (planeSize / 2) - Math.abs(site.x)
-    let planeYEdgeDist = (planeSize / 2) - Math.abs(site.y)
-
-    if (planeXEdgeDist < radius) {
-      radius = planeXEdgeDist
+      scales.setX(
+        i,
+        radius
+      )
     }
-    if (planeYEdgeDist < radius) {
-      radius = planeYEdgeDist
+
+    let geoData = {
+      offsets: offsets.array,
+      scales: scales.array
     }
 
-    offsets.setXY(
-      i,
-      site.x,
-      site.y
-    )
+    try {
+      await docRefGeo.doc(blockData.hash).set({
+        offsets: JSON.stringify(geoData.offsets),
+        scales: JSON.stringify(geoData.scales),
+        height: blockData.height
+      }, { merge: true })
+      console.log('Geo data for block: ' + blockData.hash + ' successfully written')
+    } catch (error) {
+      console.log('Error writing document: ', error)
+    }
 
-    scales.setX(
-      i,
-      radius
-    )
-  }
-
-  let geoData = {
-    offsets: offsets.array,
-    scales: scales.array
-  }
-
-  try {
-    await docRefGeo.doc(blockData.hash).set({
-      offsets: JSON.stringify(geoData.offsets),
-      scales: JSON.stringify(geoData.scales),
-      height: blockData.height
-    }, { merge: true })
-    console.log('Geo data for block: ' + blockData.hash + ' successfully written')
-  } catch (error) {
-    console.log('Error writing document: ', error)
-  }
-  return geoData
+    resolve(geoData)
+  })
 }
 
 const getLatestAddedHeight = async function () {
@@ -308,7 +310,8 @@ const blockUpdateRoutine = async function () {
       let snapshotGeo = await blockRefGeo.get()
 
       if (!snapshotGeo.exists) {
-        saveGeometry(blockData)
+        await saveGeometry(blockData)
+        createMerkleCircuit(block.hash)
       }
     } catch (error) {
       console.log(error)
@@ -354,7 +357,8 @@ app.get('/api2/updateChangedBlocks', async (req, res) => {
   snapshots.forEach(async snapshot => {
     let heights = snapshot.data().heights
     await asyncForEach(heights, async (height) => {
-      await cacheBlockData(height)
+      let block = await cacheBlockData(height)
+      createMerkleCircuit(block.hash)
     })
   })
 

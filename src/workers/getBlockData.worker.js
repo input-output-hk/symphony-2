@@ -63,7 +63,11 @@ self.addEventListener('message', async function (e) {
           heightsToUpdate.push(data.height)
         }
         if (heightsToUpdate.length > 0) {
-          await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          try {
+            await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+          } catch (error) {
+            console.log(error)
+          }
         }
       }
 

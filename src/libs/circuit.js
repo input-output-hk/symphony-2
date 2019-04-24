@@ -50,6 +50,7 @@ export default class Circuit extends EventEmitter {
       existingCanvasRef.getDownloadURL().then(function (url) {
         that.textureLoader.load(url, resolve)
       }).catch(function () {
+        resolve()
 
         /*
         if (this.offscreenMode) {

@@ -3328,10 +3328,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.updateClosestTrees()
 
-    this.group.position.x = this.originOffset.x
-    this.group.position.z = this.originOffset.y
-    this.updateOriginOffsets()
-
     if (typeof this.audioManager.buffers[this.closestBlock.blockData.height] === 'undefined') {
       this.audioManager.generate(this.closestBlock.blockData, this.closestBlockTXValues, this.closestBlockSpentRatios)
       this.crystalGenerator.updateBlockStartTimes(this.closestBlock.blockData)
@@ -3347,6 +3343,10 @@ class App extends mixin(EventEmitter, Component) {
 
     const nTX1 = this.closestBlock.blockData.n_tx
     undersideTexture1 = await this.circuit.draw(nTX1, this.closestBlock, this.closestBlockOffsets2D)
+
+    this.group.position.x = this.originOffset.x
+    this.group.position.z = this.originOffset.y
+    this.updateOriginOffsets()
 
     if (typeof prevBlock !== 'undefined') {
       if (typeof this.audioManager.buffers[prevBlock.blockData.height] === 'undefined') {
