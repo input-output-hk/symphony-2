@@ -105,6 +105,7 @@ const cacheBlockData = async function (height) {
     try {
       await docRef.doc(block.hash).set(block, { merge: false })
       console.log('Block data for: ' + block.hash + ' successfully written!')
+      await createMerkleCircuit(block.hash)
     } catch (error) {
       console.log(error)
     }
@@ -362,14 +363,10 @@ app.get('/api2/updateChangedBlocks', async (req, res) => {
   res.send({ express: 'Updating...' })
 })
 
-app.get('/api2/canvas', async (req, res) => {
+const createMerkleCircuit = async function (hash) {
   let canvasSize = 1024
   const { createCanvas } = require('canvas')
   const canvas = createCanvas(canvasSize, canvasSize)
-
-  let hash = '000000000000000000c6cc460157d3a1193476d2e5af69fe45f6c6003dbbffa3'
-
-  let bucket = admin.storage().bucket('bitcoin_circuits_TEST')
 
   let blockRef = docRef.doc(hash)
   let snapshot = await blockRef.get()
@@ -381,9 +378,46 @@ app.get('/api2/canvas', async (req, res) => {
 
   merkleTools.drawMerkleCanvas(canvas, blockData, blockData.n_tx, canvasSize, blockOffsets)
 
-  let dataUrl = canvas.toDataURL()
+  const {Storage} = require('@google-cloud/storage')
+  const storage = new Storage({
+    keyFilename: './auth/' + config.FBFilename,
+    projectId: 'webgl-gource-1da99.appspot.com'
+  })
 
-  res.send('<img src="' + dataUrl + '" />')
+  let bucket = storage.bucket('webgl-gource-1da99.appspot.com')
+  let file = bucket.file('bitcoin_circuits' + '/' + hash + '.png')
+
+  file.exists().then((data) => {
+    let exists = data[0]
+
+    if (!exists) {
+      const canvasBuffer = canvas.toBuffer()
+
+      const blobStream = file.createWriteStream({
+        metadata: {
+          contentType: 'image/png'
+        }
+      })
+
+      blobStream.on('error', (error) => {
+        console.log(error)
+      })
+
+      blobStream.on('finish', () => {
+        console.log('file uploaded')
+        return true
+      })
+
+      blobStream.end(canvasBuffer)
+    } else {
+      console.log('file exists')
+    }
+  })
+}
+
+app.get('/api2/canvas', async (req, res) => {
+  await createMerkleCircuit('000000001cf4dddb159bdd979833f3163c24cc345adba71ddddd5e57717182b5')
+  res.send('Generating Merkle Circuit Image...')
 })
 
 app.listen(port, () => console.log(`Listening on port ${port}`))

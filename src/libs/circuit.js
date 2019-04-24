@@ -50,6 +50,8 @@ export default class Circuit extends EventEmitter {
       existingCanvasRef.getDownloadURL().then(function (url) {
         that.textureLoader.load(url, resolve)
       }).catch(function () {
+
+        /*
         if (this.offscreenMode) {
           const circuitWorker = new CircuitWorker()
           circuitWorker.onmessage = async ({ data }) => {
@@ -82,8 +84,8 @@ export default class Circuit extends EventEmitter {
               console.log(error)
             }
           })
-        }
-      }.bind(this))
+        } */
+      })
     })
   }
 }

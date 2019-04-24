@@ -8,6 +8,7 @@
     "server": "nodemon server.js"
   },
   "dependencies": {
+    "@google-cloud/storage": "^2.5.0",
     "blockchain.info": "^2.12.1",
     "canvas": "^2.4.1",
     "express": "^4.16.4",
