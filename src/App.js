@@ -247,8 +247,18 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
+    let unconfirmedCount = 10000
+
+    try {
+      let unconfirmedData = await window.fetch('https://blockchain.info/q/unconfirmedcount?format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      unconfirmedCount = await unconfirmedData.json()
+    } catch (error) {
+      console.log(error)
+    }
+
     this.particlesGenerator = new Particles({
-      config: this.config
+      config: this.config,
+      particleCount: unconfirmedCount
     })
 
     this.diskGenerator = new Disk({
@@ -585,8 +595,15 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  onMouseUp () {
-    if (this.animatingCamera) {
+  onMouseUp (e) {
+    // if (this.animatingCamera) {
+    //   return
+    // }
+
+    if (
+      e.target.className === 'block-navigation-prev' ||
+      e.target.className === 'block-navigation-next'
+    ) {
       return
     }
 
@@ -2547,19 +2564,11 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
-      if (
-        e.target.className !== 'hud' &&
-        e.target.className !== 'cockpit-border' &&
-        e.target.className !== 'block-navigation'
-      ) {
-        return
-      }
-
       if (e.button !== 0) {
         return
       }
 
-      this.onMouseUp()
+      this.onMouseUp(e)
     })
 
     document.addEventListener('mousedown', (e) => {

@@ -18,7 +18,11 @@ export default class Particles extends Base {
   constructor (args) {
     super(args)
 
-    this.particleCount = 1000000
+    this.particleCount = 10000
+
+    if (args.particleCount) {
+      this.particleCount = args.particleCount
+    }
 
     this.frame = 0
 

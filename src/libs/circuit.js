@@ -5,7 +5,7 @@ import EventEmitter from 'eventemitter3'
 
 import MerkleTools from '../utils/merkleTools'
 
-import CircuitWorker from '../workers/circuit.worker.js'
+// import CircuitWorker from '../workers/circuit.worker.js'
 
 export default class Circuit extends EventEmitter {
   constructor (args) {
