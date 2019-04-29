@@ -188,6 +188,8 @@ class App extends mixin(EventEmitter, Component) {
       showInfoOverlay: true
     }
 
+    this.initFirebase()
+
     this.setTimestampToLoad()
     this.setBlockHashToLoad()
     this.setHeightToLoad()
@@ -210,8 +212,6 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initStage (quality = 'high') {
-    this.initFirebase()
-
     this.initRenderer(quality)
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
@@ -715,11 +715,11 @@ class App extends mixin(EventEmitter, Component) {
     // this.composer.addPass(this.SMAAPass)
   }
 
-  initFirebase () {
+  async initFirebase () {
     try {
       firebase.initializeApp(this.config.fireBase)
 
-      firebase.firestore().enablePersistence()
+      firebase.firestore()
       this.FBStorage = firebase.storage()
       this.FBStorageRef = this.FBStorage.ref()
 
@@ -733,7 +733,7 @@ class App extends mixin(EventEmitter, Component) {
     this.FBDocRefData = this.firebaseDB.collection('bitcoin_blocks')
     this.FBDocRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
 
-    this.anonymousSignin()
+    await this.anonymousSignin()
 
     // send ready event
     this.emit('ready')
@@ -742,10 +742,16 @@ class App extends mixin(EventEmitter, Component) {
   /**
    * Slow down a potential DDOS attack by requiring the user to be signed in anonymously
    */
-  anonymousSignin () {
-    firebase.auth().signInAnonymously().catch(function (error) {
-      console.log(error.code)
-      console.log(error.message)
+  async anonymousSignin () {
+    return new Promise((resolve, reject) => {
+      firebase.auth().signInAnonymously()
+        .then(() => {
+          resolve()
+        })
+        .catch(function (error) {
+          console.log(error.code)
+          console.log(error.message)
+        })
     })
   }
 

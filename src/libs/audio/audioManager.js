@@ -1,6 +1,7 @@
 import EventEmitter from 'eventemitter3'
 import GPU from 'gpu.js'
 import AudioUtils from './audioUtils'
+import * as ArrayUtils from '../../utils/array'
 
 import AudioWorker from '../../workers/audio.worker.js'
 import NoteWorker from '../../workers/note.worker.js'
@@ -326,9 +327,7 @@ export default class Audio extends EventEmitter {
     this.blockAudioData = {}
 
     // use OffscreenCanvas if available
-    if (typeof window.OffscreenCanvas !== 'undefined') {
-      this.offscreenMode = true
-    }
+    this.offscreenMode = typeof window.OffscreenCanvas !== 'undefined'
 
     this.narrationFilePath = 'assets/sounds/narration/'
     this.narrationSource = null
@@ -398,21 +397,68 @@ export default class Audio extends EventEmitter {
         sendObj.rArray.buffer
       ])
     } else {
-      const sineBank = this.gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: this.config.audio.maxSineBankLoops}).setOutput([this.sampleRate * this.soundDuration])
+      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.chords, this.notes, TXValues, spentRatios)
 
+      let parts = 15
+
+      const gpu = new GPU()
+
+      const txCount = blockAudio.frequencies.length > this.config.audio.maxSineBankLoops ? this.config.audio.maxSineBankLoops : blockAudio.frequencies.length
+
+      let simultaneousFrequencies = txCount / parts
+
+      let audioChunkTime = (this.soundDuration / parts)
+
+      const sineBank = gpu.createKernel(this.audioUtils.sineBank, {loopMaxIterations: this.config.audio.maxSineBankLoops}).setOutput([
+        Math.floor(
+          this.sampleRate * audioChunkTime
+        )
+      ])
       sineBank.addNativeFunction('custom_smoothstep', this.audioUtils.customSmoothstep)
       sineBank.addNativeFunction('custom_step', this.audioUtils.customStep)
       sineBank.addNativeFunction('custom_random', this.audioUtils.customRandom)
 
-      const blockAudio = this.audioUtils.generateBlockAudio(blockData, this.chords, this.notes, TXValues, spentRatios)
+      let sineArrayChunks = []
 
-      console.time('sineBank')
-      let sineArray = sineBank(blockAudio.frequencies, blockAudio.txTimes, blockAudio.spent, blockAudio.health, blockAudio.frequencies.length, this.sampleRate)
-      console.timeEnd('sineBank')
+      let i = 0
+      for (let index = 0; index < parts; index++) {
+        let startIndex = Math.floor(index * simultaneousFrequencies) - simultaneousFrequencies
+        if (startIndex < 0) {
+          startIndex = 0
+        }
 
-      let arrayBuffers = this.audioUtils.fillBuffer(sineArray)
+        let sineArray = sineBank(
+          blockAudio.frequencies,
+          blockAudio.txTimes,
+          blockAudio.spent,
+          blockAudio.health,
+          txCount,
+          this.sampleRate,
+          i * audioChunkTime,
+          startIndex
+        )
 
-      return this.startAudio(blockData, arrayBuffers)
+        sineArrayChunks.push(sineArray)
+        i++
+      }
+
+      let concatArrays = ArrayUtils.concatenate(sineArrayChunks)
+
+      let lArray = new Float32Array(this.sampleRate * this.soundDuration)
+      let rArray = new Float32Array(this.sampleRate * this.soundDuration)
+
+      this.audioUtils.fillBuffer(concatArrays, 1.0, lArray, rArray)
+
+      blockAudio.txTimes = []
+      blockAudio.spent = []
+
+      let data = {
+        lArray: lArray,
+        rArray: rArray,
+        blockAudio: blockAudio
+      }
+
+      return this.startAudio(blockData, data)
     }
   }
 
