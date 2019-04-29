@@ -11,7 +11,6 @@ const Config = {
     fullScreen: true,
     width: 300,
     height: 300,
-    antialias: window.devicePixelRatio === 1,
     canvasID: 'symphony-stage', // ID of webgl canvas element
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation
@@ -20,8 +19,6 @@ const Config = {
     particleLifeMin: 100, // min number of frames a particle can live for
     particleLifeMax: 1000, // max number of frames a particle can live for
     particleEmitterRadius: 150000, // size of sphere which emits particles
-    // forceMaxHeight: 566610
-    forceMaxHeight: null, // if blockchain.info API is playing up, get data directly from firebase
     liveUnconfirmedTX: false
   },
   debug: {

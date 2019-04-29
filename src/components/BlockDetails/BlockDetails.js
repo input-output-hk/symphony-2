@@ -85,6 +85,28 @@ export default class BlockDetails extends Component {
     }
   }
 
+  UIIntroOverlay () {
+    if (this.props.showInfoOverlay) {
+      return (
+        <div className='intro-overlay'>
+          <p className='intro-overlay-merkle'>Show Merkle Tree&nbsp;&rarr;</p>
+          <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Free Explore Mode</p>
+          <p className='intro-overlay-block-details'>View details about this block&nbsp;&rarr;</p>
+          <p className='intro-overlay-autopilot'>Autopilot controls&nbsp;&rarr;</p>
+          <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
+          <div className='intro-overlay-transactions'>
+            <p>Transactions are represented as hexagonal crystals.</p>
+            <p>The height of the crystals is determined by the value of the transactions.</p>
+            <p>The ratio of unspent to spent transaction outputs is shown as the brightness of the crystal colour.</p>
+            <p>Each transaction generates a unique sound based on value, spent outputs and fee level.</p>
+            <p>The transactions sounds are cycled through in order of the time the transactions were made.</p>
+          </div>
+          <button className='intro-overlay-start-explore' onClick={this.props.toggleInfoOverlay}>Start Exploring</button>
+        </div>
+      )
+    }
+  }
+
   UICockpitInfoOverlay () {
     if (this.props.flyControlsInteractionCount < 2) {
       return (
@@ -125,6 +147,7 @@ export default class BlockDetails extends Component {
     if (this.props.controlType === 'fly') {
       return (
         <div className='hud'>
+
           {this.UICockpitInfoOverlay()}
           <div className='coords'>
             <div className='posX'>X: { this.props.posX }</div>
@@ -181,6 +204,9 @@ export default class BlockDetails extends Component {
         <div className={className}>
 
           <div className='cockpit-border' />
+
+          {this.UIIntroOverlay()}
+
           {this.UICockpit()}
           {this.UICockpitButton()}
 

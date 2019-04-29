@@ -34,6 +34,8 @@ const planeSize = 500
 
 const map = (n, a, b, x, y) => x + (n - a) * (y - x) / (b - a)
 
+let currentHeight = 389262
+
 let voronoi
 
 const cacheBlockData = async function (height) {
@@ -363,6 +365,45 @@ app.get('/api2/updateChangedBlocks', async (req, res) => {
   })
 
   await docRefUpdate.doc('heights').set({heights: []}, { merge: false })
+
+  res.send({ express: 'Updating...' })
+})
+
+const updateInvalidBlocks = async function () {
+  if (currentHeight === 0) {
+    return
+  }
+
+  currentHeight = currentHeight - 1
+
+  console.log(currentHeight)
+
+  let blockRef = docRef
+    .where('height', '==', currentHeight)
+    .limit(1)
+  let blockSnapshot = await blockRef.get()
+
+  blockSnapshot.forEach(async (data) => {
+    let blockData = data.data()
+
+    if (blockData.tx.length === 0) {
+      console.log('missing tx data, updating...')
+      await cacheBlockData(currentHeight)
+      updateInvalidBlocks()
+    } else {
+      if (typeof blockData.tx[0].spentRatio === 'undefined') {
+        console.log('updating...')
+        await cacheBlockData(currentHeight)
+        updateInvalidBlocks()
+      } else {
+        updateInvalidBlocks()
+      }
+    }
+  })
+}
+
+app.get('/api2/updateInvalidBlocks', async (req, res) => {
+  updateInvalidBlocks()
 
   res.send({ express: 'Updating...' })
 })

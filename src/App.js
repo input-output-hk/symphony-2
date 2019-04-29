@@ -183,22 +183,36 @@ class App extends mixin(EventEmitter, Component) {
       posZ: 0,
       sceneReady: false,
       started: false, // if the experience has started
-      flyControlsInteractionCount: 0
+      flyControlsInteractionCount: 0,
+      qualitySelected: false,
+      showInfoOverlay: true
     }
 
     this.setTimestampToLoad()
     this.setBlockHashToLoad()
     this.setHeightToLoad()
+    this.getUnconfirmedCount()
+  }
+
+  async getUnconfirmedCount () {
+    this.unconfirmedCount = 10000
+
+    try {
+      let unconfirmedData = await window.fetch('https://blockchain.info/q/unconfirmedcount?format=json&apiCode=' + this.config.blockchainInfo.apiCode)
+      this.unconfirmedCount = await unconfirmedData.json()
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   componentDidMount () {
-    this.initStage()
+    // this.initStage()
   }
 
-  async initStage () {
+  async initStage (quality = 'high') {
     this.initFirebase()
 
-    this.initRenderer()
+    this.initRenderer(quality)
 
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
     this.audioManager = new AudioManager({
@@ -247,18 +261,9 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
-    let unconfirmedCount = 10000
-
-    try {
-      let unconfirmedData = await window.fetch('https://blockchain.info/q/unconfirmedcount?format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-      unconfirmedCount = await unconfirmedData.json()
-    } catch (error) {
-      console.log(error)
-    }
-
     this.particlesGenerator = new Particles({
       config: this.config,
-      particleCount: unconfirmedCount
+      particleCount: this.unconfirmedCount
     })
 
     this.diskGenerator = new Disk({
@@ -297,6 +302,8 @@ class App extends mixin(EventEmitter, Component) {
     this.renderer.setAnimationLoop(function () {
       this.renderFrame()
     }.bind(this))
+
+    this.startIntro()
   }
 
   enableVR () {
@@ -872,20 +879,16 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async initPositions () {
-    if (this.config.scene.forceMaxHeight !== null) {
-      this.maxHeight = this.config.scene.forceMaxHeight
-    } else {
-      let blockData = this.FBDocRefData
-        .orderBy('height', 'desc')
-        .limit(1)
+    let blockData = this.FBDocRefData
+      .orderBy('height', 'desc')
+      .limit(1)
 
-      let snapshot = await blockData.get()
+    let snapshot = await blockData.get()
 
-      snapshot.forEach(snapshot => {
-        let data = snapshot.data()
-        this.maxHeight = data.height
-      })
-    }
+    snapshot.forEach(snapshot => {
+      let data = snapshot.data()
+      this.maxHeight = data.height
+    })
 
     this.blockPositions = new Float32Array((this.maxHeight * 2) + 2)
 
@@ -1062,13 +1065,13 @@ class App extends mixin(EventEmitter, Component) {
     }
 
     for (let height = this.maxHeight - 200; height < this.maxHeight; height++) {
-      if (Math.random() > 0.97) {
+      if (Math.random() > 0.98) {
         txHeights.push(height)
       }
     }
 
     for (let height = this.maxHeight - 10000; height < this.maxHeight - 1000; height++) {
-      if (Math.random() > 0.998) {
+      if (Math.random() > 0.999) {
         txHeights.push(height)
       }
     }
@@ -1840,17 +1843,23 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   hideMerkleDetail () {
-    this.underside.visible = false
-    this.underside.position.x = 0
-    this.underside.position.z = 0
+    if (this.underside) {
+      this.underside.visible = false
+      this.underside.position.x = 0
+      this.underside.position.z = 0
+    }
 
-    this.undersideL.visible = false
-    this.undersideL.position.x = 0
-    this.undersideL.position.z = 0
+    if (this.undersideL) {
+      this.undersideL.visible = false
+      this.undersideL.position.x = 0
+      this.undersideL.position.z = 0
+    }
 
-    this.undersideR.visible = false
-    this.undersideR.position.x = 0
-    this.undersideR.position.z = 0
+    if (this.undersideR) {
+      this.undersideR.visible = false
+      this.undersideR.position.x = 0
+      this.undersideR.position.z = 0
+    }
   }
 
   prepareCamNavigation (args = {stopAudio: true}) {
@@ -2537,6 +2546,12 @@ class App extends mixin(EventEmitter, Component) {
                     this.setState({
                       activeIntro: 6
                     })
+                    setTimeout(() => {
+                      this.goToBlock(this.maxHeight)
+                      this.setState({
+                        activeIntro: 7
+                      })
+                    }, this.config.scene.introTextTime)
                   }, this.config.scene.introTextTime)
                 }, this.config.scene.introTextTime)
               }, this.config.scene.introTextTime)
@@ -3766,11 +3781,13 @@ class App extends mixin(EventEmitter, Component) {
   /**
    * Set up renderer
    */
-  initRenderer () {
+  initRenderer (quality) {
     this.canvas = document.getElementById(this.config.scene.canvasID)
 
+    let antialias = quality === 'high'
+
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: antialias,
       logarithmicDepthBuffer: true,
       canvas: this.canvas
     })
@@ -4125,6 +4142,12 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  toggleInfoOverlay () {
+    this.setState({
+      showInfoOverlay: !this.state.showInfoOverlay
+    })
+  }
+
   UITXSearchBox () {
     if (this.state.txSearchOpen) {
       return (
@@ -4183,6 +4206,8 @@ class App extends mixin(EventEmitter, Component) {
           maxHeight={this.maxHeight}
           flyControlsInteractionCount={this.state.flyControlsInteractionCount}
           closeFlyInfo={this.closeFlyInfo.bind(this)}
+          showInfoOverlay={this.state.showInfoOverlay}
+          toggleInfoOverlay={this.toggleInfoOverlay.bind(this)}
         />
 
       </div>
@@ -4195,20 +4220,44 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
-  UILoadingScreen () {
-    let className = 'loading-container'
-    if (!this.state.loading) {
-      className += ' loaded'
-    }
+  UIQualityScreen () {
+    if (!this.state.qualitySelected) {
+      let className = 'loading-container'
+      if (!this.state.loading) {
+        className += ' loaded'
+      }
 
-    return (
-      <div className={className}>
-        <div className='logo-container'>
-          <img className='symphony-logo pulsate' src={logo} alt='Symphony Logo' />
-          <h1>SYMPHONY • <span>LOADING</span></h1>
+      return (
+        <div className={className}>
+          <div className='logo-container'>
+            <img className='symphony-logo' src={logo} alt='Symphony Logo' />
+            <h1>Symphony</h1>
+            <p className='choose-quality'>Choose Quality:</p>
+            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} title='Recommended for computers with modern graphics cards'>HIGH</a>
+            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} title='Recommended for lower-powered computers'>LOW</a>
+            <p className='sound-hint'>(Turn on your sound)</p>
+          </div>
         </div>
-      </div>
-    )
+      )
+    }
+  }
+
+  UILoadingScreen () {
+    if (this.state.qualitySelected) {
+      let className = 'loading-container'
+      if (!this.state.loading) {
+        className += ' loaded'
+      }
+
+      return (
+        <div className={className}>
+          <div className='logo-container'>
+            <img className='symphony-logo pulsate' src={logo} alt='Symphony Logo' />
+            <h1><b>SYMPHONY</b> &middot; LOADING</h1>
+          </div>
+        </div>
+      )
+    }
   }
 
   UIStart () {
@@ -4229,12 +4278,12 @@ class App extends mixin(EventEmitter, Component) {
     if (this.state.showIntro) {
       return (
         <div className='intro-container'>
-          <h1 className={(this.state.activeIntro === 1 ? 'show' : '')}>This is the bitcoin blockchain</h1>
+          <h1 className={(this.state.activeIntro === 1 ? 'show' : '')}>This is the Bitcoin Blockchain</h1>
           <h1 className={(this.state.activeIntro === 2 ? 'show' : '')}>Blocks spiral outward from the center, starting with the latest block</h1>
-          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created around every 10 minutes</h1>
+          <h1 className={(this.state.activeIntro === 3 ? 'show' : '')}>A new block is created roughly every 10 minutes</h1>
           <h1 className={(this.state.activeIntro === 4 ? 'show' : '')}>The mempool sits at the center, unconfirmed transactions gather here</h1>
-          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
-          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}><span className='enter-blockchain-text' onClick={() => { this.goToBlock(this.maxHeight) }}>Enter the Blockchain</span></h1>
+          <h1 className={(this.state.activeIntro === 5 ? 'show' : '')}>There are currently {(this.unconfirmedCount).toLocaleString('en')} unconfirmed transactions</h1>
+          <h1 className={(this.state.activeIntro === 6 ? 'show' : '')}>There are {(this.maxHeight).toLocaleString('en')} blocks so far...</h1>
         </div>
       )
     }
@@ -4244,7 +4293,8 @@ class App extends mixin(EventEmitter, Component) {
     return (
       <div className='symphony'>
         {this.UIIntro()}
-        {this.UIStart()}
+        {/* {this.UIStart()} */}
+        {this.UIQualityScreen()}
         {this.UILoadingScreen()}
         <canvas id={this.config.scene.canvasID} />
         {this.UI()}

@@ -468,12 +468,13 @@ canvas#sketchboard {
 }
 
 .sidebar h1 {
+  font-family: 'Montserrat';
   overflow: hidden;
   color: #fff;
   text-transform: uppercase;
   font-size: 15px;
   letter-spacing: 2px;
-  font-weight: bold;
+  font-weight: normal;
   transition: opacity 0.5s;
   transition-timing-function: ease-in-out;
 }
@@ -795,6 +796,7 @@ canvas#sketchboard {
 .loading-container h1 {
   font-weight: 300;
   font-size: 1vw;
+  text-transform: uppercase;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
 
@@ -805,7 +807,16 @@ canvas#sketchboard {
 .symphony-logo {
   width: 17vw;
   opacity: 0.8;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+}
+
+.symphony-logo.pulsate {
   animation: pulsate 2.0s ease-in-out infinite both, blur-in 2.5s ease-in, opacity-pulse 2.0s ease-in-out infinite both;
+}
+
+.logo-container p {
+  text-transform: uppercase;
+  opacity: 0.6
 }
 
 .loaded {
@@ -846,6 +857,15 @@ canvas#sketchboard {
   }
   100% {
     filter: blur(0ex);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0.0;
+  }
+  100% {
+    opacity: 1.0
   }
 }
 
@@ -1061,6 +1081,87 @@ canvas#sketchboard {
   border: 1px solid #ffffff;
 }
 
+.intro-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 18px;
+  animation: blur-in 2.5s ease-in, fade-in 2.5s ease-in;
+}
+
+.intro-overlay p {
+  position: absolute;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 1;
+}
+
+.intro-overlay-merkle {
+  left: 37%;
+  top: 29px;
+}
+
+.intro-overlay-free-explore {
+  left: 54%;
+  top: 29px;
+}
+
+.intro-overlay-block-details {
+  right: 253px;
+  top: 242px;
+  width: 12vw
+}
+
+.intro-overlay-autopilot {
+  right: 253px;
+  top: 570px;
+}
+
+.intro-overlay-sidebar {
+  top: 30%;
+  left: 75px;
+}
+
+.intro-overlay-transactions {
+  position: absolute;
+  width: 75.7vh;
+  height: 50vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 60px;
+}
+
+.intro-overlay-transactions p {
+  text-align: center;
+  position: static;
+  font-size: 18px;
+  font-family: 'Montserrat';
+  font-weight: normal;
+  text-transform: none;
+}
+
+.intro-overlay-start-explore {
+  position: absolute;
+  font-family: 'Montserrat';
+  text-transform: uppercase;
+  transform: translate(-50%, -50%);
+  top: 70%;
+  left: 50%;
+  padding: 10px 20px;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #333;
+  color: #fff;
+}
+
+.intro-overlay-start-explore:hover {
+  cursor: pointer;
+}
+
 .free-explore-info-overlay {
   position: absolute;
   left: 0;
@@ -1151,4 +1252,26 @@ canvas#sketchboard {
 
 .go-button:hover {
   cursor: pointer;
+}
+
+.choose-quality {
+  font-size: 12px;
+  padding: 100px 0 0;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.quality-select {
+  opacity: 0.6;
+  padding: 0 20px;
+}
+
+.quality-select:hover {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.sound-hint {
+  font-size: 11px;
+  margin: 50px 0 0;
 }
