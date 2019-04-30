@@ -41,7 +41,7 @@ canvas#sketchboard {
   top: 0;
   left: 0;
   color: #fff;
-  font-family: 'Consolas', sans-serif;
+  font-family: 'Inconsolata', monospace;
   text-transform: uppercase;
   font-weight: 300;
   width: 100%;
@@ -1149,7 +1149,7 @@ canvas#sketchboard {
   font-family: 'Montserrat';
   text-transform: uppercase;
   transform: translate(-50%, -50%);
-  top: 70%;
+  top: 77%;
   left: 50%;
   padding: 10px 20px;
   z-index: 1;

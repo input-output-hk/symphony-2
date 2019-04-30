@@ -35,8 +35,8 @@ float plane(vec2 uv, vec2 quadUV) {
     float bottom = smoothstep(0.47 * (1.0-maxDerivative), 0.476 + maxDerivative *0.3, uv.y);
     float left = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), uv.x);
     float right = smoothstep(0.1 * (1.0-maxDerivative*20.0), 0.1 * (1.0-maxDerivative*20.0), 1.0-uv.x);
-    float pct = top * bottom * left * right;
-    //float pct = top * bottom;
+    // float pct = top * bottom * left * right;
+    float pct = top * bottom;
     return pct;
 }
 
