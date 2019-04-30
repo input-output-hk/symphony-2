@@ -607,9 +607,16 @@ class App extends mixin(EventEmitter, Component) {
     //   return
     // }
 
+    console.log(e.target.className)
+
+    const ignoreClasses = [
+      'block-navigation',
+      'grad-right',
+      'grad-left'
+    ]
+
     if (
-      e.target.className === 'block-navigation-prev' ||
-      e.target.className === 'block-navigation-next'
+      ignoreClasses.indexOf(e.target.className) === -1
     ) {
       return
     }
@@ -1179,7 +1186,10 @@ class App extends mixin(EventEmitter, Component) {
       this.controls = null
     }
 
-    this.setState({controlType: 'fly'})
+    this.setState({
+      controlType: 'fly',
+      showInfoOverlay: false
+    })
 
     // this.animatingCamera = false
 
@@ -1246,7 +1256,13 @@ class App extends mixin(EventEmitter, Component) {
     if (toTarget) {
       this.camera.lookAt(this.camPosTarget)
     } else {
+      // if (direction === 'side') {
+
+      //   this.camera.lookAt(new THREE.Vector3(this.originOffset.x, 0, this.originOffset.y))
+      // } else {
       this.camera.lookAt(new THREE.Vector3(0, 0, 0))
+      // }
+
       if (!this.vrActive) { // point camera down at block if not in VR
         switch (direction) {
           case 'up':
@@ -1279,7 +1295,10 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    this.setState({controlType: 'top'})
+    this.setState({
+      controlType: 'top',
+      showInfoOverlay: false
+    })
 
     this.stopAutoPilotAnimation()
 
@@ -1314,7 +1333,10 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    this.setState({controlType: 'underside'})
+    this.setState({
+      controlType: 'underside',
+      showInfoOverlay: false
+    })
 
     this.stopAutoPilotAnimation()
 
@@ -1322,6 +1344,50 @@ class App extends mixin(EventEmitter, Component) {
       new THREE.Vector3(this.closestBlock.blockData.pos.x, -350, this.closestBlock.blockData.pos.z),
       null,
       'up'
+    )
+
+    let that = this
+    new TWEEN.Tween(this.camera.position)
+      .to(this.camPosTo, 6000)
+      .onUpdate(function () {
+        that.camera.position.set(this.x, this.y, this.z)
+      })
+      .onComplete(() => {
+        this.animatingCamera = false
+      })
+      .easing(this.defaultCamEasing)
+      .start()
+
+    if (!this.vrActive) {
+      this.animateCamRotation(5000)
+    }
+  }
+
+  toggleSideView () {
+    if (this.isNavigating) {
+      return
+    }
+
+    this.setState({
+      controlType: 'side',
+      showInfoOverlay: false
+    })
+
+    this.stopAutoPilotAnimation()
+
+    let toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+    let newPos = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z).add(toCenterVec.normalize().multiplyScalar(500))
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    let offsetPos = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
+    this.prepareCamAnim(
+      newPos,
+      new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
+      'side'
     )
 
     let that = this
@@ -1400,6 +1466,10 @@ class App extends mixin(EventEmitter, Component) {
 
   async loadNearestBlocks (ignoreCamPos = false, closestHeight = null) {
     if (this.loadingNearestBlocks) {
+      return
+    }
+
+    if (!this.blockReady) {
       return
     }
 
@@ -1830,21 +1900,24 @@ class App extends mixin(EventEmitter, Component) {
   toggleTxSearch () {
     this.setState({
       blockSearchOpen: false,
-      txSearchOpen: !this.state.txSearchOpen
+      txSearchOpen: !this.state.txSearchOpen,
+      showInfoOverlay: false
     })
   }
 
   toggleBlockSearch () {
     this.setState({
       txSearchOpen: false,
-      blockSearchOpen: !this.state.blockSearchOpen
+      blockSearchOpen: !this.state.blockSearchOpen,
+      showInfoOverlay: false
     })
   }
 
   toggleDateSearch () {
     this.setState({
       txSearchOpen: false,
-      dateSearchOpen: !this.state.dateSearchOpen
+      dateSearchOpen: !this.state.dateSearchOpen,
+      showInfoOverlay: false
     })
   }
 
@@ -1886,7 +1959,10 @@ class App extends mixin(EventEmitter, Component) {
   goToRandomBlock () {
     this.prepareCamNavigation()
 
-    this.setState({controlType: 'top'})
+    this.setState({
+      controlType: 'top',
+      showInfoOverlay: false
+    })
 
     this.closestHeight = Math.round(Math.random() * this.maxHeight)
 
@@ -1955,11 +2031,19 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(20000)
   }
 
-  async goToBlock (blockHeight = null) {
+  async goToBlock (blockHeight = null, removeInfoOverlay = false) {
     return new Promise((resolve) => {
       this.isNavigating = true
 
-      this.setState({controlType: 'top'})
+      if (removeInfoOverlay) {
+        this.setState({
+          showInfoOverlay: false
+        })
+      }
+
+      this.setState({
+        controlType: 'top'
+      })
 
       this.prepareCamNavigation()
 
@@ -2043,6 +2127,10 @@ class App extends mixin(EventEmitter, Component) {
     if (this.isNavigating) {
       return
     }
+
+    this.setState({
+      showInfoOverlay: false
+    })
 
     if (typeof this.autoPilotTween !== 'undefined') {
       this.autoPilotTween.stop()
@@ -2314,6 +2402,10 @@ class App extends mixin(EventEmitter, Component) {
       })
     }
 
+    if (this.state.controlType === 'side') {
+      this.cameraSideViewInteraction()
+    }
+
     // this.FilmShaderPass.uniforms.time.value = window.performance.now() * 0.000001
 
     if (this.particlesGenerator && this.particlesGenerator.positionScene) {
@@ -2332,6 +2424,20 @@ class App extends mixin(EventEmitter, Component) {
         this.renderer.render(this.scene, this.cameraMain)
         // this.composer.render()
       }
+    }
+  }
+
+  cameraSideViewInteraction () {
+    if (this.animatingCamera) {
+      return
+    }
+    const clientRect = this.renderer.domElement.getBoundingClientRect()
+
+    let newPos = this.camera.position.y + ((clientRect.height * 0.5) - this.mousePos.y) * 0.001
+
+    if (newPos > -200 && newPos < 200) {
+      this.camera.position.y = newPos
+      this.camera.lookAt(new THREE.Vector3(this.originOffset.x, 0, this.originOffset.y))
     }
   }
 
@@ -3875,19 +3981,40 @@ class App extends mixin(EventEmitter, Component) {
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
-
     let to = new THREE.Vector3(posX, 400, posZ)
 
-    if (this.state.controlType === 'underside') {
-      to.y = -350
-      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
-    } else {
-      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+    switch (this.state.controlType) {
+      case 'top':
+        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+        break
+      case 'underside':
+        to.y = -350
+        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
+        break
+      case 'side':
+        let toCenterVec = new THREE.Vector3(to.x, -15, to.z)
+        let newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(500))
+
+        let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height - 1]
+        let offsetPos = new THREE.Vector2(
+          this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+          this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+        )
+
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
+          'side'
+        )
+        break
+
+      default:
+        break
     }
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(new THREE.Vector3(to.x, to.y, to.z), 2500)
+      .to(this.camPosTo, 2500)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
@@ -3916,18 +4043,40 @@ class App extends mixin(EventEmitter, Component) {
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
-
     let to = new THREE.Vector3(posX, 400, posZ)
-    if (this.state.controlType === 'underside') {
-      to.y = -350
-      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
-    } else {
-      this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+
+    switch (this.state.controlType) {
+      case 'top':
+        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
+        break
+      case 'underside':
+        to.y = -350
+        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
+        break
+      case 'side':
+        let toCenterVec = new THREE.Vector3(to.x, -15, to.z)
+        let newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(500))
+
+        let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height + 1]
+        let offsetPos = new THREE.Vector2(
+          this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+          this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+        )
+
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
+          'side'
+        )
+        break
+
+      default:
+        break
     }
 
     let that = this
     new TWEEN.Tween(this.camera.position)
-      .to(new THREE.Vector3(to.x, to.y, to.z), 2500)
+      .to(this.camPosTo, 2500)
       .onUpdate(function () {
         that.camera.position.set(this.x, this.y, this.z)
       })
@@ -4205,6 +4354,7 @@ class App extends mixin(EventEmitter, Component) {
           toggleAutoPilotDirection={this.toggleAutoPilotDirection.bind(this)}
           toggleTopView={this.toggleTopView.bind(this)}
           toggleUndersideView={this.toggleUndersideView.bind(this)}
+          toggleSideView={this.toggleSideView.bind(this)}
           toggleFlyControls={this.toggleFlyControls.bind(this)}
           stopAutoPilot={this.stopAutoPilot.bind(this)}
           gotoPrevBlock={this.gotoPrevBlock.bind(this)}

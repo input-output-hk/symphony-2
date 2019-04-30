@@ -222,7 +222,7 @@ canvas#sketchboard {
   border: none;
   width: 58px;
   height: 41px;
-  opacity: 0.7;
+  opacity: 0.9;
   transition: opacity 0.5s;
   display: block;
   position: absolute;
@@ -232,7 +232,7 @@ canvas#sketchboard {
   position: absolute;
   width: 32px;
   height: 41px;
-  opacity: 0.7;
+  opacity: 0.9;
   left: 8px;
   top: 9px;
 }
@@ -1128,7 +1128,7 @@ canvas#sketchboard {
 .intro-overlay-transactions {
   position: absolute;
   width: 75.7vh;
-  height: 50vh;
+  height: 75.7vh;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

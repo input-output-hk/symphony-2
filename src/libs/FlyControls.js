@@ -49,8 +49,8 @@ export default class FlyControls {
     this.domElement.addEventListener('contextmenu', this.contextmenu, false)
 
     this.domElement.addEventListener('mousemove', this.mousemove, false)
-    this.domElement.addEventListener('mousedown', this.mousedown, false)
-    this.domElement.addEventListener('mouseup', this.mouseup, false)
+    // this.domElement.addEventListener('mousedown', this.mousedown, false)
+    // this.domElement.addEventListener('mouseup', this.mouseup, false)
 
     window.addEventListener('keydown', this.keydown, false)
     window.addEventListener('keyup', this.keyup, false)

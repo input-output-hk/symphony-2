@@ -8,18 +8,28 @@ import Scope from '../Scope/Scope'
 
 export default class BlockDetails extends Component {
   UIUndersideButton () {
-    if (this.props.controlType !== 'underside') {
-      return (
-        <div className='flip-view-container'>
-          <button title='Show Merkle Tree' onClick={this.props.toggleUndersideView} className='flip-view' />
-        </div>
-      )
-    } else {
-      return (
-        <div className='flip-view-container'>
-          <button title='Show Block Top' onClick={this.props.toggleTopView} className='flip-view' />
-        </div>
-      )
+    switch (this.props.controlType) {
+      case 'underside':
+        return (
+          <div className='flip-view-container'>
+            <button title='Show Block Top' onClick={this.props.toggleTopView} className='flip-view' />
+          </div>
+        )
+      case 'top':
+        return (
+          <div className='flip-view-container'>
+            <button title='Side View' onClick={this.props.toggleSideView} className='flip-view' />
+          </div>
+        )
+      case 'side':
+        return (
+          <div className='flip-view-container'>
+            <button title='Bottom View' onClick={this.props.toggleUndersideView} className='flip-view' />
+          </div>
+        )
+
+      default:
+        break
     }
   }
 
@@ -72,14 +82,14 @@ export default class BlockDetails extends Component {
     if (this.props.controlType === 'fly') {
       return (
         <div className='explore-container'>
-          <button title='Exit Free Explore' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
-          <span title='Exit Free Explore' className='cancel' onClick={this.props.toggleTopView} />
+          <button title='Exit Flight Simulator' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
+          <span title='Exit Flight Simulator' className='cancel' onClick={this.props.toggleTopView} />
         </div>
       )
     } else {
       return (
         <div className='explore-container'>
-          <button title='Free Explore' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
+          <button title='Flight Simulator Mode' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
         </div>
       )
     }
@@ -89,17 +99,17 @@ export default class BlockDetails extends Component {
     if (this.props.showInfoOverlay) {
       return (
         <div className='intro-overlay'>
-          <p className='intro-overlay-merkle'>Show Merkle Tree&nbsp;&rarr;</p>
-          <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Free Explore Mode</p>
+          <p className='intro-overlay-merkle'>Cycle Through Views&nbsp;&rarr;</p>
+          <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Flight Simulator Mode</p>
           <p className='intro-overlay-block-details'>View details about this block&nbsp;&rarr;</p>
           <p className='intro-overlay-autopilot'>Autopilot controls&nbsp;&rarr;</p>
           <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
           <div className='intro-overlay-transactions'>
             <p>Transactions are represented as hexagonal crystals.</p>
-            <p>The height of the crystals is determined by the value of the transactions.</p>
-            <p>The ratio of unspent to spent transaction outputs is shown as the brightness of the crystal colour.</p>
+            <p>The height of each crystal is determined by the value of the transaction.</p>
+            <p>The ratio of unspent to spent transaction outputs is reflected in the brightness of the crystal.</p>
             <p>Each transaction generates a unique sound based on value, spent outputs and fee level.</p>
-            <p>The transactions sounds are cycled through in order of the time the transactions were made.</p>
+            <p>The transaction sounds are cycled through in order of the time the transactions were made.</p>
           </div>
           <button className='intro-overlay-start-explore' onClick={this.props.toggleInfoOverlay}>Start Exploring</button>
         </div>
@@ -112,7 +122,7 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>
-            Free Explore lets you fly around the Blockchain and listen to the sounds of each block
+            Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
             <br />
             <br />
             Move your mouse to tilt the camera
@@ -176,7 +186,11 @@ export default class BlockDetails extends Component {
       prevButtonClassName += ' hide'
     }
 
-    if (this.props.controlType === 'underside' || this.props.controlType === 'top') {
+    if (
+      this.props.controlType === 'underside' ||
+      this.props.controlType === 'top' ||
+      this.props.controlType === 'side'
+    ) {
       return (
         <div className='block-navigation'>
           <button title='Previous Block' onClick={() => this.props.gotoPrevBlock()} className={prevButtonClassName}>Previous Block</button>
