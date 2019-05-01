@@ -116,6 +116,13 @@ canvas#sketchboard {
   opacity: 0.3;
 }
 
+@media only screen and (max-width: 600px) {
+  .block-details-border {
+    display:none;
+  }
+
+}
+
 .block-details {
   pointer-events: auto;
   position: absolute;
@@ -131,10 +138,48 @@ canvas#sketchboard {
   opacity: 1.0;
 }
 
+@media only screen and (max-width: 600px) {
+  .block-details {
+    background: none;
+    position: absolute;
+    left: 0;
+    right: auto;
+    width: 100vw;
+    padding: 30px;
+    top: 65px;
+    height: 100%;
+    z-index: 0;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .block-details-inner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding-left: 30px;
+    height: 248px;
+    padding-top: 20px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+}
+
+
 .block-details-heading {
   position: absolute;
   left: 0;
   top: -29px;
+}
+
+@media only screen and (max-width: 600px) {
+  .block-details-heading {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    left: 0;
+    top: auto;
+    font-size: 5vw!important;
+  }
 }
 
 .block-details .view-details {
@@ -189,6 +234,18 @@ canvas#sketchboard {
 
 .block-details ul {
   display: inline-block;
+}
+
+@media only screen and (max-width: 600px) {
+  .block-details ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 0;
+    -webkit-column-count: 2;
+    -webkit-column-gap: 0;
+    column-count: 2;
+    column-gap: 0;
+    width: 100vw;
+  }
 }
 
 .explore-container {
@@ -770,8 +827,7 @@ canvas#sketchboard {
 
 @media only screen and (max-width: 600px) {
   .block-hash h2 {
-    font-size: 5vw;
-    padding: 20px;
+    display: none;
   }
 }
 
@@ -1037,7 +1093,7 @@ canvas#sketchboard {
 @media only screen and (max-width: 600px) {
   .block-navigation-prev {
     left: -9vh;
-    width: 7vh;
+    width: 5vh;
   }
 }
 
@@ -1070,7 +1126,7 @@ canvas#sketchboard {
 @media only screen and (max-width: 600px) {
   .block-navigation-next {
     right: -9vh;
-    width: 7vh;
+    width: 5vh;
   }
 }
 
@@ -1096,6 +1152,7 @@ canvas#sketchboard {
   .block-navigation {
     width: 58.8vw;
     height: 58.8vw;
+    z-index: 1;
   }
 }
 
@@ -1112,6 +1169,15 @@ canvas#sketchboard {
   background: linear-gradient(to left, rgba(0,0,0,0.6) 0%,rgba(0,0,0,0) 40%);
 }
 
+@media only screen and (max-width: 600px) {
+  .grad-left {
+    display: none;
+  }
+  .grad-right {
+    display: none;
+  }
+}
+
 .autopilot-controls {
   position: absolute;
   right: 20px;
@@ -1124,6 +1190,12 @@ canvas#sketchboard {
   -o-transition: opacity .5s;
   transition: opacity .5s;
   opacity: 1.0;
+}
+
+@media only screen and (max-width: 600px) {
+  .autopilot-controls {
+    display: none;
+  }
 }
 
 .autopilot-inner {

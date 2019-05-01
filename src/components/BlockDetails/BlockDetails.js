@@ -237,33 +237,35 @@ export default class BlockDetails extends Component {
           <div className='block-details'>
             <h2 className='block-details-heading'>//BLOCK-{this.props.closestBlock.blockData.height}</h2>
             <div className='block-details-border' />
-            <div><h3>Health:</h3>
-              <div className='health-bar-container' title={healthInv}>
-                <div
-                  className='health-bar'
-                  style={{
-                    width: 100 * healthInv,
-                    background: 'rgba(' + 255 * healthInv + ', ' + 255 * healthInv + ', ' + 255 * healthInv + ', 1.0)'
-                  }}
-                />
+            <div className='block-details-inner'>
+              <div><h3>Health:</h3>
+                <div className='health-bar-container' title={healthInv}>
+                  <div
+                    className='health-bar'
+                    style={{
+                      width: 100 * healthInv,
+                      background: 'rgba(' + 255 * healthInv + ', ' + 255 * healthInv + ', ' + 255 * healthInv + ', 1.0)'
+                    }}
+                  />
+                </div>
               </div>
+              <ul>
+                <li><h3>No. of Tx:</h3> <strong>{ this.props.closestBlock.blockData.n_tx }</strong></li>
+                <li><h3>Output Total:</h3> <strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
+                <li><h3>Fees:</h3> <strong>{ (this.props.closestBlock.blockData.fee / 100000000).toFixed(2) } BTC</strong></li>
+                <li><h3>Date:</h3> <strong>{ moment.unix(this.props.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
+                <li><h3>Bits:</h3> <strong>{ this.props.closestBlock.blockData.bits }</strong></li>
+                <li><h3>Size:</h3> <strong>{ this.props.closestBlock.blockData.size / 1000 } KB</strong></li>
+                <li><h3>Height:</h3> <strong>{ this.props.closestBlock.blockData.height }</strong></li>
+                <li><h3>Merkle Root:</h3> <strong>{ this.props.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
+                <li><h3>Nonce:</h3> <strong>{ this.props.closestBlock.blockData.nonce }</strong></li>
+                <li><h3>Version:</h3> <strong>{ this.props.closestBlock.blockData.ver }</strong></li>
+                <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
+              </ul>
+              <Scope
+                config={this.props.config}
+              />
             </div>
-            <ul>
-              <li><h3>No. of Tx:</h3> <strong>{ this.props.closestBlock.blockData.n_tx }</strong></li>
-              <li><h3>Output Total:</h3> <strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
-              <li><h3>Fees:</h3> <strong>{ (this.props.closestBlock.blockData.fee / 100000000).toFixed(2) } BTC</strong></li>
-              <li><h3>Date:</h3> <strong>{ moment.unix(this.props.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
-              <li><h3>Bits:</h3> <strong>{ this.props.closestBlock.blockData.bits }</strong></li>
-              <li><h3>Size:</h3> <strong>{ this.props.closestBlock.blockData.size / 1000 } KB</strong></li>
-              <li><h3>Height:</h3> <strong>{ this.props.closestBlock.blockData.height }</strong></li>
-              <li><h3>Merkle Root:</h3> <strong>{ this.props.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
-              <li><h3>Nonce:</h3> <strong>{ this.props.closestBlock.blockData.nonce }</strong></li>
-              <li><h3>Version:</h3> <strong>{ this.props.closestBlock.blockData.ver }</strong></li>
-              <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
-            </ul>
-            <Scope
-              config={this.props.config}
-            />
           </div>
 
           <div className='autopilot-controls'>

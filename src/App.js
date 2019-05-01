@@ -107,7 +107,8 @@ class App extends mixin(EventEmitter, Component) {
     this.defaultCamEasing = TWEEN.Easing.Quadratic.InOut
     this.autoPilot = false
     this.autoPilotDirection = false
-    this.mapControlsYPos = 400
+    this.topViewYPos = this.config.detector.isMobile ? 800 : 400
+    this.undersideViewYPos = this.config.detector.isMobile ? -800 : -350
     this.closestHeight = null
     this.originOffset = new THREE.Vector2(0, 0)
     this.txCountBufferSize = 4000 // buffer size for tx counts
@@ -1302,7 +1303,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.stopAutoPilotAnimation()
 
-    let yPos = this.mapControlsYPos
+    let yPos = this.topViewYPos
     if (this.vrActive) {
       yPos = 20
     }
@@ -1341,7 +1342,7 @@ class App extends mixin(EventEmitter, Component) {
     this.stopAutoPilotAnimation()
 
     this.prepareCamAnim(
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, -350, this.closestBlock.blockData.pos.z),
+      new THREE.Vector3(this.closestBlock.blockData.pos.x, this.undersideViewYPos, this.closestBlock.blockData.pos.z),
       null,
       'up'
     )
@@ -1427,11 +1428,11 @@ class App extends mixin(EventEmitter, Component) {
 
           if (!this.vrActive) {
             if (this.state.controlType === 'top') {
-              blockPos.y += 400
+              blockPos.y += this.topViewYPos
             }
 
             if (this.state.controlType === 'underside') {
-              blockPos.y -= 400
+              blockPos.y -= this.topViewYPos
             }
           }
 
@@ -1973,12 +1974,12 @@ class App extends mixin(EventEmitter, Component) {
 
     let to = new THREE.Vector3(posX, 1000000, posZ)
 
-    this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
+    this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
 
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
 
-    let blockYDist = this.vrActive ? 20 : 400
+    let blockYDist = this.vrActive ? 20 : this.topViewYPos
 
     let that = this
     new TWEEN.Tween(this.camera.position)
@@ -2060,16 +2061,12 @@ class App extends mixin(EventEmitter, Component) {
 
       let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
+      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
 
-      let blockYDist = this.vrActive ? 20 : 400
-
-      if (this.config.detector.isMobile) {
-        blockYDist = 1000
-      }
+      let blockYDist = this.vrActive ? 20 : this.topViewYPos
 
       let that = this
       new TWEEN.Tween(this.camera.position)
@@ -3983,18 +3980,16 @@ class App extends mixin(EventEmitter, Component) {
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
-    let camYPos = this.config.detector.isMobile ? 1000 : 400
-
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
-    let to = new THREE.Vector3(posX, camYPos, posZ)
+    let to = new THREE.Vector3(posX, this.topViewYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         break
       case 'underside':
-        to.y = this.config.detector.isMobile ? -1000 : -350
+        to.y = this.undersideViewYPos
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
         break
       case 'side':
@@ -4047,18 +4042,16 @@ class App extends mixin(EventEmitter, Component) {
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
-    let camYPos = this.config.detector.isMobile ? 1000 : 400
-
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
-    let to = new THREE.Vector3(posX, camYPos, posZ)
+    let to = new THREE.Vector3(posX, this.topViewYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         break
       case 'underside':
-        to.y = this.config.detector.isMobile ? -1000 : -350
+        to.y = this.undersideViewYPos
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
         break
       case 'side':
@@ -4115,12 +4108,12 @@ class App extends mixin(EventEmitter, Component) {
 
       let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
+      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
 
-      let blockYDist = this.vrActive ? 20 : 400
+      let blockYDist = this.vrActive ? 20 : this.topViewYPos
 
       let that = this
       new TWEEN.Tween(this.camera.position)
@@ -4244,12 +4237,12 @@ class App extends mixin(EventEmitter, Component) {
 
       let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.prepareCamAnim(new THREE.Vector3(to.x, 400, to.z))
+      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
 
-      let blockYDist = this.vrActive ? 20 : 400
+      let blockYDist = this.vrActive ? 20 : this.topViewYPos
 
       let that = this
       new TWEEN.Tween(this.camera.position)
