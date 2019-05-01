@@ -1408,7 +1408,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   getClosestBlock () {
-    if (this.camera.position.y >= 600) {
+    if (this.camera.position.y >= 1100) {
       if (this.state.closestBlock !== null) {
         this.setState({closestBlock: null})
       }
@@ -1456,7 +1456,7 @@ class App extends mixin(EventEmitter, Component) {
         if (this.prevClosestBlock.blockData.hash !== this.closestBlock.blockData.hash) {
           this.closestBlockReadyForUpdate = true
         }
-        if (closestDist < 300000 && this.closestBlockReadyForUpdate) {
+        if (closestDist < 400000 && this.closestBlockReadyForUpdate) {
           this.closestBlockReadyForUpdate = false
           this.emit('blockChanged')
         }
@@ -2067,6 +2067,10 @@ class App extends mixin(EventEmitter, Component) {
 
       let blockYDist = this.vrActive ? 20 : 400
 
+      if (this.config.detector.isMobile) {
+        blockYDist = 1000
+      }
+
       let that = this
       new TWEEN.Tween(this.camera.position)
         .to(aboveStart, 5000)
@@ -2297,7 +2301,7 @@ class App extends mixin(EventEmitter, Component) {
     this.getClosestBlock()
 
     if (this.blockReady) {
-      if (!this.vrActive && this.audioManager.analyser && window.oscilloscope) {
+      if (!this.vrActive && this.audioManager.analyser && window.oscilloscope && !this.config.detector.isMobile) {
         window.oscilloscope.drawScope(this.audioManager.analyser, window.oscilloscope.refs.scope)
       }
 
@@ -3979,16 +3983,18 @@ class App extends mixin(EventEmitter, Component) {
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
+    let camYPos = this.config.detector.isMobile ? 1000 : 400
+
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
-    let to = new THREE.Vector3(posX, 400, posZ)
+    let to = new THREE.Vector3(posX, camYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         break
       case 'underside':
-        to.y = -350
+        to.y = this.config.detector.isMobile ? -1000 : -350
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
         break
       case 'side':
@@ -4041,16 +4047,18 @@ class App extends mixin(EventEmitter, Component) {
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
+    let camYPos = this.config.detector.isMobile ? 1000 : 400
+
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
-    let to = new THREE.Vector3(posX, 400, posZ)
+    let to = new THREE.Vector3(posX, camYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
         break
       case 'underside':
-        to.y = -350
+        to.y = this.config.detector.isMobile ? -1000 : -350
         this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
         break
       case 'side':
@@ -4345,6 +4353,7 @@ class App extends mixin(EventEmitter, Component) {
         {this.UITXSearchBox()}
         {this.UIBlockSearchBox()}
         <BlockDetails
+          config={this.config}
           posX={this.state.posX}
           posY={this.state.posY}
           posZ={this.state.posZ}

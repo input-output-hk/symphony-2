@@ -200,6 +200,12 @@ canvas#sketchboard {
   text-align: center;
 }
 
+@media only screen and (max-width: 600px) {
+  .explore-container {
+    display: none;
+  }
+}
+
 .cancel {
   display: block;
   width: 45px;
@@ -384,8 +390,34 @@ canvas#sketchboard {
   transition-timing-function: ease-in-out;
 }
 
+@media only screen and (max-width: 600px) {
+  .sidebar {
+    background: rgba(0, 0, 0, 1.0);
+  }
+}
+
 .sidebar.closed {
   width: 58px;
+}
+
+@media only screen and (max-width: 600px) {
+  .sidebar.closed {
+    background: none;
+    border: none;
+    height: 20px;
+  }
+
+  .sidebar.closed .key {
+    display: none;
+  }
+
+  .sidebar.closed .explore {
+    display: none;
+  }
+
+  .sidebar.closed .sidebar-footer {
+    display: none;
+  }
 }
 
 .sidebar.open {
@@ -736,11 +768,29 @@ canvas#sketchboard {
   padding: 0;
 }
 
+@media only screen and (max-width: 600px) {
+  .block-hash h2 {
+    font-size: 5vw;
+    padding: 20px;
+  }
+}
+
 .block-hash h3 {
   font-size: 12px;
 }
 
+@media only screen and (max-width: 600px) {
+  .block-hash h3 {
+    display: none;
+  }
+}
 
+@media only screen and (max-width: 600px) {
+  .block-hash {
+    bottom: 15px;
+    left: 15px;
+  }
+}
 
 .tx-details-border {
   position: absolute;
@@ -800,6 +850,12 @@ canvas#sketchboard {
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
 
+@media only screen and (max-width: 600px) {
+  .loading-container h1 {
+    font-size: 7vw;
+  }
+}
+
 .loading-container h1 span {
   font-weight: 500;
 }
@@ -808,6 +864,12 @@ canvas#sketchboard {
   width: 17vw;
   opacity: 0.8;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+}
+
+@media only screen and (max-width: 600px) {
+  .symphony-logo {
+    width: 80vw;
+  }
 }
 
 .symphony-logo.pulsate {
@@ -903,6 +965,14 @@ canvas#sketchboard {
   transition: opacity 2s, filter 2s;
 }
 
+@media only screen and (max-width: 600px) {
+  .intro-container h1 {
+    font-size: 4.8vw;
+    padding: 20px;
+    line-height: 33px;
+  }
+}
+
 .intro-container h1.show {
   opacity: 1;
   filter: blur(0ex);
@@ -963,10 +1033,19 @@ canvas#sketchboard {
   border: none;
   opacity: 0.6;
 }
+
+@media only screen and (max-width: 600px) {
+  .block-navigation-prev {
+    left: -9vh;
+    width: 7vh;
+  }
+}
+
 .block-navigation-prev:hover {
   cursor: pointer;
   opacity: 1.0;
 }
+
 .block-navigation-prev.hide {
   display: none;
 }
@@ -988,6 +1067,13 @@ canvas#sketchboard {
   opacity: 0.6;
 }
 
+@media only screen and (max-width: 600px) {
+  .block-navigation-next {
+    right: -9vh;
+    width: 7vh;
+  }
+}
+
 .block-navigation-next:hover {
   cursor: pointer;
   opacity: 1.0;
@@ -1004,6 +1090,13 @@ canvas#sketchboard {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+@media only screen and (max-width: 600px) {
+  .block-navigation {
+    width: 58.8vw;
+    height: 58.8vw;
+  }
 }
 
 .grad-left {
@@ -1090,6 +1183,12 @@ canvas#sketchboard {
   background: rgba(0, 0, 0, 0.6);
   font-size: 18px;
   animation: blur-in 2.5s ease-in, fade-in 2.5s ease-in;
+}
+
+@media only screen and (max-width: 600px) {
+  .intro-overlay {
+    display:none;
+  }
 }
 
 .intro-overlay p {
@@ -1274,4 +1373,10 @@ canvas#sketchboard {
 .sound-hint {
   font-size: 11px;
   margin: 50px 0 0;
+}
+
+@media only screen and (max-width: 600px) {
+  .sound-hint {
+    display: none;
+  }
 }

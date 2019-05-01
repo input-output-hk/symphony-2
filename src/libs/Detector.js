@@ -1,12 +1,8 @@
 export default class Detector {
   constructor () {
     this.prefixes = 'Webkit Moz O ms'.split(' ')
-    this.dummyStyle = document.createElement('div').style
-    this.win = window
-    this.doc = document
     this.ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase()
-    this.isRetina = this.win.devicePixelRatio && this.win.devicePixelRatio >= 1.5
-    this.isSupportOpacity = typeof this.dummyStyle.opacity !== 'undefined'
+    this.isRetina = window.devicePixelRatio && window.devicePixelRatio >= 1.5
     this.isChrome = this.ua.indexOf('chrome') > -1
     this.isFirefox = this.ua.indexOf('firefox') > -1
     this.isSafari = this.ua.indexOf('safari') > -1

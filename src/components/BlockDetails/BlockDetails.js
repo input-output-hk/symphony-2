@@ -4,8 +4,6 @@ import moment from 'moment'
 
 import Scope from '../Scope/Scope'
 
-// import styles from './BlockDetails.css'
-
 export default class BlockDetails extends Component {
   UIUndersideButton () {
     switch (this.props.controlType) {
@@ -263,7 +261,9 @@ export default class BlockDetails extends Component {
               <li><h3>Version:</h3> <strong>{ this.props.closestBlock.blockData.ver }</strong></li>
               <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
             </ul>
-            <Scope />
+            <Scope
+              config={this.props.config}
+            />
           </div>
 
           <div className='autopilot-controls'>

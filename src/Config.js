@@ -44,14 +44,15 @@ const Config = {
   },
   camera: {
     fov: 80,
-    initPos: new THREE.Vector3(0.0, 1300000.0, 0.0),
+    initPos: detector.isMobile ? new THREE.Vector3(0.0, 2300000.0, 0.0) : new THREE.Vector3(0.0, 1300000.0, 0.0),
     initTarget: new THREE.Vector3(0.0, 0.0, 0.0)
   },
   VR: {
     interactionTimeout: 0, // (ms)
     experienceLength: 180000 // (ms)
   },
-  floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType
+  floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType,
+  detector: detector
 }
 
 export default Config

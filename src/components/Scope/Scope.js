@@ -48,87 +48,91 @@ export default class Scope extends Component {
   }
 
   render () {
-    return (
-      <div>
-        <div className={styles.scopeBorder} />
-        <div className={styles.scopeGridContainer}>
+    if (this.props.config.detector.isMobile) {
+      return null
+    } else {
+      return (
+        <div>
+          <div className={styles.scopeBorder} />
+          <div className={styles.scopeGridContainer}>
 
-          <div className={styles.scopeGridContainerChildTopLeft} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
-          <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTopLeft} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
+            <div className={styles.scopeGridContainerChildTop} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
-          <div className={styles.scopeGridContainerChildLeft} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
-          <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChildLeft} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
+            <div className={styles.scopeGridContainerChild} />
 
+          </div>
+
+          <canvas id={styles.scope} ref='scope' width='220' height='80' />
         </div>
-
-        <canvas id={styles.scope} ref='scope' width='220' height='80' />
-      </div>
-    )
+      )
+    }
   }
 }

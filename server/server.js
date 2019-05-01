@@ -34,7 +34,7 @@ const planeSize = 500
 
 const map = (n, a, b, x, y) => x + (n - a) * (y - x) / (b - a)
 
-let currentHeight = 389262
+let currentHeight = 61843
 
 let voronoi
 
