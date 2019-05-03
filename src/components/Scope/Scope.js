@@ -52,7 +52,7 @@ export default class Scope extends Component {
       return null
     } else {
       return (
-        <div>
+        <div className={styles.oscilloscope}>
           <div className={styles.scopeBorder} />
           <div className={styles.scopeGridContainer}>
 

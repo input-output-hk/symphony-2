@@ -43,3 +43,10 @@
     composes: scopeGridContainerChild;
     border-left: none;
 }
+
+:local(.oscilloscope) {
+    position: absolute;
+    top: 373px;
+    width: 244px;
+    right: 0;
+}

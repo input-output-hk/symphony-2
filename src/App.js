@@ -208,9 +208,9 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  componentDidMount () {
-    // this.initStage()
-  }
+  // componentDidMount () {
+  //   // this.initStage()
+  // }
 
   async initStage (quality = 'high') {
     this.initRenderer(quality)
@@ -2111,7 +2111,7 @@ class App extends mixin(EventEmitter, Component) {
         .easing(this.defaultCamEasing)
         .start()
 
-      this.animateCamRotation(20000)
+      this.animateCamRotation(200)
     })
   }
 
@@ -2632,6 +2632,11 @@ class App extends mixin(EventEmitter, Component) {
           this.VRReadyToEnd = true
         }, this.config.VR.experienceLength)
       } else {
+        // this.goToBlock(this.maxHeight)
+        // this.setState({
+        //   activeIntro: 7
+        // })
+
         this.setState({
           showIntro: true
         })
@@ -2695,11 +2700,20 @@ class App extends mixin(EventEmitter, Component) {
       if (e.button !== 0) {
         return
       }
+      this.onMouseUp(e)
+    })
 
+    document.addEventListener('touchend', (e) => {
+      if (e.button !== 0) {
+        return
+      }
       this.onMouseUp(e)
     })
 
     document.addEventListener('mousedown', (e) => {
+      this.onMouseDown()
+    })
+    document.addEventListener('touchstart', (e) => {
       this.onMouseDown()
     })
 

@@ -94,36 +94,36 @@ export default class BlockDetails extends Component {
   }
 
   UIIntroOverlay () {
-    if (this.props.showInfoOverlay) {
-      return (
-        <div className='intro-overlay'>
-          <p className='intro-overlay-merkle'>Cycle Through Views&nbsp;&rarr;</p>
-          <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Flight Simulator Mode</p>
-          <p className='intro-overlay-block-details'>View details about this block&nbsp;&rarr;</p>
-          <p className='intro-overlay-autopilot'>Autopilot controls&nbsp;&rarr;</p>
-          <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
-          <div className='intro-overlay-transactions'>
-            <p>Transactions are represented as hexagonal crystals.</p>
-            <p>The height of each crystal is determined by the value of the transaction.</p>
-            <p>The ratio of unspent to spent transaction outputs is reflected in the brightness of the crystal.</p>
-            <p>Each transaction generates a unique sound based on value, spent outputs and fee level.</p>
-            <p>The transaction sounds are cycled through in order of the time the transactions were made.</p>
-          </div>
-          <button className='intro-overlay-start-explore' onClick={this.props.toggleInfoOverlay}>Start Exploring</button>
-        </div>
-      )
+    let className = 'intro-overlay'
+    if (!this.props.showInfoOverlay) {
+      className += ' hide'
     }
+
+    return (
+      <div className={className}>
+        <p className='intro-overlay-merkle'>Cycle Through Views&nbsp;&rarr;</p>
+        <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Flight Simulator Mode</p>
+        <p className='intro-overlay-block-details'>View details about this block&nbsp;&rarr;</p>
+        <p className='intro-overlay-autopilot'>Autopilot controls&nbsp;&rarr;</p>
+        <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
+        <button className='intro-overlay-start-explore action-button' onClick={this.props.toggleInfoOverlay}>
+          <span className='tl' />
+          <span className='tr' />
+          <span className='bl' />
+          <span className='br' />
+          <div className='swipe' />
+          <p>Start Exploring</p>
+        </button>
+      </div>
+    )
   }
 
   UICockpitInfoOverlay () {
-    if (this.props.flyControlsInteractionCount < 2) {
+    if (this.props.controlType === 'fly' && this.props.flyControlsInteractionCount < 2) {
       return (
         <div className='free-explore-info-overlay'>
           <p>
             Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-            <br />
-            <br />
-            Move your mouse to tilt the camera
           </p>
           <div className='free-explore-keys'>
             <div className='free-explore-key-container'>
@@ -145,18 +145,25 @@ export default class BlockDetails extends Component {
               <div className='free-explore-key'>D</div> <p className='key-d'>Move right</p>
             </div>
           </div>
-          <button className='go-button' onClick={this.props.closeFlyInfo.bind(this)}>GO</button>
+          <button className='go-button action-button' onClick={this.props.closeFlyInfo.bind(this)}>
+            <span className='tl' />
+            <span className='tr' />
+            <span className='bl' />
+            <span className='br' />
+            <div className='swipe' />
+            <p>GO</p>
+          </button>
+
         </div>
       )
     }
   }
 
   UICockpit () {
-    if (this.props.controlType === 'fly') {
+    if (this.props.controlType === 'fly' && this.props.flyControlsInteractionCount > 1) {
       return (
         <div className='hud'>
 
-          {this.UICockpitInfoOverlay()}
           <div className='coords'>
             <div className='posX'>X: { this.props.posX }</div>
             <div className='posY'>Y: { this.props.posY }</div>
@@ -199,6 +206,30 @@ export default class BlockDetails extends Component {
     }
   }
 
+  infoPanelContent () {
+    switch (this.props.controlType) {
+      case 'underside':
+        return (
+          <div>
+            <p>Merkle Trees allow efficient and secure verification of large data structures.</p>
+            <p>You are looking at a representation of the structure of the Merkle Tree for this block. The branches of the tree connect to the transactions above.</p>
+            <p>Merkle Trees cryptographically link one block to the next.</p>
+          </div>
+        )
+
+      default:
+        return (
+          <div>
+            <p>Transactions are represented as crystals.</p>
+            <p>The height of each crystal is value of the transaction.</p>
+            <p>The ratio of unspent outputs is shown in the brightness of the crystal.</p>
+            <p>Each transaction creates sound based on value, spent outputs and fee.</p>
+            <p>The sounds are cycled through in the order the transactions were made.</p>
+          </div>
+        )
+    }
+  }
+
   render () {
     if (this.props.closestBlock) {
       const health = this.props.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.props.closestBlock.blockData.healthRatio
@@ -216,6 +247,8 @@ export default class BlockDetails extends Component {
         <div className={className}>
 
           <div className='cockpit-border' />
+
+          {this.UICockpitInfoOverlay()}
 
           {this.UIIntroOverlay()}
 
@@ -262,11 +295,12 @@ export default class BlockDetails extends Component {
                 <li><h3>Version:</h3> <strong>{ this.props.closestBlock.blockData.ver }</strong></li>
                 <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
               </ul>
-              <Scope
-                config={this.props.config}
-              />
             </div>
           </div>
+
+          <Scope
+            config={this.props.config}
+          />
 
           <div className='autopilot-controls'>
             <h2 className='autopilot-controls-heading'>//AUTOPILOT</h2>
@@ -275,6 +309,14 @@ export default class BlockDetails extends Component {
               <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
               <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
               <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+            </div>
+          </div>
+
+          <div className='info-panel'>
+            <h2 className='info-panel-heading'>//INFO</h2>
+            <div className='info-panel-inner'>
+              <div className='info-panel-border' />
+              {this.infoPanelContent()}
             </div>
           </div>
 

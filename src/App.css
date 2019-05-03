@@ -17,6 +17,10 @@ a:hover {
   color: #ffffff;
 }
 
+body {
+  letter-spacing: 1px;
+}
+
 canvas#symphony-stage {
   width: 100vw;
   height: 100vh;
@@ -40,7 +44,7 @@ canvas#sketchboard {
   position: fixed;
   top: 0;
   left: 0;
-  color: #fff;
+  color: #cecece;
   font-family: 'Inconsolata', monospace;
   text-transform: uppercase;
   font-weight: 300;
@@ -104,11 +108,12 @@ canvas#sketchboard {
   left: 122px;
 }
 
-.block-details-border {
+.block-details-border,
+.info-panel-border {
   border-left: 1px solid #fff;
   border-top: 1px solid #fff;
   border-bottom: 1px solid #fff;
-  height: 270px;
+  height: 100%;
   width: 42px;
   position: absolute;
   left: -1px;
@@ -123,11 +128,13 @@ canvas#sketchboard {
 
 }
 
-.block-details {
+
+.block-details,
+.info-panel {
   pointer-events: auto;
   position: absolute;
   right: 20px;
-  top: 130px;
+  top: 106px;
   width: 222px;
   z-index: 9;
   background: rgba(0, 0, 0, 0.25);
@@ -138,8 +145,13 @@ canvas#sketchboard {
   opacity: 1.0;
 }
 
+.info-panel {
+  top: 628px;
+}
+
 @media only screen and (max-width: 600px) {
-  .block-details {
+  .block-details,
+  .info-panel {
     background: none;
     position: absolute;
     left: 0;
@@ -165,7 +177,8 @@ canvas#sketchboard {
 }
 
 
-.block-details-heading {
+.block-details-heading,
+.info-panel-heading {
   position: absolute;
   left: 0;
   top: -29px;
@@ -904,6 +917,7 @@ canvas#sketchboard {
   font-size: 1vw;
   text-transform: uppercase;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  letter-spacing: 10px;
 }
 
 @media only screen and (max-width: 600px) {
@@ -995,6 +1009,25 @@ canvas#sketchboard {
     transform: scale(3.0);
   }
 }
+
+@keyframes flicker {
+  0% {
+    opacity: 1.0;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1.0;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1.0;
+  }
+}
+
 
 .intro-container {
   font-family: 'Montserrat', sans-serif;
@@ -1181,7 +1214,7 @@ canvas#sketchboard {
 .autopilot-controls {
   position: absolute;
   right: 20px;
-  top: 560px;
+  top: 528px;
   width: 222px;
   z-index: 9;
   background: rgba(0, 0, 0, 0.25);
@@ -1257,6 +1290,12 @@ canvas#sketchboard {
   animation: blur-in 2.5s ease-in, fade-in 2.5s ease-in;
 }
 
+.intro-overlay.hide {
+  opacity: 0;
+  transition: opacity 3s, filter 3s;
+  filter: blur(6ex);
+}
+
 @media only screen and (max-width: 600px) {
   .intro-overlay {
     display:none;
@@ -1266,12 +1305,12 @@ canvas#sketchboard {
 .intro-overlay p {
   position: absolute;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: normal;
   z-index: 1;
 }
 
 .intro-overlay-merkle {
-  left: 37%;
+  left: 36%;
   top: 29px;
 }
 
@@ -1281,14 +1320,14 @@ canvas#sketchboard {
 }
 
 .intro-overlay-block-details {
-  right: 253px;
+  right: 232px;
   top: 242px;
-  width: 12vw
+  width: 13vw;
 }
 
 .intro-overlay-autopilot {
   right: 253px;
-  top: 570px;
+  top: 538px;
 }
 
 .intro-overlay-sidebar {
@@ -1317,20 +1356,106 @@ canvas#sketchboard {
 
 .intro-overlay-start-explore {
   position: absolute;
-  font-family: 'Montserrat';
+  font-family: 'Inconsolata', monospace;
   text-transform: uppercase;
   transform: translate(-50%, -50%);
-  top: 77%;
+  top: 50%;
   left: 50%;
-  padding: 10px 20px;
+  padding: 12px 30px;
   z-index: 1;
   background: rgba(0, 0, 0, 0.7);
-  border: 1px solid #333;
-  color: #fff;
+  border: none;
+  color: #cecece;
+  font-size: 17px;
 }
 
-.intro-overlay-start-explore:hover {
+.action-button {
+  overflow: hidden;
+}
+
+.action-button p {
+  position: static;
+  padding: 0;
+  margin: 0;
+}
+
+.action-button:hover {
   cursor: pointer;
+}
+.action-button:hover p {
+  cursor: pointer;
+  animation: flicker 0.25s;
+}
+
+.action-button:hover .tl {
+  top: 3px;
+  left: 3px;
+  transition: top 0.1s, left 0.1s;
+}
+.action-button:hover .tr {
+  top: 3px;
+  right: 3px;
+  transition: top 0.1s, right 0.1s;
+}
+.action-button:hover .bl {
+  bottom: 3px;
+  left: 3px;
+  transition: bottom 0.1s, left 0.1s;
+}
+.action-button:hover .br {
+  bottom: 3px;
+  right: 3px;
+  transition: bottom 0.1s, right 0.1s;
+}
+
+.action-button .swipe {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  left: -100%;
+  top: 0;
+  position: absolute;
+  opacity: 0.2;
+  transition: left 0.3s;
+  clip-path: polygon(90% 0, 100% 0, 80% 100%, 70% 100%);
+  z-index: 2;
+}
+
+.action-button:hover .swipe {
+  left: 100px;
+}
+
+.action-button span {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  display: block;
+  opacity: 0.3;
+}
+
+.action-button .tl {
+  left: 0;
+  top: 0;
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+}
+.action-button .tr {
+  right: 0;
+  top: 0;
+  border-right: 1px solid #fff;
+  border-top: 1px solid #fff;
+}
+.action-button .bl {
+  left: 0;
+  bottom: 0;
+  border-left: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+.action-button .br {
+  right: 0;
+  bottom: 0;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
 }
 
 .free-explore-info-overlay {
@@ -1339,8 +1464,10 @@ canvas#sketchboard {
   top: 0;
   width: 100%;
   height: 100%;
-  background: #000;
+  background: rgba(0, 0, 0, 0.6);
   font-size: 18px;
+  animation: blur-in 2.5s ease-in, fade-in 2.5s ease-in;
+  z-index: 3;
 }
 
 .free-explore-info-overlay > p {
@@ -1365,7 +1492,7 @@ canvas#sketchboard {
   font-size: 40px;
   padding: 10px 20px;
   margin: 20px;
-  border: 1px solid #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .free-explore-key-container {
@@ -1386,7 +1513,7 @@ canvas#sketchboard {
 
 .free-explore-key-container .key-w {
   left: 97px;
-  top: -10px;
+  top: -15px;
 }
 
 .free-explore-key-container .key-e {
@@ -1413,12 +1540,18 @@ canvas#sketchboard {
 
 .go-button {
   position: absolute;
+  font-family: 'Inconsolata', monospace;
+  text-transform: uppercase;
+  top: 697px;
   left: 50%;
-  font-size: 30px;
-  width: 100px;
-  margin-left: -50px;
-  top: 700px;
-  z-index: 10;
+  width: 140px;
+  z-index: 1;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: #cecece;
+  font-size: 15px;
+  margin-left: -70px;
 }
 
 .go-button:hover {
