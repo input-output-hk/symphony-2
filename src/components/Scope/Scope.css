@@ -45,8 +45,8 @@
 }
 
 :local(.oscilloscope) {
-    position: absolute;
-    top: 373px;
-    width: 244px;
-    right: 0;
+    width: 245px;
+    position: relative;
+    left: -13px;
+    top: 3px;
 }

@@ -133,11 +133,6 @@ export default class Audio extends EventEmitter {
         rArray[index] = map(sineArray[index + 200], min, max, -vol, vol) // right channel slightly out of phase with left for stereo effect
       }
     }
-
-    // return {
-    //   lArray: lArray,
-    //   rArray: rArray
-    // }
   }
 
   sineBank (
@@ -156,7 +151,7 @@ export default class Audio extends EventEmitter {
 
     for (let i = 0; i + chunkIndex < length; i++) {
       let time = times[i + chunkIndex]
-      // if (Math.abs(currentTime - time) < 8) {
+
       let ANGULAR_FREQUENCY = frequencies[i + chunkIndex] * twoPI
 
       let ANGULAR_FREQUENCY_MOD = (frequencies[i + chunkIndex] + (Math.sin(currentTime * (custom_random(ANGULAR_FREQUENCY) * 0.1)) * (health * 10.0))) * twoPI
@@ -189,10 +184,9 @@ export default class Audio extends EventEmitter {
         Math.sin(currentAngleMod * (7.0 + (custom_random(ANGULAR_FREQUENCY * 7.0) * health))) * spent7 +
         Math.sin(currentAngleMod * (8.0 + (custom_random(ANGULAR_FREQUENCY * 8.0) * health))) * spent8
 
-      wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 30.0)), custom_random(i))
+      wave *= Math.max(Math.sin(currentTime * Math.floor(custom_random(ANGULAR_FREQUENCY) * 20.0)), custom_random(i))
 
       sum += wave * attack * release
-      // }
     }
 
     return sum

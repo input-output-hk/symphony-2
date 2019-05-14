@@ -31,7 +31,7 @@ export default class Disk extends Base {
     this.material = new DiskMaterial({
       flatShading: true,
       color: 0xffffff,
-      emissive: 0x000000,
+      emissive: 0x111111,
       metalness: 0.4,
       roughness: 0.3,
       opacity: 1.0,

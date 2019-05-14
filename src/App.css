@@ -122,12 +122,11 @@ canvas#sketchboard {
 }
 
 @media only screen and (max-width: 600px) {
-  .block-details-border {
+  .block-details-border,
+  .info-panel-border {
     display:none;
   }
-
 }
-
 
 .block-details,
 .info-panel {
@@ -146,12 +145,11 @@ canvas#sketchboard {
 }
 
 .info-panel {
-  top: 628px;
+  top: 390px;
 }
 
 @media only screen and (max-width: 600px) {
-  .block-details,
-  .info-panel {
+  .block-details {
     background: none;
     position: absolute;
     left: 0;
@@ -161,6 +159,10 @@ canvas#sketchboard {
     top: 65px;
     height: 100%;
     z-index: 0;
+  }
+
+  .info-panel {
+    display: none;
   }
 }
 
@@ -322,9 +324,7 @@ canvas#sketchboard {
 }
 
 .flip-view-container {
-  background: #1b2238;
   padding: 11px;
-  border-radius: 50px;
   display: block;
   position: absolute;
   left: 45%;
@@ -348,7 +348,7 @@ canvas#sketchboard {
 
 
 .tx-details {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.45);
   position: absolute;
   left: 50%;
   border: 0;
@@ -953,7 +953,7 @@ canvas#sketchboard {
 
 .loaded {
   opacity: 0.0;
-  filter: blur(6ex);
+  filter: blur(2ex);
   /* transition: opacity 10s, filter 10s, visibility 10s; */
   visibility: hidden;
   /* animation: zoom-in 10s ease-in; */
@@ -985,7 +985,7 @@ canvas#sketchboard {
 
 @keyframes blur-in {
   0% {
-    filter: blur(6ex);
+    filter: blur(2ex);
   }
   100% {
     filter: blur(0ex);
@@ -1050,7 +1050,7 @@ canvas#sketchboard {
   text-transform: uppercase;
   position: absolute;
   opacity: 0;
-  filter: blur(6ex);
+  filter: blur(2ex);
   transition: opacity 2s, filter 2s;
 }
 
@@ -1213,11 +1213,10 @@ canvas#sketchboard {
 
 .autopilot-controls {
   position: absolute;
-  right: 20px;
-  top: 528px;
-  width: 222px;
+  left: 55%;
+  top: 20px;
+  width: 129px;
   z-index: 9;
-  background: rgba(0, 0, 0, 0.25);
   padding: 0 12px;
   -webkit-transition: opacity .5s;
   -o-transition: opacity .5s;
@@ -1259,10 +1258,13 @@ canvas#sketchboard {
   width: 10px;
   height: 19px;
   margin: 10px 10px;
+  opacity: 0.7;
+  transition: opacity 0.5s;
 }
 
 .autopilot-controls span:hover {
   cursor: pointer;
+  opacity: 1.0;
 }
 
 .autopilot-controls span.backward {
@@ -1293,7 +1295,7 @@ canvas#sketchboard {
 .intro-overlay.hide {
   opacity: 0;
   transition: opacity 3s, filter 3s;
-  filter: blur(6ex);
+  filter: blur(2ex);
 }
 
 @media only screen and (max-width: 600px) {
@@ -1307,6 +1309,7 @@ canvas#sketchboard {
   font-size: 14px;
   font-weight: normal;
   z-index: 1;
+  text-align: center;
 }
 
 .intro-overlay-merkle {
@@ -1315,19 +1318,19 @@ canvas#sketchboard {
 }
 
 .intro-overlay-free-explore {
-  left: 54%;
-  top: 29px;
+  left: 47.3%;
+  top: 65px;
 }
 
 .intro-overlay-block-details {
-  right: 232px;
+  right: 246px;
   top: 242px;
   width: 13vw;
 }
 
 .intro-overlay-autopilot {
-  right: 253px;
-  top: 538px;
+  left: 61.4%;
+  top: 29px;
 }
 
 .intro-overlay-sidebar {

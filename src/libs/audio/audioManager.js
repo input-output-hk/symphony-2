@@ -25,7 +25,8 @@ export default class Audio extends EventEmitter {
     })
 
     this.gpu = new GPU()
-    this.audioContext = new window.AudioContext()
+    let Ctx = window.AudioContext || window.webkitAudioContext
+    this.audioContext = new Ctx()
     this.blockAudioBus = this.audioContext.createGain()
     this.masterBus = this.audioContext.createGain()
 
@@ -331,6 +332,9 @@ export default class Audio extends EventEmitter {
 
     this.narrationFilePath = 'assets/sounds/narration/'
     this.narrationSource = null
+
+    this.audioFilePath = 'assets/sounds/'
+    this.loadedAudioSources = {}
   }
 
   startAudio (blockData, arrayBuffers) {
@@ -578,6 +582,33 @@ export default class Audio extends EventEmitter {
           }, delay)
         }
       }
+    })
+  }
+
+  /**
+   * Play audio file
+   *
+   * @returns Promise
+   */
+  async playAudioFile (filePath, loop = false) {
+    return new Promise(async (resolve) => {
+      let path = this.audioFilePath + filePath + '.mp3'
+
+      let response = await window.fetch(path)
+      let arrayBuffer = await response.arrayBuffer()
+      let audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+      let source = this.audioContext.createBufferSource()
+      source.buffer = audioBuffer
+
+      const gainNode = this.audioContext.createGain()
+      gainNode.gain.value = 0.3
+      gainNode.connect(this.audioContext.destination)
+
+      if (loop) {
+        source.loop = true
+      }
+      source.connect(gainNode)
+      source.start()
     })
   }
 

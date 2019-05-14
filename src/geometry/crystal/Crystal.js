@@ -42,10 +42,7 @@ export default class Crystal extends Base {
       envMap: this.cubeMap,
       normalMap: this.normalMap,
       normalScale: new THREE.Vector2(0.01, 0.01),
-      // alphaMap: this.alphaMap,
-      // bumpMap: this.bumpMap,
       roughnessMap: this.roughnessMap
-      // bumpScale: 0.05
     })
   }
 
@@ -332,6 +329,7 @@ export default class Crystal extends Base {
   }
 
   update (args) {
+    this.material.uniforms.uIsMobile.value = this.config.detector.isMobile ? 1.0 : 0.0
     this.material.uniforms.uTime.value = args.time
     this.material.uniforms.uAudioTime.value = args.time
     this.material.uniforms.uCamPos.value = args.camPos
@@ -346,6 +344,11 @@ class CrystalMaterial extends THREE.MeshStandardMaterial {
     this.type = 'ShaderMaterial'
 
     this.uniforms = THREE.ShaderLib.standard.uniforms
+
+    this.uniforms.uIsMobile = {
+      type: 'f',
+      value: 0.0
+    }
 
     this.uniforms.uTime = {
       type: 'f',

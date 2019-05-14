@@ -19,5 +19,6 @@ void main() {
 
 	gl_FragColor.a *= noiseVal;
 
-	gl_FragColor.a *= (0.8 + (sin(uTime) + 1.0 * 0.5));
+	//gl_FragColor.a *= (0.8 + (sin(uTime) + 1.0 * 0.5));
+	// gl_FragColor.a *= (0.8);
 }

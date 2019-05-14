@@ -95,35 +95,34 @@ export default class BlockDetails extends Component {
 
   UIIntroOverlay () {
     let className = 'intro-overlay'
-    if (!this.props.showInfoOverlay) {
-      className += ' hide'
+    if (this.props.showInfoOverlay) {
+      return (
+        <div className={className}>
+          <p className='intro-overlay-merkle'>Cycle Through Views&nbsp;&rarr;</p>
+          <p className='intro-overlay-free-explore'>&uarr;<br />Flight Simulator Mode</p>
+          <p className='intro-overlay-autopilot'>&larr;&nbsp;Autopilot controls</p>
+          <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
+          <button className='intro-overlay-start-explore action-button' onClick={this.props.toggleInfoOverlay} onMouseEnter={this.props.playButtonSound}>
+            <span className='tl' />
+            <span className='tr' />
+            <span className='bl' />
+            <span className='br' />
+            <div className='swipe' />
+            <p>Start Exploring</p>
+          </button>
+        </div>
+      )
     }
-
-    return (
-      <div className={className}>
-        <p className='intro-overlay-merkle'>Cycle Through Views&nbsp;&rarr;</p>
-        <p className='intro-overlay-free-explore'>&larr;&nbsp;Enter Flight Simulator Mode</p>
-        <p className='intro-overlay-block-details'>View details about this block&nbsp;&rarr;</p>
-        <p className='intro-overlay-autopilot'>Autopilot controls&nbsp;&rarr;</p>
-        <p className='intro-overlay-sidebar'>&larr;&nbsp;Search for Blocks and Transactions</p>
-        <button className='intro-overlay-start-explore action-button' onClick={this.props.toggleInfoOverlay}>
-          <span className='tl' />
-          <span className='tr' />
-          <span className='bl' />
-          <span className='br' />
-          <div className='swipe' />
-          <p>Start Exploring</p>
-        </button>
-      </div>
-    )
   }
 
   UICockpitInfoOverlay () {
     if (this.props.controlType === 'fly' && this.props.flyControlsInteractionCount < 2) {
       return (
         <div className='free-explore-info-overlay'>
-          <p>
-            Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
+          <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
+          <br />
+          <br />
+          Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
             <div className='free-explore-key-container'>
@@ -145,13 +144,13 @@ export default class BlockDetails extends Component {
               <div className='free-explore-key'>D</div> <p className='key-d'>Move right</p>
             </div>
           </div>
-          <button className='go-button action-button' onClick={this.props.closeFlyInfo.bind(this)}>
+          <button className='go-button action-button' onClick={this.props.closeFlyInfo.bind(this)} onMouseEnter={this.props.playButtonSound}>
             <span className='tl' />
             <span className='tr' />
             <span className='bl' />
             <span className='br' />
             <div className='swipe' />
-            <p>GO</p>
+            <p>Start</p>
           </button>
 
         </div>
@@ -163,7 +162,6 @@ export default class BlockDetails extends Component {
     if (this.props.controlType === 'fly' && this.props.flyControlsInteractionCount > 1) {
       return (
         <div className='hud'>
-
           <div className='coords'>
             <div className='posX'>X: { this.props.posX }</div>
             <div className='posY'>Y: { this.props.posY }</div>
@@ -198,8 +196,8 @@ export default class BlockDetails extends Component {
     ) {
       return (
         <div className='block-navigation'>
-          <button title='Previous Block' onClick={() => this.props.gotoPrevBlock()} className={prevButtonClassName}>Previous Block</button>
-          <button title='Next Block' onClick={() => this.props.gotoNextBlock()} className={nextButtonClassName}>Next Block</button>
+          <button title='Previous Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoPrevBlock() }} className={prevButtonClassName}>Previous Block</button>
+          <button title='Next Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoNextBlock() }} className={nextButtonClassName}>Next Block</button>
         </div>
 
       )
@@ -211,8 +209,8 @@ export default class BlockDetails extends Component {
       case 'underside':
         return (
           <div>
-            <p>Merkle Trees allow efficient and secure verification of large data structures.</p>
-            <p>You are looking at a representation of the structure of the Merkle Tree for this block. The branches of the tree connect to the transactions above.</p>
+            <p>Merkle Trees allow efficient and secure verification of large data sets.</p>
+            <p>The branches of the tree connect to the transactions above.</p>
             <p>Merkle Trees cryptographically link one block to the next.</p>
           </div>
         )
@@ -220,11 +218,9 @@ export default class BlockDetails extends Component {
       default:
         return (
           <div>
-            <p>Transactions are represented as crystals.</p>
-            <p>The height of each crystal is value of the transaction.</p>
-            <p>The ratio of unspent outputs is shown in the brightness of the crystal.</p>
-            <p>Each transaction creates sound based on value, spent outputs and fee.</p>
-            <p>The sounds are cycled through in the order the transactions were made.</p>
+            <p>Transactions are shown as crystals; height is value, brightness is spent output ratio.</p>
+            <p>Each crystal creates sound based on value, spent outputs and fee.</p>
+            <p>Sounds are cycled through in the order the transactions were made.</p>
           </div>
         )
     }
@@ -246,6 +242,11 @@ export default class BlockDetails extends Component {
       return (
         <div className={className}>
 
+          <div className='controls-container'>
+            <div className='controls-container-left' />
+            <div className='controls-container-right' />
+          </div>
+
           <div className='cockpit-border' />
 
           {this.UICockpitInfoOverlay()}
@@ -254,6 +255,14 @@ export default class BlockDetails extends Component {
 
           {this.UICockpit()}
           {this.UICockpitButton()}
+
+          <div className='autopilot-controls'>
+            <div className='autopilot-inner'>
+              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
+              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+            </div>
+          </div>
 
           <div className={'grad-left' + gradClass} />
           <div className={'grad-right' + gradClass} />
@@ -298,26 +307,14 @@ export default class BlockDetails extends Component {
             </div>
           </div>
 
-          <Scope
-            config={this.props.config}
-          />
-
-          <div className='autopilot-controls'>
-            <h2 className='autopilot-controls-heading'>//AUTOPILOT</h2>
-            <div className='autopilot-controls-border' />
-            <div className='autopilot-inner'>
-              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
-              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
-              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
-            </div>
-          </div>
-
           <div className='info-panel'>
-            <h2 className='info-panel-heading'>//INFO</h2>
             <div className='info-panel-inner'>
               <div className='info-panel-border' />
               {this.infoPanelContent()}
             </div>
+            <Scope
+              config={this.props.config}
+            />
           </div>
 
         </div>

@@ -6,6 +6,7 @@
 #define PHYSICAL
 
 uniform float uTime;
+uniform float uIsMobile;
 uniform float uAudioTime;
 uniform vec3 uCamPos;
 uniform float uAutoPilot;
@@ -40,11 +41,9 @@ varying float vEnvelope;
 varying vec3 vPickerColor;
 varying vec4 vWorldPosition;
 
-// #ifndef FLAT_SHADED
 
-	varying vec3 vNormal;
+varying vec3 vNormal;
 
-// #endif
 
 #include <common>
 #include <uv_pars_vertex>
@@ -70,11 +69,7 @@ void main() {
 	
 	#include <defaultnormal_vertex>
 
-//#ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
-
 	vNormal = normalize( transformedNormal );
-
-//#endif
 
 	#include <begin_vertex>
 
@@ -94,22 +89,15 @@ void main() {
 	transformed.xyz = applyQuaternionToVector( quaternion, transformed.xyz );
 	vec3 originalTransform = transformed.xyz;
 
-	
-
-	// transformed.xz *= ((scale * attackLoad)  * 1.07);
 	transformed.xz *= scale;
 
 	transformed.y *= max(  ((offset.y + (3.0 * vEnvelope)) * attackLoad) , 0.5 );
 	transformed.y *= 2.0;
 
-	if (uCamPosYPositive != 1.0) {
-		//transformed.y += (offset.y * 0.5) * attackLoad;
+	if (uCamPosYPositive != 1.0 || uIsMobile == 1.0) {
 		transformed.y = max(transformed.y, 0.2) * topVertex;
 	}
 
-	// transformed.y += (1.0 * isSelected);
-
-	// transformed.y += abs(sin( (uTime*0.0005) )) * 5.0 * isSelected;
 	mat4 rotation = rotationMatrix(offset.xyz * vec3(0.0,1.0,0.0), (uTime*0.0002) * isSelected);
 
 	vec4 newPos = rotation * vec4( transformed, 1.0 );
@@ -129,12 +117,6 @@ void main() {
 		}
 	}
 
-	//float randVal = random(offset.x);
-	// float randVal = 1.0;
-
-	// transformed.y += (randVal * (offset.y*0.1) ) * centerTopVertex * attackLoad;
-	// transformed.y += (randVal * (offset.y*0.01)) * topVertex * attackLoad;
-		
 	vOffset = transformed;
 
     transformed.xz -= uOriginOffset.xy;

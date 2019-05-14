@@ -36,8 +36,8 @@ void main() {
 	// }
 
 	// outgoingLight *= vec3(112./255., 158./255., 236./255.);
-	outgoingLight.r += (vLife / uParticleLifeMax) * 0.3;
-	diffuseColor.a = (vLife / uParticleLifeMax);
+	outgoingLight.r += (vLife / uParticleLifeMax) * 0.25;
+	// diffuseColor.a = (vLife / uParticleLifeMax) * (vLife / uParticleLifeMax);
 	// diffuseColor.a *= 1.0 - (vLife / uParticleLifeMax);
 
 	gl_FragColor = vec4( outgoingLight, diffuseColor.a );
