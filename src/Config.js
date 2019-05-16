@@ -8,9 +8,6 @@ const Config = {
   scene: {
     showIntro: true,
     introTextTime: 5500, // ms
-    fullScreen: true,
-    width: 300,
-    height: 300,
     canvasID: 'symphony-stage', // ID of webgl canvas element
     autoRotate: false, // auto rotate camera around target
     autoRotateSpeed: 0.1, // speed of auto rotation

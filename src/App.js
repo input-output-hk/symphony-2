@@ -11,6 +11,7 @@ import 'firebase/storage'
 import moment from 'moment'
 import { map } from './utils/math'
 import FlyControls from './libs/FlyControls'
+import MapControls from './libs/MapControls'
 import AudioManager from './libs/audio/audioManager'
 import Circuit from './libs/circuit'
 import * as dat from 'dat.gui'
@@ -245,14 +246,16 @@ class App extends mixin(EventEmitter, Component) {
       config: this.config
     })
 
-    this.txGenerator = new Tx({
-      config: this.config
-    })
+    if (!this.config.detector.isMobile) {
+      this.txGenerator = new Tx({
+        config: this.config
+      })
 
-    this.particlesGenerator = new Particles({
-      config: this.config,
-      particleCount: this.unconfirmedCount
-    })
+      this.particlesGenerator = new Particles({
+        config: this.config,
+        particleCount: this.unconfirmedCount
+      })
+    }
 
     this.diskGenerator = new Disk({
       config: this.config
@@ -299,8 +302,10 @@ class App extends mixin(EventEmitter, Component) {
    * Switch renderOrder of elements based on camera position
    */
   setRenderOrder () {
-    this.txs.renderOrder = 0
-    this.particles.renderOrder = 0
+    if (!this.config.detector.isMobile) {
+      this.txs.renderOrder = 0
+      this.particles.renderOrder = 0
+    }
     this.glow.renderOrder = 0
 
     if (this.camera.position.y > 0) {
@@ -615,8 +620,10 @@ class App extends mixin(EventEmitter, Component) {
     if (this.lastSelectedID === this.lastHoveredID) {
       this.deselectTx()
     } else {
-      if (mouseMoveVec.lengthSq() > 10) {
-        return
+      if (!this.config.detector.isMobile) {
+        if (mouseMoveVec.lengthSq() > 10) {
+          return
+        }
       }
 
       if (this.txIsHovered) {
@@ -907,12 +914,19 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalAO.translateY(0.1)
     this.group.add(this.crystalAO)
 
-    this.txs = await this.txGenerator.init({
-      blockPositions: this.blockPositions,
-      renderer: this.renderer,
-      txHeights: []
-    })
-    this.group.add(this.txs)
+    if (!this.config.detector.isMobile) {
+      this.txs = await this.txGenerator.init({
+        blockPositions: this.blockPositions,
+        renderer: this.renderer,
+        txHeights: []
+      })
+      this.group.add(this.txs)
+      this.particles = await this.particlesGenerator.init({
+        blockGeoData: blockGeoData,
+        renderer: this.renderer
+      })
+      this.scene.add(this.particles)
+    }
 
     this.trees = await this.treeGenerator.init(blockGeoData)
     this.group.add(this.trees)
@@ -922,12 +936,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.occlusion = await this.occlusionGenerator.init(blockGeoData)
     this.group.add(this.occlusion)
-
-    this.particles = await this.particlesGenerator.init({
-      blockGeoData: blockGeoData,
-      renderer: this.renderer
-    })
-    this.scene.add(this.particles)
 
     this.closestBlockReadyForUpdate = true
 
@@ -955,6 +963,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   startUnconfirmed () {
+    if (this.config.detector.isMobile) {
+      return
+    }
+
     if (this.config.scene.liveUnconfirmedTX) {
       this.unconfirmedLoop()
     } else {
@@ -1176,7 +1188,24 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(5000)
   }
 
-  prepareCamAnim (to, toTarget, direction = 'down') {
+  toggleMapControls (target, orientation = 'positive') {
+    this.controls = new MapControls(this.cameraMain)
+    this.controls.domElement = this.renderer.domElement
+    this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.25
+    this.controls.screenSpacePanning = true
+    this.controls.minDistance = 20
+    this.controls.maxDistance = 800
+    this.controls.maxPolarAngle = orientation === 'positive' ? Math.PI / 2 : Math.PI * 2
+    this.controls.rotateSpeed = 0.05
+    this.controls.panSpeed = 0.25
+    this.controls.zoomSpeed = 0.5
+    this.controls.enableRotate = false
+    this.controls.target = target
+    this.controls.currentBlockPos = target.clone()
+  }
+
+  prepareCamAnim (to, toTarget) {
     this.animatingCamera = true
 
     if (this.controls) {
@@ -1197,20 +1226,6 @@ class App extends mixin(EventEmitter, Component) {
       this.camera.lookAt(this.camPosTarget)
     } else {
       this.camera.lookAt(new THREE.Vector3(0, 0, 0))
-
-      if (!this.vrActive) { // point camera down at block if not in VR
-        switch (direction) {
-          case 'up':
-            this.camera.rotateX((Math.PI / 2))
-            break
-          case 'down':
-            this.camera.rotateX(-(Math.PI / 2))
-            break
-
-          default:
-            break
-        }
-      }
     }
 
     this.camToRotation = new THREE.Euler().copy(this.camera.rotation)
@@ -1237,13 +1252,24 @@ class App extends mixin(EventEmitter, Component) {
 
     this.stopAutoPilotAnimation()
 
+    let toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+
     let yPos = this.topViewYPos
     if (this.vrActive) {
       yPos = 20
     }
 
+    let newPos = new THREE.Vector3(this.closestBlock.blockData.pos.x, yPos, this.closestBlock.blockData.pos.z).add(toCenterVec.normalize().multiplyScalar(0.01))
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    let offsetPos = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
     this.prepareCamAnim(
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, yPos, this.closestBlock.blockData.pos.z)
+      newPos,
+      new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
     )
 
     let that = this
@@ -1254,6 +1280,7 @@ class App extends mixin(EventEmitter, Component) {
       })
       .onComplete(() => {
         this.animatingCamera = false
+        this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1275,10 +1302,18 @@ class App extends mixin(EventEmitter, Component) {
 
     this.stopAutoPilotAnimation()
 
+    let toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+    let newPos = new THREE.Vector3(this.closestBlock.blockData.pos.x, this.undersideViewYPos, this.closestBlock.blockData.pos.z).add(toCenterVec.normalize().multiplyScalar(20))
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
+    let offsetPos = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
     this.prepareCamAnim(
-      new THREE.Vector3(this.closestBlock.blockData.pos.x, this.undersideViewYPos, this.closestBlock.blockData.pos.z),
-      null,
-      'up'
+      newPos,
+      new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
     )
 
     let that = this
@@ -1289,6 +1324,7 @@ class App extends mixin(EventEmitter, Component) {
       })
       .onComplete(() => {
         this.animatingCamera = false
+        this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1311,7 +1347,12 @@ class App extends mixin(EventEmitter, Component) {
     this.stopAutoPilotAnimation()
 
     let toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
-    let newPos = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z).add(toCenterVec.normalize().multiplyScalar(500))
+
+    let blockDist = 500
+    if (this.config.detector.isMobile) {
+      blockDist = 800
+    }
+    let newPos = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z).add(toCenterVec.normalize().multiplyScalar(blockDist))
 
     let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height]
     let offsetPos = new THREE.Vector2(
@@ -1321,8 +1362,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.prepareCamAnim(
       newPos,
-      new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
-      'side'
+      new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
     )
 
     let that = this
@@ -1391,7 +1431,7 @@ class App extends mixin(EventEmitter, Component) {
         if (this.prevClosestBlock.blockData.hash !== this.closestBlock.blockData.hash) {
           this.closestBlockReadyForUpdate = true
         }
-        if (closestDist < 400000 && this.closestBlockReadyForUpdate) {
+        if (closestDist < 1000000 && this.closestBlockReadyForUpdate) {
           this.closestBlockReadyForUpdate = false
           this.emit('blockChanged')
         }
@@ -1897,9 +1937,15 @@ class App extends mixin(EventEmitter, Component) {
     let posX = this.blockPositions[this.closestHeight * 2 + 0]
     let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
+    let toCenterVec = new THREE.Vector3(posX, 0, posZ)
+    let newPos = new THREE.Vector3(posX, this.topViewYPos, posZ).add(toCenterVec.normalize().multiplyScalar(0.01))
+
     let to = new THREE.Vector3(posX, 1000000, posZ)
 
-    this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
+    this.prepareCamAnim(
+      newPos,
+      new THREE.Vector3(to.x, 0, to.z)
+    )
 
     let aboveStart = this.camera.position.clone()
     aboveStart.y = 1000000
@@ -1932,12 +1978,13 @@ class App extends mixin(EventEmitter, Component) {
                   })
                   .onComplete(() => {
                     new TWEEN.Tween(this.camera.position)
-                      .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
+                      .to(new THREE.Vector3(that.camPosTo.x, blockYDist, that.camPosTo.z), 10000)
                       .onUpdate(function () {
                         that.camera.position.set(this.x, this.y, this.z)
                       })
                       .onComplete(() => {
                         this.animatingCamera = false
+                        this.toggleMapControls(new THREE.Vector3(to.x, 0, to.z), 'positive')
                       })
                       .easing(TWEEN.Easing.Quadratic.Out)
                       .start()
@@ -1988,9 +2035,15 @@ class App extends mixin(EventEmitter, Component) {
       let posX = this.blockPositions[this.closestHeight * 2 + 0]
       let posZ = this.blockPositions[this.closestHeight * 2 + 1]
 
+      let toCenterVec = new THREE.Vector3(posX, 0, posZ)
+      let newPos = new THREE.Vector3(posX, this.topViewYPos, posZ).add(toCenterVec.normalize().multiplyScalar(0.01))
+
       let to = new THREE.Vector3(posX, 1000000, posZ)
 
-      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
+      this.prepareCamAnim(
+        newPos,
+        new THREE.Vector3(to.x, 0, to.z)
+      )
 
       let aboveStart = this.camera.position.clone()
       aboveStart.y = 1000000
@@ -2017,7 +2070,7 @@ class App extends mixin(EventEmitter, Component) {
                 })
                 .onComplete(() => {
                   new TWEEN.Tween(this.camera.position)
-                    .to(new THREE.Vector3(to.x, blockYDist, to.z), speed === 'normal' ? 10000 : 10000)
+                    .to(new THREE.Vector3(that.camPosTo.x, blockYDist, that.camPosTo.z), 10000)
                     .onUpdate(function () {
                       that.camera.position.set(this.x, this.y, this.z)
                     })
@@ -2026,6 +2079,8 @@ class App extends mixin(EventEmitter, Component) {
 
                       this.isNavigating = false
                       this.animatingCamera = false
+
+                      this.toggleMapControls(new THREE.Vector3(to.x, 0, to.z), 'positive')
                       resolve(true)
                     })
                     .easing(TWEEN.Easing.Quadratic.Out)
@@ -2293,17 +2348,18 @@ class App extends mixin(EventEmitter, Component) {
       camPos: this.camera.position
     })
 
-    this.txGenerator.update({
-      time: window.performance.now()
-    })
+    if (!this.config.detector.isMobile) {
+      this.txGenerator.update({
+        time: window.performance.now()
+      })
+      this.particlesGenerator.update({
+        time: window.performance.now(),
+        deltaTime: delta
+      })
+    }
 
     this.undersideGenerator.update({
       time: window.performance.now()
-    })
-
-    this.particlesGenerator.update({
-      time: window.performance.now(),
-      deltaTime: delta
     })
 
     this.crystalGenerator.update({
@@ -2333,20 +2389,28 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   sceneRenderLogic () {
-    if (this.particlesGenerator && this.particlesGenerator.positionScene) {
-      if (this.config.debug.debugPicker && this.pickingScene) {
-        if (this.WebVRLib.VRSupported) {
-          this.renderer.vr.enabled = true
+    if (this.config.detector.isMobile) {
+      if (this.WebVRLib.VRSupported) {
+        this.renderer.vr.enabled = true
+      }
+      this.renderer.setRenderTarget(null)
+      this.renderer.render(this.scene, this.cameraMain)
+    } else {
+      if (this.particlesGenerator && this.particlesGenerator.positionScene) {
+        if (this.config.debug.debugPicker && this.pickingScene) {
+          if (this.WebVRLib.VRSupported) {
+            this.renderer.vr.enabled = true
+          }
+          this.renderer.setRenderTarget(null)
+          this.renderer.render(this.pickingScene, this.cameraMain)
+        } else {
+          // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
+          if (this.WebVRLib.VRSupported) {
+            this.renderer.vr.enabled = true
+          }
+          this.renderer.setRenderTarget(null)
+          this.renderer.render(this.scene, this.cameraMain)
         }
-        this.renderer.setRenderTarget(null)
-        this.renderer.render(this.pickingScene, this.cameraMain)
-      } else {
-        // this.renderer.render(this.particlesGenerator.positionScene, this.particlesGenerator.quadCamera)
-        if (this.WebVRLib.VRSupported) {
-          this.renderer.vr.enabled = true
-        }
-        this.renderer.setRenderTarget(null)
-        this.renderer.render(this.scene, this.cameraMain)
       }
     }
   }
@@ -2569,56 +2633,56 @@ class App extends mixin(EventEmitter, Component) {
           this.VRReadyToEnd = true
         }, this.config.VR.experienceLength)
       } else {
-        this.goToBlock(this.maxHeight)
-        this.setState({
-          activeIntro: 7
-        })
+        // this.goToBlock(this.maxHeight)
+        // this.setState({
+        //   activeIntro: 7
+        // })
 
-        // this.goToBlock(
-        //   this.maxHeight,
-        //   false,
-        //   'slow'
-        // )
+        this.goToBlock(
+          this.maxHeight,
+          false,
+          'slow'
+        )
 
-        this.setState({
-          showIntro: true
-        })
-        setTimeout(() => {
-          this.setState({
-            activeIntro: 1
-          })
-          setTimeout(() => {
-            this.setState({
-              activeIntro: 2
-            })
-            setTimeout(() => {
-              this.setState({
-                activeIntro: 3
-              })
-              setTimeout(() => {
-                this.setState({
-                  activeIntro: 4
-                })
-                setTimeout(() => {
-                  this.setState({
-                    activeIntro: 5
-                  })
-                  setTimeout(() => {
-                    this.setState({
-                      activeIntro: 6
-                    })
-                    setTimeout(() => {
-                      this.setState({
-                        showIntro: false,
-                        activeIntro: 7
-                      })
-                    }, this.config.scene.introTextTime)
-                  }, this.config.scene.introTextTime)
-                }, this.config.scene.introTextTime)
-              }, this.config.scene.introTextTime)
-            }, this.config.scene.introTextTime)
-          }, this.config.scene.introTextTime)
-        }, 2000)
+        // this.setState({
+        //   showIntro: true
+        // })
+        // setTimeout(() => {
+        //   this.setState({
+        //     activeIntro: 1
+        //   })
+        //   setTimeout(() => {
+        //     this.setState({
+        //       activeIntro: 2
+        //     })
+        //     setTimeout(() => {
+        //       this.setState({
+        //         activeIntro: 3
+        //       })
+        //       setTimeout(() => {
+        //         this.setState({
+        //           activeIntro: 4
+        //         })
+        //         setTimeout(() => {
+        //           this.setState({
+        //             activeIntro: 5
+        //           })
+        //           setTimeout(() => {
+        //             this.setState({
+        //               activeIntro: 6
+        //             })
+        //             setTimeout(() => {
+        //               this.setState({
+        //                 showIntro: false,
+        //                 activeIntro: 7
+        //               })
+        //             }, this.config.scene.introTextTime)
+        //           }, this.config.scene.introTextTime)
+        //         }, this.config.scene.introTextTime)
+        //       }, this.config.scene.introTextTime)
+        //     }, this.config.scene.introTextTime)
+        //   }, this.config.scene.introTextTime)
+        // }, 2000)
       }
     }
   }
@@ -2637,22 +2701,33 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
-    document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
+    if (!this.config.detector.isMobile) {
+      document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
-    document.addEventListener('mouseup', (e) => {
-      if (e.button !== 0) {
-        return
-      }
-      this.onMouseUp(e)
-    })
+      document.addEventListener('mouseup', (e) => {
+        if (e.button !== 0) {
+          return
+        }
+        this.onMouseUp(e)
+      })
 
-    document.addEventListener('mousedown', (e) => {
-      this.onMouseDown()
-    })
+      document.addEventListener('mousedown', (e) => {
+        this.onMouseDown()
+      })
+    } else {
+      document.addEventListener('touchmove', (e) => {
+        this.onMouseMove()
+      }, false)
 
-    document.addEventListener('touchstart', (e) => {
-      this.onMouseUp(e)
-    })
+      document.addEventListener('touchstart', (e) => {
+        this.onMouseMove(e)
+        this.onMouseUp(e)
+      })
+
+      document.addEventListener('touchend', (e) => {
+        this.onMouseMove(e)
+      })
+    }
 
     document.addEventListener('keydown', (event) => {
       if (this.state.controlType === 'fly') {
@@ -3320,6 +3395,15 @@ class App extends mixin(EventEmitter, Component) {
       this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
     )
 
+    // update map controls
+    if (this.controls && (this.state.controlType === 'top' || this.state.controlType === 'underside')) {
+      this.controls.currentBlockPos = new THREE.Vector3(
+        this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+        0,
+        this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+      )
+    }
+
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
     if (typeof txIndexOffset === 'undefined') {
@@ -3490,7 +3574,9 @@ class App extends mixin(EventEmitter, Component) {
     this.crystalGenerator.updateOriginOffset(this.originOffset)
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
-    this.txGenerator.updateOriginOffset(this.originOffset)
+    if (!this.config.detector.isMobile) {
+      this.txGenerator.updateOriginOffset(this.originOffset)
+    }
   }
 
   async updateClosestTrees () {
@@ -3870,16 +3956,8 @@ class App extends mixin(EventEmitter, Component) {
    * Window resize
    */
   resize () {
-    if (this.config.scene.fullScreen) {
-      this.width = window.innerWidth
-      this.height = window.innerHeight
-    } else {
-      this.width = this.config.scene.width
-      this.height = this.config.scene.height
-    }
-
-    this.config.scene.width = this.width
-    this.config.scene.height = this.height
+    this.width = window.innerWidth
+    this.height = window.innerHeight
 
     this.cameraMain.aspect = this.width / this.height
     this.cameraMain.updateProjectionMatrix()
@@ -3932,33 +4010,46 @@ class App extends mixin(EventEmitter, Component) {
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height - 1]
+    let offsetPos = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
+    let newPos
+    let toCenterVec
     let to = new THREE.Vector3(posX, this.topViewYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
-        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
-        break
-      case 'underside':
-        to.y = this.undersideViewYPos
-        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
-        break
-      case 'side':
-        let toCenterVec = new THREE.Vector3(to.x, -15, to.z)
-        let newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(500))
-
-        let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height - 1]
-        let offsetPos = new THREE.Vector2(
-          this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-          this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-        )
-
+        toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+        newPos = new THREE.Vector3(to.x, this.topViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(0.01))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
-          'side'
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
         )
         break
-
+      case 'underside':
+        toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+        newPos = new THREE.Vector3(to.x, this.undersideViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(20))
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+        )
+        break
+      case 'side':
+        toCenterVec = new THREE.Vector3(to.x, -15, to.z)
+        let blockDist = 500
+        if (this.config.detector.isMobile) {
+          blockDist = 800
+        }
+        newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(blockDist))
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+        )
+        break
       default:
         break
     }
@@ -3971,6 +4062,16 @@ class App extends mixin(EventEmitter, Component) {
       })
       .onComplete(() => {
         this.animatingCamera = false
+        switch (this.state.controlType) {
+          case 'top' :
+            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'positive')
+            break
+          case 'underside' :
+            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
+            break
+          default:
+            break
+        }
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -3994,33 +4095,46 @@ class App extends mixin(EventEmitter, Component) {
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
+
+    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height + 1]
+    let offsetPos = new THREE.Vector2(
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
+    )
+
+    let newPos
+    let toCenterVec
     let to = new THREE.Vector3(posX, this.topViewYPos, posZ)
 
     switch (this.state.controlType) {
       case 'top':
-        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z))
-        break
-      case 'underside':
-        to.y = this.undersideViewYPos
-        this.prepareCamAnim(new THREE.Vector3(to.x, to.y, to.z), null, 'up')
-        break
-      case 'side':
-        let toCenterVec = new THREE.Vector3(to.x, -15, to.z)
-        let newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(500))
-
-        let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height + 1]
-        let offsetPos = new THREE.Vector2(
-          this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-          this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-        )
-
+        toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+        newPos = new THREE.Vector3(to.x, this.topViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(0.01))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y),
-          'side'
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
         )
         break
-
+      case 'underside':
+        toCenterVec = new THREE.Vector3(this.closestBlock.blockData.pos.x, 0, this.closestBlock.blockData.pos.z)
+        newPos = new THREE.Vector3(to.x, this.undersideViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(20))
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+        )
+        break
+      case 'side':
+        toCenterVec = new THREE.Vector3(to.x, -15, to.z)
+        let blockDist = 500
+        if (this.config.detector.isMobile) {
+          blockDist = 800
+        }
+        newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(blockDist))
+        this.prepareCamAnim(
+          newPos,
+          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+        )
+        break
       default:
         break
     }
@@ -4033,6 +4147,16 @@ class App extends mixin(EventEmitter, Component) {
       })
       .onComplete(() => {
         this.animatingCamera = false
+        switch (this.state.controlType) {
+          case 'top' :
+            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'positive')
+            break
+          case 'underside' :
+            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
+            break
+          default:
+            break
+        }
       })
       .easing(this.defaultCamEasing)
       .start()

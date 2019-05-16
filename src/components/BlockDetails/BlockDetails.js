@@ -8,6 +8,7 @@ export default class BlockDetails extends Component {
   UIUndersideButton () {
     switch (this.props.controlType) {
       case 'underside':
+      case 'fly':
         return (
           <div className='flip-view-container'>
             <button title='Show Block Top' onClick={this.props.toggleTopView} className='flip-view' />
@@ -120,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-          <br />
-          <br />
+            <br />
+            <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
