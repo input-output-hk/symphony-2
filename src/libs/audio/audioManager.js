@@ -492,6 +492,14 @@ export default class Audio extends EventEmitter {
     }
   }
 
+  muteMaster (time = 0) {
+    this.masterBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, time)
+  }
+
+  unMuteMaster (time = 0) {
+    this.masterBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, time)
+  }
+
   fadeOutBlockAudio (time = 2) {
     this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, time)
   }

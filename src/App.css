@@ -359,6 +359,49 @@ body,
   height: 100%
 } */
 
+[tooltip] {
+  position: relative;
+  display: inline-block;
+}
+
+[tooltip]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  z-index: 99;
+  opacity:0;
+  top: 100%;
+  margin-top: 8px;
+  transform: translateX(-50%) translatey(-100%) rotate(-180deg);
+  transition: opacity .2s
+}
+
+[tooltip]::after {
+  content: attr(tooltip);
+  position: absolute;
+  left: 50%;
+  text-align: center;
+  color: #fff;
+  padding: 4px 2px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: normal!important;
+  min-width: 150px;
+  pointer-events: none;
+  padding: 4px 4px;
+  z-index: 99;
+  opacity: 0;
+  top: 100%;
+  margin-top: 8px;
+  transform: translateX(-50%) translateY(0%);
+  transition: opacity .2s;
+}
+
+[tooltip]:hover::after, 
+[tooltip]:hover::before {
+  opacity: 0.7;
+}
+
 canvas#symphony-stage {
   width: 100%;
   height: 100%;
@@ -627,7 +670,7 @@ canvas#sketchboard {
   height: 38px;
   background: url(./assets/images/cancel.svg) no-repeat;
   border: none;
-  opacity: 0.4;
+  opacity: 1.0;
   position: absolute;
   top: 0;
   left: 5px;
@@ -1117,6 +1160,7 @@ canvas#sketchboard {
 
 .sidebar.open .iohk-supported {
   opacity: 0.5;
+  letter-spacing: 0
 }
 
 .key h3 {
@@ -1968,9 +2012,9 @@ canvas#sketchboard {
 .volume-controls {
   position: absolute;
   z-index: 2;
-  font-size: 28px;
-  bottom: -60px;
-  opacity: 0.8;
+  font-size: 18px;
+  bottom: -95px;
+  opacity: 0.7;
 }
 
 .volume-controls i:hover {
@@ -1982,3 +2026,4 @@ canvas#sketchboard {
     display: none;
   }
 }
+

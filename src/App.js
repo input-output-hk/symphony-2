@@ -2660,45 +2660,45 @@ class App extends mixin(EventEmitter, Component) {
           'slow'
         )
 
-        // this.setState({
-        //   showIntro: true
-        // })
-        // setTimeout(() => {
-        //   this.setState({
-        //     activeIntro: 1
-        //   })
-        //   setTimeout(() => {
-        //     this.setState({
-        //       activeIntro: 2
-        //     })
-        //     setTimeout(() => {
-        //       this.setState({
-        //         activeIntro: 3
-        //       })
-        //       setTimeout(() => {
-        //         this.setState({
-        //           activeIntro: 4
-        //         })
-        //         setTimeout(() => {
-        //           this.setState({
-        //             activeIntro: 5
-        //           })
-        //           setTimeout(() => {
-        //             this.setState({
-        //               activeIntro: 6
-        //             })
-        //             setTimeout(() => {
-        //               this.setState({
-        //                 showIntro: false,
-        //                 activeIntro: 7
-        //               })
-        //             }, this.config.scene.introTextTime)
-        //           }, this.config.scene.introTextTime)
-        //         }, this.config.scene.introTextTime)
-        //       }, this.config.scene.introTextTime)
-        //     }, this.config.scene.introTextTime)
-        //   }, this.config.scene.introTextTime)
-        // }, 2000)
+        this.setState({
+          showIntro: true
+        })
+        setTimeout(() => {
+          this.setState({
+            activeIntro: 1
+          })
+          setTimeout(() => {
+            this.setState({
+              activeIntro: 2
+            })
+            setTimeout(() => {
+              this.setState({
+                activeIntro: 3
+              })
+              setTimeout(() => {
+                this.setState({
+                  activeIntro: 4
+                })
+                setTimeout(() => {
+                  this.setState({
+                    activeIntro: 5
+                  })
+                  setTimeout(() => {
+                    this.setState({
+                      activeIntro: 6
+                    })
+                    setTimeout(() => {
+                      this.setState({
+                        showIntro: false,
+                        activeIntro: 7
+                      })
+                    }, this.config.scene.introTextTime)
+                  }, this.config.scene.introTextTime)
+                }, this.config.scene.introTextTime)
+              }, this.config.scene.introTextTime)
+            }, this.config.scene.introTextTime)
+          }, this.config.scene.introTextTime)
+        }, 2000)
       }
     }
   }
@@ -4398,14 +4398,14 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({
       audioMuted: true
     })
-    this.audioManager.fadeOutBlockAudio(0)
+    this.audioManager.muteMaster()
   }
 
   unMuteAudio () {
     this.setState({
       audioMuted: false
     })
-    this.audioManager.fadeInBlockAudio(0)
+    this.audioManager.unMuteMaster()
   }
 
   toggleInfoOverlay () {
@@ -4505,8 +4505,8 @@ class App extends mixin(EventEmitter, Component) {
             <img className='symphony-logo' src={logo} alt='Symphony Logo' />
             <h1>Symphony</h1>
             <p className='choose-quality'>Choose Quality:</p>
-            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} title='Recommended for computers with modern graphics cards'>HIGH</a>
-            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} title='Recommended for lower-powered computers'>LOW</a>
+            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
+            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} tooltip='For Computers with low power graphics cards'>LOW</a>
           </div>
         </div>
       )

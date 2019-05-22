@@ -11,19 +11,19 @@ export default class BlockDetails extends Component {
       case 'fly':
         return (
           <div className='flip-view-container'>
-            <button title='Show Block Top' onClick={this.props.toggleTopView} className='flip-view' />
+            <button tooltip='Show Block Top' onClick={this.props.toggleTopView} className='flip-view' />
           </div>
         )
       case 'top':
         return (
           <div className='flip-view-container'>
-            <button title='Side View' onClick={this.props.toggleSideView} className='flip-view' />
+            <button tooltip='Side View' onClick={this.props.toggleSideView} className='flip-view' />
           </div>
         )
       case 'side':
         return (
           <div className='flip-view-container'>
-            <button title='Bottom View' onClick={this.props.toggleUndersideView} className='flip-view' />
+            <button tooltip='Bottom View' onClick={this.props.toggleUndersideView} className='flip-view' />
           </div>
         )
 
@@ -81,14 +81,14 @@ export default class BlockDetails extends Component {
     if (this.props.controlType === 'fly') {
       return (
         <div className='explore-container'>
-          <button title='Exit Flight Simulator' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
-          <span title='Exit Flight Simulator' className='cancel' onClick={this.props.toggleTopView} />
+          <button tooltip='Exit Flight Simulator' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
+          <span tooltip='Exit Flight Simulator' className='cancel' onClick={this.props.toggleTopView} />
         </div>
       )
     } else {
       return (
         <div className='explore-container'>
-          <button title='Flight Simulator Mode' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
+          <button tooltip='Flight Simulator Mode' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
         </div>
       )
     }
@@ -121,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-            <br />
-            <br />
+          <br />
+          <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
@@ -197,8 +197,8 @@ export default class BlockDetails extends Component {
     ) {
       return (
         <div className='block-navigation'>
-          <button title='Previous Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoPrevBlock() }} className={prevButtonClassName}>Previous Block</button>
-          <button title='Next Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoNextBlock() }} className={nextButtonClassName}>Next Block</button>
+          <button tooltip='Previous Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoPrevBlock() }} className={prevButtonClassName}>Previous Block</button>
+          <button tooltip='Next Block' onClick={() => { this.props.toggleInfoOverlay(); this.props.gotoNextBlock() }} className={nextButtonClassName}>Next Block</button>
         </div>
 
       )
@@ -280,9 +280,9 @@ export default class BlockDetails extends Component {
 
           <div className='autopilot-controls'>
             <div className='autopilot-inner'>
-              <span title='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
-              <span title='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
-              <span title='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+              <span tooltip='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+              <span tooltip='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
+              <span tooltip='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
             </div>
           </div>
 
@@ -303,7 +303,7 @@ export default class BlockDetails extends Component {
             <div className='block-details-border' />
             <div className='block-details-inner'>
               <div><h3>Health:</h3>
-                <div className='health-bar-container' title={healthInv}>
+                <div className='health-bar-container' tooltip={healthInv}>
                   <div
                     className='health-bar'
                     style={{
