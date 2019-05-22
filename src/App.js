@@ -2111,7 +2111,7 @@ class App extends mixin(EventEmitter, Component) {
         .easing(this.defaultCamEasing)
         .start()
 
-      this.animateCamRotation(25000)
+      this.animateCamRotation(speed === 'slow' ? 20000 : 25000)
     })
   }
 
@@ -4394,6 +4394,20 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  muteAudio () {
+    this.setState({
+      audioMuted: true
+    })
+    this.audioManager.fadeOutBlockAudio(0)
+  }
+
+  unMuteAudio () {
+    this.setState({
+      audioMuted: false
+    })
+    this.audioManager.fadeInBlockAudio(0)
+  }
+
   toggleInfoOverlay () {
     this.setState({
       showInfoOverlay: false
@@ -4469,6 +4483,9 @@ class App extends mixin(EventEmitter, Component) {
           showInfoOverlay={this.state.showInfoOverlay}
           toggleInfoOverlay={this.toggleInfoOverlay.bind(this)}
           playButtonSound={this.playButtonSound.bind(this)}
+          muteAudio={this.muteAudio.bind(this)}
+          unMuteAudio={this.unMuteAudio.bind(this)}
+          audioMuted={this.state.audioMuted}
         />
 
       </div>
@@ -4490,7 +4507,6 @@ class App extends mixin(EventEmitter, Component) {
             <p className='choose-quality'>Choose Quality:</p>
             <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} title='Recommended for computers with modern graphics cards'>HIGH</a>
             <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} title='Recommended for lower-powered computers'>LOW</a>
-            <p className='sound-hint'>(Turn on your sound)</p>
           </div>
         </div>
       )

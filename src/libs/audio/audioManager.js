@@ -28,6 +28,7 @@ export default class Audio extends EventEmitter {
     let Ctx = window.AudioContext || window.webkitAudioContext
     this.audioContext = new Ctx()
     this.blockAudioBus = this.audioContext.createGain()
+    this.blockAudioMaxLevel = 0.8
     this.masterBus = this.audioContext.createGain()
 
     this.masterBus.gain.setTargetAtTime(0.8, this.audioContext.currentTime, 0.0)
@@ -491,16 +492,16 @@ export default class Audio extends EventEmitter {
     }
   }
 
-  fadeOutBlockAudio () {
-    this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 2)
+  fadeOutBlockAudio (time = 2) {
+    this.blockAudioBus.gain.setTargetAtTime(0.0, this.audioContext.currentTime, time)
   }
 
-  fadeInBlockAudio () {
-    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 2)
+  fadeInBlockAudio (time = 2) {
+    this.blockAudioBus.gain.setTargetAtTime(this.blockAudioMaxLevel, this.audioContext.currentTime, time)
   }
 
   stopNotes () {
-    this.blockAudioBus.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 3)
+    this.blockAudioBus.gain.setTargetAtTime(this.blockAudioMaxLevel, this.audioContext.currentTime, 3)
 
     Object.keys(this.noteSources).forEach((i) => {
       this.noteSources[i].stop()

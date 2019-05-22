@@ -121,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-          <br />
-          <br />
+            <br />
+            <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
@@ -227,6 +227,22 @@ export default class BlockDetails extends Component {
     }
   }
 
+  audioMuteControls () {
+    if (this.props.audioMuted) {
+      return (
+        <div className='volume-controls'>
+          <i className='fas fa-volume-mute' onClick={this.props.unMuteAudio} />
+        </div>
+      )
+    } else {
+      return (
+        <div className='volume-controls'>
+          <i className='fas fa-volume-up' onClick={this.props.muteAudio} />
+        </div>
+      )
+    }
+  }
+
   render () {
     if (this.props.closestBlock) {
       const health = this.props.closestBlock.blockData.healthRatio > 1.0 ? 1.0 : this.props.closestBlock.blockData.healthRatio
@@ -318,6 +334,9 @@ export default class BlockDetails extends Component {
               <div className='info-panel-border' />
               {this.infoPanelContent()}
             </div>
+
+            {this.audioMuteControls()}
+
             <Scope
               config={this.props.config}
             />

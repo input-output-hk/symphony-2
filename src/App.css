@@ -1964,3 +1964,21 @@ canvas#sketchboard {
     display: none;
   }
 }
+
+.volume-controls {
+  position: absolute;
+  z-index: 2;
+  font-size: 28px;
+  bottom: -60px;
+  opacity: 0.8;
+}
+
+.volume-controls i:hover {
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+  .volume-controls {
+    display: none;
+  }
+}
