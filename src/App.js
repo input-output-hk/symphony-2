@@ -382,6 +382,18 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   onMouseMove (e) {
+    if (typeof e === 'undefined') {
+      return
+    }
+
+    if (typeof e.touches !== 'undefined') {
+      if (typeof e.touches[0] === 'undefined') {
+        return
+      } else {
+        e = e.touches[0]
+      }
+    }
+
     this.mousePos.x = e.clientX
     this.mousePos.y = e.clientY
   }
@@ -602,6 +614,10 @@ class App extends mixin(EventEmitter, Component) {
     console.log(e.target.className)
 
     const ignoreClasses = [
+      'input-output',
+      'cockpit-border',
+      'block-details-heading',
+      'block-details',
       'block-navigation',
       'grad-right',
       'grad-left',
@@ -2701,33 +2717,31 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
-    if (!this.config.detector.isMobile) {
-      document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
+    document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
-      document.addEventListener('mouseup', (e) => {
-        if (e.button !== 0) {
-          return
-        }
-        this.onMouseUp(e)
-      })
+    document.addEventListener('mouseup', (e) => {
+      // if (e.button !== 0) {
+      //   return
+      // }
+      this.onMouseUp(e)
+    })
 
-      document.addEventListener('mousedown', (e) => {
-        this.onMouseDown()
-      })
-    } else {
-      document.addEventListener('touchmove', (e) => {
-        this.onMouseMove()
-      }, false)
+    document.addEventListener('mousedown', (e) => {
+      this.onMouseDown()
+    })
 
-      document.addEventListener('touchstart', (e) => {
-        this.onMouseMove(e)
-        this.onMouseUp(e)
-      })
+    document.addEventListener('touchmove', (e) => {
+      this.onMouseMove()
+    }, false)
 
-      document.addEventListener('touchend', (e) => {
-        this.onMouseMove(e)
-      })
-    }
+    document.addEventListener('touchstart', (e) => {
+      this.onMouseMove(e)
+    //   this.onMouseUp(e)
+    })
+
+    document.addEventListener('touchend', (e) => {
+      this.onMouseMove(e)
+    })
 
     document.addEventListener('keydown', (event) => {
       if (this.state.controlType === 'fly') {

@@ -121,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-            <br />
-            <br />
+          <br />
+          <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
@@ -240,6 +240,11 @@ export default class BlockDetails extends Component {
         className += ' cockpit'
       }
 
+      let txSelectedClass = ''
+      if (this.props.txSelected) {
+        txSelectedClass = ' tx-selected'
+      }
+
       return (
         <div className={className}>
 
@@ -277,7 +282,7 @@ export default class BlockDetails extends Component {
 
           {this.UIBlockNavigation()}
 
-          <div className='block-details'>
+          <div className={'block-details ' + txSelectedClass}>
             <h2 className='block-details-heading'>//BLOCK-{this.props.closestBlock.blockData.height}</h2>
             <div className='block-details-border' />
             <div className='block-details-inner'>
