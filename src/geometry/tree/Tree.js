@@ -15,7 +15,11 @@ export default class Tree extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
     this.gltfLoader = new GLTFLoader()
 
-    this.instanceTotal = 200
+    this.instanceTotal = 100
+
+    if (this.config.detector.isMobile) {
+      this.instanceTotal = 10
+    }
 
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')

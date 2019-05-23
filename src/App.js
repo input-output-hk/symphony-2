@@ -65,6 +65,8 @@ class App extends mixin(EventEmitter, Component) {
     this.planeOffsetMultiplier = 1080
     this.planeMargin = 100
     this.blockReady = false
+    this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
+    this.blocksToLoadEitherSide = 5
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -1540,8 +1542,8 @@ class App extends mixin(EventEmitter, Component) {
     for (const height in this.blockGeoDataObject) {
       if (this.blockGeoDataObject.hasOwnProperty(height)) {
         if (
-          height < this.closestHeight - 25 ||
-            height > this.closestHeight + 25
+          height < this.closestHeight - this.baseGeoToLoadEitherSide ||
+            height > this.closestHeight + this.baseGeoToLoadEitherSide
         ) {
           delete this.blockGeoDataObject[height]
         }
@@ -1550,7 +1552,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.loadedBaseGeoHeights.forEach((height, i) => {
       if (
-        height < this.closestHeight - 100 || height > this.closestHeight + 100
+        height < this.closestHeight - this.baseGeoToLoadEitherSide || height > this.closestHeight + this.baseGeoToLoadEitherSide
       ) {
         delete this.loadedBaseGeoHeights[ i ]
       }
@@ -1559,7 +1561,7 @@ class App extends mixin(EventEmitter, Component) {
     let nearestBlocks = []
 
     nearestBlocks.push(this.closestHeight)
-    for (let i = 1; i < 25; i++) {
+    for (let i = 1; i < this.baseGeoToLoadEitherSide; i++) {
       let next = this.closestHeight + i
       let prev = this.closestHeight - i
 
@@ -1669,7 +1671,7 @@ class App extends mixin(EventEmitter, Component) {
           }
         }
 
-        for (let i = 1; i < 5; i++) {
+        for (let i = 1; i < this.blocksToLoadEitherSide; i++) {
           let next = this.closestHeight + i
           let prev = this.closestHeight - i
 
@@ -1691,8 +1693,8 @@ class App extends mixin(EventEmitter, Component) {
         }
 
         this.heightsToLoad.forEach((height, index) => {
-          if (height > this.closestHeight + 10 ||
-          height < this.closestHeight - 10) {
+          if (height > this.closestHeight + (this.blocksToLoadEitherSide * 2) ||
+          height < this.closestHeight - (this.blocksToLoadEitherSide * 2)) {
             console.log('removed ' + height + ' from heightsToLoad')
             delete this.heightsToLoad[index]
           }
@@ -1704,8 +1706,8 @@ class App extends mixin(EventEmitter, Component) {
 
             if (typeof this.blockGeoDataObject[height] === 'undefined') {
               if (
-                height < this.closestHeight - 10 ||
-                  height > this.closestHeight + 10
+                height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
+                  height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
               ) {
                 console.log('moved too far away from block at height: ' + height)
                 return
@@ -1717,8 +1719,8 @@ class App extends mixin(EventEmitter, Component) {
                   let blockGeoData = await this.getGeometry(data.hash, height)
 
                   if (
-                    height < this.closestHeight - 10 ||
-                      height > this.closestHeight + 10
+                    height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
+                      height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
                   ) {
                     console.log('moved too far away from block at height: ' + height)
                     return
@@ -3479,11 +3481,13 @@ class App extends mixin(EventEmitter, Component) {
       }
     }
 
-    this.createCubeMap(
-      new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-        100,
-        this.plane.geometry.attributes.planeOffset.array[indexOffset + 1])
-    )
+    if (!this.config.detector.isMobile) {
+      this.createCubeMap(
+        new THREE.Vector3(this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
+          100,
+          this.plane.geometry.attributes.planeOffset.array[indexOffset + 1])
+      )
+    }
 
     this.updateClosestTrees()
 

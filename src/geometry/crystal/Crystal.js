@@ -16,6 +16,11 @@ export default class Crystal extends Base {
 
     this.normalMap.minFilter = THREE.NearestFilter
     this.instanceTotal = 10 * 4000
+
+    if (this.config.detector.isMobile) {
+      this.instanceTotal = 3 * 4000
+    }
+
     this.txCount = 0
     this.txIndexOffsets = {}
 

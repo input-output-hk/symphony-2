@@ -402,6 +402,12 @@ body,
   opacity: 0.7;
 }
 
+@media only screen and (max-width: 600px) {
+  [tooltip]::before, [tooltip]::after {
+    display: none;
+  }
+}
+
 canvas#symphony-stage {
   width: 100%;
   height: 100%;

@@ -17,7 +17,11 @@ export default class Plane extends Base {
     this.normalMap.wrapT = THREE.RepeatWrapping
     this.normalMap.repeat.set(4, 4)
 
-    this.instanceTotal = 200
+    this.instanceTotal = 100
+
+    if (this.config.detector.isMobile) {
+      this.instanceTotal = 10
+    }
 
     this.blockHeightIndex = {}
 

@@ -17,7 +17,7 @@ export default class CrystalAO extends Base {
       transparent: true,
       side: THREE.DoubleSide,
       map: this.map,
-      opacity: 0.45,
+      opacity: 0.4,
       depthTest: true,
       depthWrite: false
     })
@@ -25,6 +25,10 @@ export default class CrystalAO extends Base {
     this.txIndexOffsets = {}
     this.instanceTotal = 10 * 3000
     this.txCount = 0
+
+    if (this.config.detector.isMobile) {
+      this.instanceTotal = 0
+    }
   }
 
   async init (blockGeoData) {
