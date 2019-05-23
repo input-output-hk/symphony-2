@@ -44,6 +44,7 @@
     "mixin": "^0.2.0",
     "moment": "^2.24.0",
     "noisejs": "^2.1.0",
+    "nosleep.js": "^0.9.0",
     "object-assign": "4.1.1",
     "postcss-flexbugs-fixes": "3.3.0",
     "postcss-loader": "2.1.4",

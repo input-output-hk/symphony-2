@@ -2,9 +2,6 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
 
-let retryCount = 0
-const retryMax = 3
-
 self.addEventListener('message', async function (e) {
   let data = e.data
   switch (data.cmd) {

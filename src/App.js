@@ -20,6 +20,7 @@ import WebVR from './libs/WebVR'
 import OBJLoader from './libs/OBJLoader'
 import ViveController from './libs/ViveController'
 import * as ArrayUtils from './utils/array'
+import NoSleep from 'nosleep.js'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -66,7 +67,7 @@ class App extends mixin(EventEmitter, Component) {
     this.planeMargin = 100
     this.blockReady = false
     this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
-    this.blocksToLoadEitherSide = 5
+    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 2 : 5
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -198,8 +199,11 @@ class App extends mixin(EventEmitter, Component) {
 
   async initStage (quality = 'high') {
     if (this.config.detector.isMobile) {
+      const noSleep = new NoSleep()
+      noSleep.enable()
+
       if (document.body.requestFullscreen) {
-        document.body.requestFullscreen()
+        // document.body.requestFullscreen()
       }
     }
 
@@ -1542,8 +1546,8 @@ class App extends mixin(EventEmitter, Component) {
     for (const height in this.blockGeoDataObject) {
       if (this.blockGeoDataObject.hasOwnProperty(height)) {
         if (
-          height < this.closestHeight - this.baseGeoToLoadEitherSide ||
-            height > this.closestHeight + this.baseGeoToLoadEitherSide
+          height < this.closestHeight - this.blocksToLoadEitherSide ||
+            height > this.closestHeight + this.blocksToLoadEitherSide
         ) {
           delete this.blockGeoDataObject[height]
         }
@@ -1769,6 +1773,7 @@ class App extends mixin(EventEmitter, Component) {
     let sendObj = {
       cmd: 'get',
       closestHeight: this.closestHeight,
+      blocksToLoadEitherSide: this.blocksToLoadEitherSide,
       config: this.config,
       maxHeight: this.maxHeight,
       blockHeightIndexes: new Int32Array(9).fill(-1),
@@ -2718,6 +2723,10 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalGenerator.updateBlockStartTimes(blockData)
       this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
+
+    document.addEventListener('touchmove', function (event) {
+      if (event.scale !== 1) { event.preventDefault() }
+    }, false)
 
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 

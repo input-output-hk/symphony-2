@@ -15,10 +15,10 @@ export default class Crystal extends Base {
     this.normalMap = new THREE.TextureLoader().load('assets/images/textures/normalMap.jpg')
 
     this.normalMap.minFilter = THREE.NearestFilter
-    this.instanceTotal = 10 * 4000
+    this.instanceTotal = 10 * 3000
 
     if (this.config.detector.isMobile) {
-      this.instanceTotal = 3 * 4000
+      this.instanceTotal = 3 * 3000
     }
 
     this.txCount = 0
