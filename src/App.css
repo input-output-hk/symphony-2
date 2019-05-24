@@ -374,7 +374,7 @@ body {
   position: absolute;
   left: 50%;
   z-index: 99;
-  opacity:0;
+  opacity: 0;
   top: 100%;
   margin-top: 8px;
   transform: translateX(-50%) translatey(-100%) rotate(-180deg);
@@ -388,7 +388,7 @@ body {
   text-align: center;
   color: #fff;
   padding: 4px 2px;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   font-weight: normal!important;
   min-width: 150px;
@@ -445,6 +445,22 @@ canvas#sketchboard {
   height: 100%;
 }
 
+@media only screen and (max-width: 600px) {
+  .symphony-ui {
+    font-size: 12px;
+    position: absolute;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    color: #cecece;
+    font-family: 'Inconsolata', monospace;
+    text-transform: uppercase;
+    font-weight: 300;
+    width: 100%;
+    height: auto;
+  }
+}
+
 .symphony-ui h2 {
   font-weight: normal;
   font-size: 12px;
@@ -478,6 +494,8 @@ canvas#sketchboard {
 
 .symphony-ui li a {
   color: #cecece;
+  position: relative;
+  z-index: 2; 
 }
 
 .health-bar-container {
@@ -544,14 +562,16 @@ canvas#sketchboard {
 @media only screen and (max-width: 600px) {
   .block-details {
     background: none;
-    position: absolute;
-    left: 0;
-    right: auto;
     width: 100%;
-    padding: 30px;
-    top: 65px;
-    height: 100%;
+    padding: 0;
     z-index: 0;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    top: auto;
+    background: rgba(0, 0, 0, 0.4);
+    height: auto;
+    z-index: 2;
   }
 
   .block-details.tx-selected {
@@ -565,13 +585,9 @@ canvas#sketchboard {
 
 @media only screen and (max-width: 600px) {
   .block-details-inner {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    padding-left: 30px;
-    height: 248px;
-    padding-top: 20px;
-    background: rgba(0, 0, 0, 0.25);
+    position: static;
+    padding: 20px;
+    background: none;
   }
 }
 
@@ -590,12 +606,27 @@ canvas#sketchboard {
     text-align: center;
     left: 0;
     top: auto;
+    bottom: 80vh;
     font-size: 5vw!important;
+  }
+}
+
+@media only screen and (max-width: 400px) {
+  .block-details-heading {
+    bottom: 70vh;
   }
 }
 
 .block-details .view-details {
   padding-top: 10px;
+}
+
+@media only screen and (max-width: 600px) {
+  .block-details .view-details {
+    padding-top: 0;
+    position: relative;
+    z-index: 2;
+  }
 }
 
 .block-details strong {
@@ -632,9 +663,7 @@ canvas#sketchboard {
   z-index: 9;
 }
 
-/* .cockpit .controls-container {
-  display: none;
-} */
+
 .cockpit-border {
   background: url(./assets/images/vignette2.png) no-repeat;
   position: absolute;
@@ -644,9 +673,16 @@ canvas#sketchboard {
   background-size: cover;
 }
 
+@media only screen and (max-width: 600px) {
+  .cockpit-border {
+    display: none;
+  }
+}
+
 .block-details ul {
   display: inline-block;
 }
+
 
 @media only screen and (max-width: 600px) {
   .block-details ul {
@@ -657,6 +693,8 @@ canvas#sketchboard {
     column-count: 2;
     column-gap: 0;
     width: 100%;
+    float: left;
+    margin-bottom: 20px;
   }
 }
 
@@ -729,6 +767,19 @@ canvas#sketchboard {
   z-index: 2;
 }
 
+@media only screen and (max-width: 600px) {
+  .flip-view-container {
+    top: auto;
+    bottom: 90vh;
+  } 
+}
+
+@media only screen and (max-width: 400px) {
+  .flip-view-container {
+    bottom: 80vh;
+  } 
+}
+
 .flip-view {
   display: block;
   width: 18px;
@@ -759,7 +810,7 @@ canvas#sketchboard {
 
 @media only screen and (max-width: 600px) {
   .tx-details {
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.4);
     position: absolute;
     left: 0;
     border: 0;
@@ -1065,6 +1116,15 @@ canvas#sketchboard {
   margin-left: -261px;
 }
 
+@media only screen and (max-width: 600px) {
+  .search-container {
+    top: -50vh;
+    width: 100vw;
+    margin: 0;
+    left: 0;
+  }
+}
+
 .search-container h2 {
   border: none;
 }
@@ -1073,6 +1133,12 @@ canvas#sketchboard {
   width: 453px;
   height: 28px;
   float: left;
+}
+
+@media only screen and (max-width: 600px) {
+  .search-box {
+    width: 90%;
+  }
 }
 
 .search-box-close {
@@ -1324,8 +1390,8 @@ canvas#sketchboard {
 .loading-container {
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;
-   width: 100%; 
-   height: 100%; 
+  width: 100%; 
+  height: 100%; 
   background: #000;
   position: relative;
   z-index: 1;
@@ -1377,6 +1443,7 @@ canvas#sketchboard {
 }
 
 .loaded {
+  display: none;
   opacity: 0.0;
   filter: blur(2ex);
   /* transition: opacity 10s, filter 10s, visibility 10s; */
@@ -1552,6 +1619,8 @@ canvas#sketchboard {
   .block-navigation-prev {
     left: -9vh;
     width: 5vh;
+    top: auto;
+    bottom: 50vh;
   }
 }
 
@@ -1585,7 +1654,10 @@ canvas#sketchboard {
   .block-navigation-next {
     right: -9vh;
     width: 5vh;
+    top: auto;
+    bottom: 50vh;
   }
+
 }
 
 .block-navigation-next:hover {

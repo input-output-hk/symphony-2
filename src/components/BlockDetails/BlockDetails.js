@@ -302,8 +302,8 @@ export default class BlockDetails extends Component {
             <h2 className='block-details-heading'>//BLOCK-{this.props.closestBlock.blockData.height}</h2>
             <div className='block-details-border' />
             <div className='block-details-inner'>
-              <div><h3>Health:</h3>
-                <div className='health-bar-container' tooltip={healthInv}>
+              <ul>
+                <li><h3>Health:</h3> <div className='health-bar-container' tooltip={healthInv}>
                   <div
                     className='health-bar'
                     style={{
@@ -312,12 +312,11 @@ export default class BlockDetails extends Component {
                     }}
                   />
                 </div>
-              </div>
-              <ul>
+                </li>
                 <li><h3>No. of Tx:</h3> <strong>{ this.props.closestBlock.blockData.n_tx }</strong></li>
-                <li><h3>Output Total:</h3> <strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
+                <li><h3>Output:</h3> <strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
                 <li><h3>Fees:</h3> <strong>{ (this.props.closestBlock.blockData.fee / 100000000).toFixed(2) } BTC</strong></li>
-                <li><h3>Date:</h3> <strong>{ moment.unix(this.props.closestBlock.blockData.time).format('YYYY-MM-DD HH:mm:ss') }</strong></li>
+                <li><h3>Date:</h3> <strong>{ moment.unix(this.props.closestBlock.blockData.time).format('HH:mm DD/MM/YY') }</strong></li>
                 <li><h3>Bits:</h3> <strong>{ this.props.closestBlock.blockData.bits }</strong></li>
                 <li><h3>Size:</h3> <strong>{ this.props.closestBlock.blockData.size / 1000 } KB</strong></li>
                 <li><h3>Height:</h3> <strong>{ this.props.closestBlock.blockData.height }</strong></li>

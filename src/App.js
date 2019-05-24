@@ -619,7 +619,7 @@ class App extends mixin(EventEmitter, Component) {
   onMouseUp (e) {
     console.log(e.target.className)
 
-    const ignoreClasses = [
+    const classes = [
       'input-output',
       'cockpit-border',
       'block-details-heading',
@@ -627,11 +627,12 @@ class App extends mixin(EventEmitter, Component) {
       'block-navigation',
       'grad-right',
       'grad-left',
-      'hud'
+      'hud',
+      'symphony-stage'
     ]
 
     if (
-      ignoreClasses.indexOf(e.target.className) === -1
+      classes.indexOf(e.target.className) === -1
     ) {
       return
     }
@@ -1211,7 +1212,11 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   toggleMapControls (target, orientation = 'positive') {
-    this.controls = new MapControls(this.cameraMain)
+    if (this.config.detector.isMobile) {
+      this.controls = new MapControls(this.cameraMain, this.renderer.domElement)
+    } else {
+      this.controls = new MapControls(this.cameraMain)
+    }
     this.controls.domElement = this.renderer.domElement
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.25
@@ -2724,10 +2729,6 @@ class App extends mixin(EventEmitter, Component) {
       this.crystalAOGenerator.updateBlockStartTimes(blockData)
     })
 
-    document.addEventListener('touchmove', function (event) {
-      if (event.scale !== 1) { event.preventDefault() }
-    }, false)
-
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
@@ -2742,16 +2743,17 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     document.addEventListener('touchmove', (e) => {
+      // if (e.scale !== 1) { e.preventDefault() }
       this.onMouseMove()
     }, false)
 
     document.addEventListener('touchstart', (e) => {
       this.onMouseMove(e)
-    //   this.onMouseUp(e)
     })
 
     document.addEventListener('touchend', (e) => {
       this.onMouseMove(e)
+      this.onMouseUp(e)
     })
 
     document.addEventListener('keydown', (event) => {
@@ -4579,7 +4581,7 @@ class App extends mixin(EventEmitter, Component) {
         {this.UIIntro()}
         {this.UIQualityScreen()}
         {this.UILoadingScreen()}
-        <canvas id={this.config.scene.canvasID} />
+        <canvas className='symphony-stage' id={this.config.scene.canvasID} />
         {this.UI()}
         <WebVRButton
           initCamera={this.initCamera.bind(this)}
