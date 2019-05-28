@@ -2110,3 +2110,49 @@ canvas#sketchboard {
   }
 }
 
+.rotate-message {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background: #000;
+  display: none;
+}
+
+.phone {
+  height: 50px;
+  width: 100px;
+  border: 3px solid white;
+  border-radius: 10px;
+  animation: rotate 1.5s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+
+.message {
+  color: white;
+  font-size: 1em;
+  margin-top: 40px;
+  opacity: 0.6;
+}
+
+@keyframes rotate {
+  0% {
+		transform: rotate(0deg)
+	}
+	50% {
+		transform: rotate(-90deg)
+	}
+	100% {
+		transform: rotate(-90deg)
+	}
+}
+
+ @media only screen and (max-width: 824px) and (orientation: landscape) { 
+  .rotate-message {
+    display: flex;
+  }
+ } 

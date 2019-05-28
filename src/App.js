@@ -67,7 +67,7 @@ class App extends mixin(EventEmitter, Component) {
     this.planeMargin = 100
     this.blockReady = false
     this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
-    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 2 : 5
+    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 3 : 5
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -180,6 +180,8 @@ class App extends mixin(EventEmitter, Component) {
 
     this.initFirebase()
 
+    this.initWorkers()
+
     this.setTimestampToLoad()
     this.setBlockHashToLoad()
     this.setHeightToLoad()
@@ -197,13 +199,26 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  async initWorkers () {
+    this.nearestBlocksWorker = new NearestBlocksWorker()
+
+    let sendObj = {
+      cmd: 'init',
+      config: this.config
+    }
+
+    this.nearestBlocksWorker.postMessage(
+      sendObj
+    )
+  }
+
   async initStage (quality = 'high') {
     if (this.config.detector.isMobile) {
       const noSleep = new NoSleep()
       noSleep.enable()
 
       if (document.body.requestFullscreen) {
-        // document.body.requestFullscreen()
+        document.body.requestFullscreen()
       }
     }
 
@@ -256,12 +271,12 @@ class App extends mixin(EventEmitter, Component) {
       this.txGenerator = new Tx({
         config: this.config
       })
-
-      this.particlesGenerator = new Particles({
-        config: this.config,
-        particleCount: this.unconfirmedCount
-      })
     }
+
+    this.particlesGenerator = new Particles({
+      config: this.config,
+      particleCount: this.unconfirmedCount
+    })
 
     this.diskGenerator = new Disk({
       config: this.config
@@ -310,8 +325,8 @@ class App extends mixin(EventEmitter, Component) {
   setRenderOrder () {
     if (!this.config.detector.isMobile) {
       this.txs.renderOrder = 0
-      this.particles.renderOrder = 0
     }
+    this.particles.renderOrder = 0
     this.glow.renderOrder = 0
 
     if (this.camera.position.y > 0) {
@@ -944,12 +959,12 @@ class App extends mixin(EventEmitter, Component) {
         txHeights: []
       })
       this.group.add(this.txs)
-      this.particles = await this.particlesGenerator.init({
-        blockGeoData: blockGeoData,
-        renderer: this.renderer
-      })
-      this.scene.add(this.particles)
     }
+    this.particles = await this.particlesGenerator.init({
+      blockGeoData: blockGeoData,
+      renderer: this.renderer
+    })
+    this.scene.add(this.particles)
 
     this.trees = await this.treeGenerator.init(blockGeoData)
     this.group.add(this.trees)
@@ -1600,8 +1615,9 @@ class App extends mixin(EventEmitter, Component) {
       }
     })
 
-    const nearestBlocksWorker = new NearestBlocksWorker()
-    nearestBlocksWorker.onmessage = async ({ data }) => {
+    // const nearestBlocksWorker = new NearestBlocksWorker()
+
+    this.nearestBlocksWorker.onmessage = async ({ data }) => {
       if (typeof data.closestBlocksData !== 'undefined') {
         let closestBlocksData = data.closestBlocksData
 
@@ -1770,7 +1786,7 @@ class App extends mixin(EventEmitter, Component) {
 
         this.loadingNearestBlocks = false
 
-        nearestBlocksWorker.terminate()
+        // nearestBlocksWorker.terminate()
       }
     }
 
@@ -1835,7 +1851,7 @@ class App extends mixin(EventEmitter, Component) {
       txSpentRatios8: new Float32Array(this.txCountBufferSize)
     }
 
-    nearestBlocksWorker.postMessage(
+    this.nearestBlocksWorker.postMessage(
       sendObj,
       [
         sendObj.blockHeightIndexes.buffer,
@@ -2123,7 +2139,7 @@ class App extends mixin(EventEmitter, Component) {
         .easing(this.defaultCamEasing)
         .start()
 
-      this.animateCamRotation(speed === 'slow' ? 20000 : 25000)
+      this.animateCamRotation(speed === 'normal' ? 20000 : 25000)
     })
   }
 
@@ -2380,11 +2396,11 @@ class App extends mixin(EventEmitter, Component) {
       this.txGenerator.update({
         time: window.performance.now()
       })
-      this.particlesGenerator.update({
-        time: window.performance.now(),
-        deltaTime: delta
-      })
     }
+    this.particlesGenerator.update({
+      time: window.performance.now(),
+      deltaTime: delta
+    })
 
     this.undersideGenerator.update({
       time: window.performance.now()
@@ -4461,6 +4477,17 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
+  UIRotateMessage () {
+    return (
+      <div className='rotate-message'>
+        <div className='phone' />
+        <div className='message'>
+          Please rotate your device!
+        </div>
+      </div>
+    )
+  }
+
   UI () {
     return (
       <div className='symphony-ui'>
@@ -4578,6 +4605,7 @@ class App extends mixin(EventEmitter, Component) {
   render () {
     return (
       <div className='symphony'>
+        {this.UIRotateMessage()}
         {this.UIIntro()}
         {this.UIQualityScreen()}
         {this.UILoadingScreen()}

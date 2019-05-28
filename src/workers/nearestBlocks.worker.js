@@ -1,12 +1,9 @@
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/auth'
-// import 'firebase/storage'
 import * as ArrayUtils from '../utils/array'
 
 import moment from 'moment'
-
-import BlockDataHelper from '../helpers/BlockDataHelper'
 
 let firebaseDB
 let docRef
@@ -16,12 +13,7 @@ let docRefUpdate
 self.addEventListener('message', async function (e) {
   let data = e.data
   switch (data.cmd) {
-    case 'get':
-
-      let blocksToLoadEitherSide = data.blocksToLoadEitherSide
-      let blockHeightIndexes = data.blockHeightIndexes
-      let geoBlockHeightIndexes = data.geoBlockHeightIndexes
-
+    case 'init':
       firebase.initializeApp(data.config.fireBase)
 
       firebase.firestore()
@@ -34,6 +26,13 @@ self.addEventListener('message', async function (e) {
         console.log(error.code)
         console.log(error.message)
       })
+      break
+
+    case 'get':
+
+      let blocksToLoadEitherSide = data.blocksToLoadEitherSide
+      let blockHeightIndexes = data.blockHeightIndexes
+      let geoBlockHeightIndexes = data.geoBlockHeightIndexes
 
       // let blockDataHelper = new BlockDataHelper({
       //   config: data.config

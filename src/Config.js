@@ -14,8 +14,8 @@ const Config = {
     bgColor: 0x121327,
     fogDensity: 0.00025,
     particleLifeMin: 100, // min number of frames a particle can live for
-    particleLifeMax: 1000, // max number of frames a particle can live for
-    particleEmitterRadius: 150000, // size of sphere which emits particles
+    particleLifeMax: detector.isMobile ? 200 : 1000, // max number of frames a particle can live for
+    particleEmitterRadius: detector.isMobile ? 50000 : 150000, // size of sphere which emits particles
     liveUnconfirmedTX: false
   },
   debug: {
@@ -41,14 +41,14 @@ const Config = {
   },
   camera: {
     fov: 80,
-    initPos: detector.isMobile ? new THREE.Vector3(0.0, 2300000.0, 0.0) : new THREE.Vector3(1500000.0, 100000.0, 0.0),
+    initPos: detector.isMobile ? new THREE.Vector3(3000000.0, 150000.0, 0.0) : new THREE.Vector3(1500000.0, 100000.0, 0.0),
     initTarget: new THREE.Vector3(0.0, 0.0, 0.0)
   },
   VR: {
     interactionTimeout: 0, // (ms)
     experienceLength: 180000 // (ms)
   },
-  floatType: detector.isIOS ? THREE.HalfFloatType : THREE.FloatType,
+  floatType: detector.isMobile && detector.isIOS ? THREE.HalfFloatType : THREE.FloatType,
   detector: detector
 }
 
