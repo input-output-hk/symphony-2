@@ -326,10 +326,7 @@ class App extends mixin(EventEmitter, Component) {
   setRenderOrder () {
     if (!this.config.detector.isMobile) {
       this.txs.renderOrder = 0
-      this.occlusion.renderOrder = 1
     }
-    this.trees.renderOrder = 1
-
     this.particles.renderOrder = 0
     this.glow.renderOrder = 0
 
@@ -344,7 +341,13 @@ class App extends mixin(EventEmitter, Component) {
         this.rTree.material.depthWrite = true
       }
 
+      if (!this.config.detector.isMobile) {
+        this.occlusion.renderOrder = 1
+      }
+
       this.crystal.renderOrder = 2
+
+      this.trees.renderOrder = 1
       this.disk.renderOrder = 3
       this.plane.renderOrder = 4
       this.crystalAO.renderOrder = 7
@@ -370,7 +373,6 @@ class App extends mixin(EventEmitter, Component) {
       if (!this.config.detector.isMobile) {
         this.occlusion.renderOrder = 11
       }
-      this.trees.renderOrder = 6
 
       this.underside.position.y = -3.1
       this.undersideL.position.y = -3.1
@@ -382,6 +384,7 @@ class App extends mixin(EventEmitter, Component) {
       this.underside.renderOrder = 5
       this.undersideL.renderOrder = 5
       this.undersideR.renderOrder = 5
+      this.trees.renderOrder = 6
       this.disk.renderOrder = 7
     }
 
@@ -1242,7 +1245,7 @@ class App extends mixin(EventEmitter, Component) {
     this.controls.dampingFactor = 0.25
     this.controls.screenSpacePanning = true
     this.controls.minDistance = 20
-    this.controls.maxDistance = 8000
+    this.controls.maxDistance = 800
     this.controls.maxPolarAngle = orientation === 'positive' ? Math.PI / 2 : Math.PI * 2
     this.controls.rotateSpeed = 0.05
     this.controls.panSpeed = 0.25
