@@ -31,7 +31,7 @@ import Sidebar from './components/Sidebar/Sidebar'
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
 import GetBlockDataWorker from './workers/getBlockData.worker.js'
 import GetGeometryWorker from './workers/getGeometry.worker.js'
-import BlockHeightWorker from './workers/blockHeight.worker.js'
+// import BlockHeightWorker from './workers/blockHeight.worker.js'
 
 // Config
 import Config from './Config'
@@ -67,7 +67,7 @@ class App extends mixin(EventEmitter, Component) {
     this.planeMargin = 100
     this.blockReady = false
     this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
-    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 3 : 5
+    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 1 : 5
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -81,7 +81,7 @@ class App extends mixin(EventEmitter, Component) {
     this.undersideR = null
     this.closestBlockReadyForUpdate = false
     this.clock = new THREE.Clock()
-    this.loadedBaseGeoHeights = []
+    this.loadedBaseGeoHeights = {}
     this.mousePos = new THREE.Vector2(0, 0) // keep track of mouse position
     this.lastMousePos = new THREE.Vector2(0, 0)
     this.camera = null
@@ -175,7 +175,8 @@ class App extends mixin(EventEmitter, Component) {
       started: false, // if the experience has started
       flyControlsInteractionCount: 0,
       qualitySelected: false,
-      showInfoOverlay: true
+      showInfoOverlay: true,
+      UIClass: 'symphony'
     }
 
     this.initFirebase()
@@ -325,7 +326,10 @@ class App extends mixin(EventEmitter, Component) {
   setRenderOrder () {
     if (!this.config.detector.isMobile) {
       this.txs.renderOrder = 0
+      this.occlusion.renderOrder = 1
     }
+    this.trees.renderOrder = 1
+
     this.particles.renderOrder = 0
     this.glow.renderOrder = 0
 
@@ -340,10 +344,7 @@ class App extends mixin(EventEmitter, Component) {
         this.rTree.material.depthWrite = true
       }
 
-      this.occlusion.renderOrder = 1
-
       this.crystal.renderOrder = 2
-      this.trees.renderOrder = 1
       this.disk.renderOrder = 3
       this.plane.renderOrder = 4
       this.crystalAO.renderOrder = 7
@@ -366,7 +367,10 @@ class App extends mixin(EventEmitter, Component) {
         this.rTree.material.depthWrite = true
       }
 
-      this.occlusion.renderOrder = 11
+      if (!this.config.detector.isMobile) {
+        this.occlusion.renderOrder = 11
+      }
+      this.trees.renderOrder = 6
 
       this.underside.position.y = -3.1
       this.undersideL.position.y = -3.1
@@ -378,7 +382,6 @@ class App extends mixin(EventEmitter, Component) {
       this.underside.renderOrder = 5
       this.undersideL.renderOrder = 5
       this.undersideR.renderOrder = 5
-      this.trees.renderOrder = 6
       this.disk.renderOrder = 7
     }
 
@@ -959,21 +962,22 @@ class App extends mixin(EventEmitter, Component) {
         txHeights: []
       })
       this.group.add(this.txs)
+
+      this.occlusion = await this.occlusionGenerator.init(blockGeoData)
+      this.group.add(this.occlusion)
     }
+
+    this.trees = await this.treeGenerator.init(blockGeoData)
+    this.group.add(this.trees)
+
     this.particles = await this.particlesGenerator.init({
       blockGeoData: blockGeoData,
       renderer: this.renderer
     })
     this.scene.add(this.particles)
 
-    this.trees = await this.treeGenerator.init(blockGeoData)
-    this.group.add(this.trees)
-
     this.plane = await this.planeGenerator.init(blockGeoData)
     this.group.add(this.plane)
-
-    this.occlusion = await this.occlusionGenerator.init(blockGeoData)
-    this.group.add(this.occlusion)
 
     this.closestBlockReadyForUpdate = true
 
@@ -1144,6 +1148,7 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeCamera.update(this.renderer, this.scene)
 
     this.crystal.material.envMap = this.cubeCamera.renderTarget.texture
+
     this.trees.material.envMap = this.cubeCamera.renderTarget.texture
 
     if (this.centerTree) {
@@ -1237,7 +1242,7 @@ class App extends mixin(EventEmitter, Component) {
     this.controls.dampingFactor = 0.25
     this.controls.screenSpacePanning = true
     this.controls.minDistance = 20
-    this.controls.maxDistance = 800
+    this.controls.maxDistance = 8000
     this.controls.maxPolarAngle = orientation === 'positive' ? Math.PI / 2 : Math.PI * 2
     this.controls.rotateSpeed = 0.05
     this.controls.panSpeed = 0.25
@@ -1482,432 +1487,443 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async loadNearestBlocks (ignoreCamPos = false, closestHeight = null) {
-    if (this.loadingNearestBlocks) {
-      return
-    }
-
-    if (!this.blockReady) {
-      return
-    }
-
-    if (!ignoreCamPos) {
-      if (this.camera.position.y > 20000) {
-        this.loadingNearestBlocks = false
+    return new Promise((resolve, reject) => {
+      if (this.loadingNearestBlocks) {
+        resolve()
         return
       }
-    }
 
-    let loadNew = false
+      if (!this.blockReady) {
+        resolve()
+        return
+      }
 
-    if (ignoreCamPos) {
-      loadNew = true
-    }
+      if (!ignoreCamPos) {
+        if (this.camera.position.y > 20000) {
+          this.loadingNearestBlocks = false
+          resolve()
+          return
+        }
+      }
 
-    if (typeof this.lastLoadPos === 'undefined') {
+      let loadNew = false
+
+      if (ignoreCamPos) {
+        loadNew = true
+      }
+
+      if (typeof this.lastLoadPos === 'undefined') {
+        this.lastLoadPos = {
+          x: this.camera.position.x,
+          z: this.camera.position.z
+        }
+        loadNew = true
+      }
+
+      if (!ignoreCamPos) {
+        if (
+          Math.abs(this.camera.position.x - this.lastLoadPos.x) > 500 ||
+          Math.abs(this.camera.position.z - this.lastLoadPos.z) > 500
+        ) {
+          loadNew = true
+        }
+      }
+
+      if (!loadNew) {
+        this.loadingNearestBlocks = false
+        resolve()
+        return
+      }
+
+      this.loadingNearestBlocks = true
+
       this.lastLoadPos = {
         x: this.camera.position.x,
         z: this.camera.position.z
       }
-      loadNew = true
-    }
 
-    if (!ignoreCamPos) {
-      if (
-        Math.abs(this.camera.position.x - this.lastLoadPos.x) > 500 ||
-        Math.abs(this.camera.position.z - this.lastLoadPos.z) > 500
-      ) {
-        loadNew = true
-      }
-    }
+      if (closestHeight !== null) {
+        this.closestHeight = JSON.parse(JSON.stringify(closestHeight))
+      } else {
+        let closestDist = Number.MAX_SAFE_INTEGER
 
-    if (!loadNew) {
-      this.loadingNearestBlocks = false
-      return
-    }
+        let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
 
-    this.loadingNearestBlocks = true
+        let start = this.closestHeight - 5
+        let end = this.closestHeight + 5
 
-    this.lastLoadPos = {
-      x: this.camera.position.x,
-      z: this.camera.position.z
-    }
+        if (start < 0) {
+          start = 0
+        }
 
-    if (closestHeight !== null) {
-      this.closestHeight = closestHeight
-    } else {
-      let closestDist = Number.MAX_SAFE_INTEGER
+        if (end > this.blockPositions.length / 2) {
+          end = this.blockPositions.length / 2
+        }
 
-      let camVec = new THREE.Vector2(this.camera.position.x, this.camera.position.z)
+        for (let index = start; index < end; index++) {
+          const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
+          const zComponent = this.blockPositions[index * 2 + 1] - camVec.y
+          const dist = (xComponent * xComponent) + (zComponent * zComponent)
 
-      let start = this.closestHeight - 5
-      let end = this.closestHeight + 5
-
-      if (start < 0) {
-        start = 0
-      }
-
-      if (end > this.blockPositions.length / 2) {
-        end = this.blockPositions.length / 2
-      }
-
-      for (let index = start; index < end; index++) {
-        const xComponent = this.blockPositions[index * 2 + 0] - camVec.x
-        const zComponent = this.blockPositions[index * 2 + 1] - camVec.y
-        const dist = (xComponent * xComponent) + (zComponent * zComponent)
-
-        if (dist < closestDist) {
-          closestDist = dist
-          this.closestHeight = index
+          if (dist < closestDist) {
+            closestDist = dist
+            this.closestHeight = index
+          }
         }
       }
-    }
 
-    // unload blocks n away from closest block
-    for (const height in this.blockGeoDataObject) {
-      if (this.blockGeoDataObject.hasOwnProperty(height)) {
-        if (
-          height < this.closestHeight - this.blocksToLoadEitherSide ||
-            height > this.closestHeight + this.blocksToLoadEitherSide
-        ) {
-          delete this.blockGeoDataObject[height]
+      // unload blocks n away from closest block
+      for (const height in this.blockGeoDataObject) {
+        if (this.blockGeoDataObject.hasOwnProperty(height)) {
+          if (
+            height < this.closestHeight - this.blocksToLoadEitherSide ||
+          height > this.closestHeight + this.blocksToLoadEitherSide
+          ) {
+            delete this.blockGeoDataObject[height]
+          }
         }
       }
-    }
 
-    this.loadedBaseGeoHeights.forEach((height, i) => {
-      if (
-        height < this.closestHeight - this.baseGeoToLoadEitherSide || height > this.closestHeight + this.baseGeoToLoadEitherSide
-      ) {
-        delete this.loadedBaseGeoHeights[ i ]
-      }
-    })
-
-    let nearestBlocks = []
-
-    nearestBlocks.push(this.closestHeight)
-    for (let i = 1; i < this.baseGeoToLoadEitherSide; i++) {
-      let next = this.closestHeight + i
-      let prev = this.closestHeight - i
-
-      if (next <= this.maxHeight && next >= 0) {
-        nearestBlocks.push(next)
-      }
-
-      if (prev <= this.maxHeight && prev >= 0) {
-        nearestBlocks.push(prev)
-      }
-    }
-
-    nearestBlocks.forEach((height) => {
-      if (this.loadedBaseGeoHeights.indexOf(height) === -1) {
-        this.loadedBaseGeoHeights.push(height)
-
-        let blockGeoDataTemp = {}
-        blockGeoDataTemp.blockData = {}
-        blockGeoDataTemp.blockData.height = height
-        blockGeoDataTemp.blockData.pos = {}
-        blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
-        blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
-
-        this.planeGenerator.updateGeometry(blockGeoDataTemp)
-        this.occlusionGenerator.updateGeometry(blockGeoDataTemp)
-        this.treeGenerator.updateGeometry(blockGeoDataTemp)
-      }
-    })
-
-    // const nearestBlocksWorker = new NearestBlocksWorker()
-
-    this.nearestBlocksWorker.onmessage = async ({ data }) => {
-      if (typeof data.closestBlocksData !== 'undefined') {
-        let closestBlocksData = data.closestBlocksData
-
-        data.blockHeightIndexes.forEach((height, index) => {
-          if (typeof closestBlocksData[height] !== 'undefined') {
-            closestBlocksData[height].txValues = data['txValues' + index]
-            closestBlocksData[height].txIndexes = data['txIndexes' + index]
-            closestBlocksData[height].txSpentRatios = data['txSpentRatios' + index]
+      for (const height in this.loadedBaseGeoHeights) {
+        if (this.loadedBaseGeoHeights.hasOwnProperty(height)) {
+          if (
+            height < this.closestHeight - this.baseGeoToLoadEitherSide ||
+            height > this.closestHeight + this.baseGeoToLoadEitherSide
+          ) {
+            delete this.loadedBaseGeoHeights[height]
           }
-        })
+        }
+      }
 
-        let closestBlocksGeoData = {}
+      let nearestBlocks = []
+      nearestBlocks.push(this.closestHeight)
+      for (let i = 1; i <= this.baseGeoToLoadEitherSide; i++) {
+        let next = this.closestHeight + i
+        let prev = this.closestHeight - i
 
-        data.geoBlockHeightIndexes.forEach((height, index) => {
-          if (typeof closestBlocksData[height] !== 'undefined') {
-            closestBlocksGeoData[height] = {}
-            closestBlocksGeoData[height].height = height
-            closestBlocksGeoData[height].offsets = data['offsets' + index]
-            closestBlocksGeoData[height].scales = data['scales' + index]
+        if (next <= this.maxHeight && next >= 0) {
+          nearestBlocks.push(next)
+        }
+
+        if (prev <= this.maxHeight && prev >= 0) {
+          nearestBlocks.push(prev)
+        }
+      }
+
+      nearestBlocks.forEach((height) => {
+        if (typeof this.loadedBaseGeoHeights[height] === 'undefined') {
+          this.loadedBaseGeoHeights[height] = height
+
+          let blockGeoDataTemp = {}
+          blockGeoDataTemp.blockData = {}
+          blockGeoDataTemp.blockData.height = height
+          blockGeoDataTemp.blockData.pos = {}
+          blockGeoDataTemp.blockData.pos.x = this.blockPositions[height * 2 + 0]
+          blockGeoDataTemp.blockData.pos.z = this.blockPositions[height * 2 + 1]
+
+          this.planeGenerator.updateGeometry(blockGeoDataTemp)
+          if (!this.config.detector.isMobile) {
+            this.occlusionGenerator.updateGeometry(blockGeoDataTemp)
           }
-        })
+          this.treeGenerator.updateGeometry(blockGeoDataTemp)
+        }
+      })
 
-        Object.keys(closestBlocksGeoData).forEach((height) => {
-          let blockGeoData = closestBlocksGeoData[height]
+      this.nearestBlocksWorker.onmessage = async ({ data }) => {
+        if (typeof data.closestBlocksData !== 'undefined') {
+          let closestBlocksData = data.closestBlocksData
 
-          if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+          data.blockHeightIndexes.forEach((height, index) => {
             if (typeof closestBlocksData[height] !== 'undefined') {
-              if (
-                blockGeoData.height < this.closestHeight - 10 ||
-                blockGeoData.height > this.closestHeight + 10
-              ) {
-                console.log('moved too far away from block at height: ' + blockGeoData.height)
-              } else {
-                blockGeoData.blockData = closestBlocksData[height]
-
-                blockGeoData.blockData.pos = {}
-                blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
-                blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
-
-                blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
-
-                this.blockGeoDataObject[blockGeoData.height] = {}
-                this.blockGeoDataObject[blockGeoData.height].blockData = {
-                  bits: blockGeoData.blockData.bits,
-                  block_index: blockGeoData.blockData.block_index,
-                  fee: blockGeoData.blockData.fee,
-                  hash: blockGeoData.blockData.hash,
-                  healthRatio: blockGeoData.blockData.healthRatio,
-                  height: blockGeoData.blockData.height,
-                  main_chain: blockGeoData.blockData.main_chain,
-                  mrkl_root: blockGeoData.blockData.mrkl_root,
-                  n_tx: blockGeoData.blockData.n_tx,
-                  next_block: blockGeoData.blockData.next_block,
-                  nonce: blockGeoData.blockData.nonce,
-                  outputTotal: blockGeoData.blockData.outputTotal,
-                  pos: blockGeoData.blockData.pos,
-                  prev_block: blockGeoData.blockData.prev_block,
-                  received_time: blockGeoData.blockData.received_time,
-                  relayed_by: blockGeoData.blockData.relayed_by,
-                  size: blockGeoData.blockData.size,
-                  time: blockGeoData.blockData.time,
-                  ver: blockGeoData.blockData.ver,
-                  txIndexes: blockGeoData.blockData.txIndexes
-                }
-
-                this.crystalGenerator.updateGeometry(blockGeoData)
-                this.crystalAOGenerator.updateGeometry(blockGeoData)
-              }
+              closestBlocksData[height].txValues = data['txValues' + index]
+              closestBlocksData[height].txIndexes = data['txIndexes' + index]
+              closestBlocksData[height].txSpentRatios = data['txSpentRatios' + index]
             }
-          }
-        })
+          })
 
-        if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
-          if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
-            this.heightsToLoad.push(this.closestHeight)
-          }
-        }
+          let closestBlocksGeoData = {}
 
-        for (let i = 1; i < this.blocksToLoadEitherSide; i++) {
-          let next = this.closestHeight + i
-          let prev = this.closestHeight - i
-
-          if (typeof this.blockGeoDataObject[next] === 'undefined') {
-            if (next <= this.maxHeight && next >= 0) {
-              if (this.heightsToLoad.indexOf(next) === -1) {
-                this.heightsToLoad.push(next)
-              }
+          data.geoBlockHeightIndexes.forEach((height, index) => {
+            if (typeof closestBlocksData[height] !== 'undefined') {
+              closestBlocksGeoData[height] = {}
+              closestBlocksGeoData[height].height = height
+              closestBlocksGeoData[height].offsets = data['offsets' + index]
+              closestBlocksGeoData[height].scales = data['scales' + index]
             }
-          }
+          })
 
-          if (typeof this.blockGeoDataObject[prev] === 'undefined') {
-            if (prev <= this.maxHeight && prev >= 0) {
-              if (this.heightsToLoad.indexOf(prev) === -1) {
-                this.heightsToLoad.push(prev)
-              }
-            }
-          }
-        }
+          Object.keys(closestBlocksGeoData).forEach((height) => {
+            let blockGeoData = closestBlocksGeoData[height]
 
-        this.heightsToLoad.forEach((height, index) => {
-          if (height > this.closestHeight + (this.blocksToLoadEitherSide * 2) ||
-          height < this.closestHeight - (this.blocksToLoadEitherSide * 2)) {
-            console.log('removed ' + height + ' from heightsToLoad')
-            delete this.heightsToLoad[index]
-          }
-        })
+            if (typeof this.blockGeoDataObject[blockGeoData.height] === 'undefined') {
+              if (typeof closestBlocksData[height] !== 'undefined') {
+                if (
+                  blockGeoData.height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
+                blockGeoData.height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
+                ) {
+                  console.log('moved too far away from block at height: ' + blockGeoData.height)
+                } else {
+                  blockGeoData.blockData = closestBlocksData[height]
 
-        this.heightsToLoad.forEach(async (height) => {
-          if (this.loadingMutex.indexOf(height) === -1) {
-            this.loadingMutex.push(height)
+                  blockGeoData.blockData.pos = {}
+                  blockGeoData.blockData.pos.x = this.blockPositions[blockGeoData.height * 2 + 0]
+                  blockGeoData.blockData.pos.z = this.blockPositions[blockGeoData.height * 2 + 1]
 
-            if (typeof this.blockGeoDataObject[height] === 'undefined') {
-              if (
-                height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
-                  height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
-              ) {
-                console.log('moved too far away from block at height: ' + height)
-                return
-              }
+                  blockGeoData.blockData.healthRatio = (blockGeoData.blockData.fee / blockGeoData.blockData.outputTotal) * 2000 // 0 == healthy
 
-              const blockHeightWorker = new BlockHeightWorker()
-              blockHeightWorker.onmessage = async ({ data }) => {
-                if (typeof data.hash !== 'undefined') {
-                  let blockGeoData = await this.getGeometry(data.hash, height)
-
-                  if (
-                    height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
-                      height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
-                  ) {
-                    console.log('moved too far away from block at height: ' + height)
-                    return
+                  this.blockGeoDataObject[blockGeoData.height] = {}
+                  this.blockGeoDataObject[blockGeoData.height].blockData = {
+                    bits: blockGeoData.blockData.bits,
+                    block_index: blockGeoData.blockData.block_index,
+                    fee: blockGeoData.blockData.fee,
+                    hash: blockGeoData.blockData.hash,
+                    healthRatio: blockGeoData.blockData.healthRatio,
+                    height: blockGeoData.blockData.height,
+                    main_chain: blockGeoData.blockData.main_chain,
+                    mrkl_root: blockGeoData.blockData.mrkl_root,
+                    n_tx: blockGeoData.blockData.n_tx,
+                    next_block: blockGeoData.blockData.next_block,
+                    nonce: blockGeoData.blockData.nonce,
+                    outputTotal: blockGeoData.blockData.outputTotal,
+                    pos: blockGeoData.blockData.pos,
+                    prev_block: blockGeoData.blockData.prev_block,
+                    received_time: blockGeoData.blockData.received_time,
+                    relayed_by: blockGeoData.blockData.relayed_by,
+                    size: blockGeoData.blockData.size,
+                    time: blockGeoData.blockData.time,
+                    ver: blockGeoData.blockData.ver,
+                    txIndexes: blockGeoData.blockData.txIndexes
                   }
 
-                  if (blockGeoData) {
-                    this.crystalGenerator.updateGeometry(blockGeoData)
-                    this.crystalAOGenerator.updateGeometry(blockGeoData)
-                  }
-
-                  let heightIndex = this.heightsToLoad.indexOf(height)
-                  if (heightIndex > -1) {
-                    this.heightsToLoad.splice(heightIndex, 1)
-                  }
-                  let mutexIndex = this.loadingMutex.indexOf(height)
-                  if (mutexIndex > -1) {
-                    this.heightsToLoad.splice(mutexIndex, 1)
-                  }
-
-                  blockHeightWorker.terminate()
-                } else if (data.error !== 'undefined') {
-                  console.error(data.error)
+                  this.crystalGenerator.updateGeometry(blockGeoData)
+                  this.crystalAOGenerator.updateGeometry(blockGeoData)
                 }
               }
-
-              let blockHeightWorkerSendObj = {
-                cmd: 'get',
-                config: this.config,
-                height: height
-              }
-
-              blockHeightWorker.postMessage(
-                blockHeightWorkerSendObj
-              )
             }
-          }
-        })
+          })
 
-        this.loadingNearestBlocks = false
+          // if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
+          //   if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
+          //     this.heightsToLoad.push(this.closestHeight)
+          //   }
+          // }
+
+          // for (let i = 1; i < this.blocksToLoadEitherSide; i++) {
+          //   let next = this.closestHeight + i
+          //   let prev = this.closestHeight - i
+
+          //   if (typeof this.blockGeoDataObject[next] === 'undefined') {
+          //     if (next <= this.maxHeight && next >= 0) {
+          //       if (this.heightsToLoad.indexOf(next) === -1) {
+          //         this.heightsToLoad.push(next)
+          //       }
+          //     }
+          //   }
+
+          //   if (typeof this.blockGeoDataObject[prev] === 'undefined') {
+          //     if (prev <= this.maxHeight && prev >= 0) {
+          //       if (this.heightsToLoad.indexOf(prev) === -1) {
+          //         this.heightsToLoad.push(prev)
+          //       }
+          //     }
+          //   }
+          // }
+
+          // this.heightsToLoad.forEach((height, index) => {
+          //   if (
+          //     height > this.closestHeight + (this.blocksToLoadEitherSide * 2) ||
+          //     height < this.closestHeight - (this.blocksToLoadEitherSide * 2)
+          //   ) {
+          //     console.log('removed ' + height + ' from heightsToLoad')
+          //     delete this.heightsToLoad[index]
+          //   }
+          // })
+
+          // this.heightsToLoad.forEach(async (height) => {
+          //   if (this.loadingMutex.indexOf(height) === -1) {
+          //     this.loadingMutex.push(height)
+
+          //     if (typeof this.blockGeoDataObject[height] === 'undefined') {
+          //       if (
+          //         height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
+          //         height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
+          //       ) {
+          //         console.log('moved too far away from block at height: ' + height)
+          //         return
+          //       }
+
+          //       const blockHeightWorker = new BlockHeightWorker()
+          //       blockHeightWorker.onmessage = async ({ data }) => {
+          //         if (typeof data.hash !== 'undefined') {
+          //           let blockGeoData = await this.getGeometry(data.hash, height)
+
+          //           if (
+          //             height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
+          //             height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
+          //           ) {
+          //             console.log('moved too far away from block at height: ' + height)
+          //             return
+          //           }
+
+          //           if (blockGeoData) {
+          //             this.crystalGenerator.updateGeometry(blockGeoData)
+          //             this.crystalAOGenerator.updateGeometry(blockGeoData)
+          //           }
+
+          //           let heightIndex = this.heightsToLoad.indexOf(height)
+          //           if (heightIndex > -1) {
+          //             this.heightsToLoad.splice(heightIndex, 1)
+          //           }
+          //           let mutexIndex = this.loadingMutex.indexOf(height)
+          //           if (mutexIndex > -1) {
+          //             this.heightsToLoad.splice(mutexIndex, 1)
+          //           }
+
+          //           blockHeightWorker.terminate()
+          //         } else if (data.error !== 'undefined') {
+          //           console.error(data.error)
+          //         }
+          //       }
+
+          //       let blockHeightWorkerSendObj = {
+          //         cmd: 'get',
+          //         config: this.config,
+          //         height: height
+          //       }
+
+          //       blockHeightWorker.postMessage(
+          //         blockHeightWorkerSendObj
+          //       )
+          //     }
+          //   }
+          // })
+
+          this.loadingNearestBlocks = false
+          resolve()
 
         // nearestBlocksWorker.terminate()
+        }
       }
-    }
 
-    // use transferable objects for large data sets
-    let sendObj = {
-      cmd: 'get',
-      closestHeight: this.closestHeight,
-      blocksToLoadEitherSide: this.blocksToLoadEitherSide,
-      config: this.config,
-      maxHeight: this.maxHeight,
-      blockHeightIndexes: new Int32Array(9).fill(-1),
-      geoBlockHeightIndexes: new Int32Array(9).fill(-1),
+      // use transferable objects for large data sets
+      let sendObj = {
+        cmd: 'get',
+        closestHeight: this.closestHeight,
+        blocksToLoadEitherSide: this.blocksToLoadEitherSide,
+        config: this.config,
+        maxHeight: this.maxHeight,
+        blockHeightIndexes: new Int32Array(9).fill(-1),
+        geoBlockHeightIndexes: new Int32Array(9).fill(-1),
 
-      scales0: new Float32Array(this.txCountBufferSize),
-      scales1: new Float32Array(this.txCountBufferSize),
-      scales2: new Float32Array(this.txCountBufferSize),
-      scales3: new Float32Array(this.txCountBufferSize),
-      scales4: new Float32Array(this.txCountBufferSize),
-      scales5: new Float32Array(this.txCountBufferSize),
-      scales6: new Float32Array(this.txCountBufferSize),
-      scales7: new Float32Array(this.txCountBufferSize),
-      scales8: new Float32Array(this.txCountBufferSize),
+        scales0: new Float32Array(this.txCountBufferSize),
+        scales1: new Float32Array(this.txCountBufferSize),
+        scales2: new Float32Array(this.txCountBufferSize),
+        scales3: new Float32Array(this.txCountBufferSize),
+        scales4: new Float32Array(this.txCountBufferSize),
+        scales5: new Float32Array(this.txCountBufferSize),
+        scales6: new Float32Array(this.txCountBufferSize),
+        scales7: new Float32Array(this.txCountBufferSize),
+        scales8: new Float32Array(this.txCountBufferSize),
 
-      offsets0: new Float32Array(this.txCountBufferSize * 2),
-      offsets1: new Float32Array(this.txCountBufferSize * 2),
-      offsets2: new Float32Array(this.txCountBufferSize * 2),
-      offsets3: new Float32Array(this.txCountBufferSize * 2),
-      offsets4: new Float32Array(this.txCountBufferSize * 2),
-      offsets5: new Float32Array(this.txCountBufferSize * 2),
-      offsets6: new Float32Array(this.txCountBufferSize * 2),
-      offsets7: new Float32Array(this.txCountBufferSize * 2),
-      offsets8: new Float32Array(this.txCountBufferSize * 2),
+        offsets0: new Float32Array(this.txCountBufferSize * 2),
+        offsets1: new Float32Array(this.txCountBufferSize * 2),
+        offsets2: new Float32Array(this.txCountBufferSize * 2),
+        offsets3: new Float32Array(this.txCountBufferSize * 2),
+        offsets4: new Float32Array(this.txCountBufferSize * 2),
+        offsets5: new Float32Array(this.txCountBufferSize * 2),
+        offsets6: new Float32Array(this.txCountBufferSize * 2),
+        offsets7: new Float32Array(this.txCountBufferSize * 2),
+        offsets8: new Float32Array(this.txCountBufferSize * 2),
 
-      txValues0: new Float32Array(this.txCountBufferSize),
-      txValues1: new Float32Array(this.txCountBufferSize),
-      txValues2: new Float32Array(this.txCountBufferSize),
-      txValues3: new Float32Array(this.txCountBufferSize),
-      txValues4: new Float32Array(this.txCountBufferSize),
-      txValues5: new Float32Array(this.txCountBufferSize),
-      txValues6: new Float32Array(this.txCountBufferSize),
-      txValues7: new Float32Array(this.txCountBufferSize),
-      txValues8: new Float32Array(this.txCountBufferSize),
+        txValues0: new Float32Array(this.txCountBufferSize),
+        txValues1: new Float32Array(this.txCountBufferSize),
+        txValues2: new Float32Array(this.txCountBufferSize),
+        txValues3: new Float32Array(this.txCountBufferSize),
+        txValues4: new Float32Array(this.txCountBufferSize),
+        txValues5: new Float32Array(this.txCountBufferSize),
+        txValues6: new Float32Array(this.txCountBufferSize),
+        txValues7: new Float32Array(this.txCountBufferSize),
+        txValues8: new Float32Array(this.txCountBufferSize),
 
-      txIndexes0: new Uint32Array(this.txCountBufferSize),
-      txIndexes1: new Uint32Array(this.txCountBufferSize),
-      txIndexes2: new Uint32Array(this.txCountBufferSize),
-      txIndexes3: new Uint32Array(this.txCountBufferSize),
-      txIndexes4: new Uint32Array(this.txCountBufferSize),
-      txIndexes5: new Uint32Array(this.txCountBufferSize),
-      txIndexes6: new Uint32Array(this.txCountBufferSize),
-      txIndexes7: new Uint32Array(this.txCountBufferSize),
-      txIndexes8: new Uint32Array(this.txCountBufferSize),
+        txIndexes0: new Uint32Array(this.txCountBufferSize),
+        txIndexes1: new Uint32Array(this.txCountBufferSize),
+        txIndexes2: new Uint32Array(this.txCountBufferSize),
+        txIndexes3: new Uint32Array(this.txCountBufferSize),
+        txIndexes4: new Uint32Array(this.txCountBufferSize),
+        txIndexes5: new Uint32Array(this.txCountBufferSize),
+        txIndexes6: new Uint32Array(this.txCountBufferSize),
+        txIndexes7: new Uint32Array(this.txCountBufferSize),
+        txIndexes8: new Uint32Array(this.txCountBufferSize),
 
-      txSpentRatios0: new Float32Array(this.txCountBufferSize),
-      txSpentRatios1: new Float32Array(this.txCountBufferSize),
-      txSpentRatios2: new Float32Array(this.txCountBufferSize),
-      txSpentRatios3: new Float32Array(this.txCountBufferSize),
-      txSpentRatios4: new Float32Array(this.txCountBufferSize),
-      txSpentRatios5: new Float32Array(this.txCountBufferSize),
-      txSpentRatios6: new Float32Array(this.txCountBufferSize),
-      txSpentRatios7: new Float32Array(this.txCountBufferSize),
-      txSpentRatios8: new Float32Array(this.txCountBufferSize)
-    }
+        txSpentRatios0: new Float32Array(this.txCountBufferSize),
+        txSpentRatios1: new Float32Array(this.txCountBufferSize),
+        txSpentRatios2: new Float32Array(this.txCountBufferSize),
+        txSpentRatios3: new Float32Array(this.txCountBufferSize),
+        txSpentRatios4: new Float32Array(this.txCountBufferSize),
+        txSpentRatios5: new Float32Array(this.txCountBufferSize),
+        txSpentRatios6: new Float32Array(this.txCountBufferSize),
+        txSpentRatios7: new Float32Array(this.txCountBufferSize),
+        txSpentRatios8: new Float32Array(this.txCountBufferSize)
+      }
 
-    this.nearestBlocksWorker.postMessage(
-      sendObj,
-      [
-        sendObj.blockHeightIndexes.buffer,
-        sendObj.geoBlockHeightIndexes.buffer,
+      this.nearestBlocksWorker.postMessage(
+        sendObj,
+        [
+          sendObj.blockHeightIndexes.buffer,
+          sendObj.geoBlockHeightIndexes.buffer,
 
-        sendObj.scales0.buffer,
-        sendObj.scales1.buffer,
-        sendObj.scales2.buffer,
-        sendObj.scales3.buffer,
-        sendObj.scales4.buffer,
-        sendObj.scales5.buffer,
-        sendObj.scales6.buffer,
-        sendObj.scales7.buffer,
-        sendObj.scales8.buffer,
+          sendObj.scales0.buffer,
+          sendObj.scales1.buffer,
+          sendObj.scales2.buffer,
+          sendObj.scales3.buffer,
+          sendObj.scales4.buffer,
+          sendObj.scales5.buffer,
+          sendObj.scales6.buffer,
+          sendObj.scales7.buffer,
+          sendObj.scales8.buffer,
 
-        sendObj.offsets0.buffer,
-        sendObj.offsets1.buffer,
-        sendObj.offsets2.buffer,
-        sendObj.offsets3.buffer,
-        sendObj.offsets4.buffer,
-        sendObj.offsets5.buffer,
-        sendObj.offsets6.buffer,
-        sendObj.offsets7.buffer,
-        sendObj.offsets8.buffer,
+          sendObj.offsets0.buffer,
+          sendObj.offsets1.buffer,
+          sendObj.offsets2.buffer,
+          sendObj.offsets3.buffer,
+          sendObj.offsets4.buffer,
+          sendObj.offsets5.buffer,
+          sendObj.offsets6.buffer,
+          sendObj.offsets7.buffer,
+          sendObj.offsets8.buffer,
 
-        sendObj.txValues0.buffer,
-        sendObj.txValues1.buffer,
-        sendObj.txValues2.buffer,
-        sendObj.txValues3.buffer,
-        sendObj.txValues4.buffer,
-        sendObj.txValues5.buffer,
-        sendObj.txValues6.buffer,
-        sendObj.txValues7.buffer,
-        sendObj.txValues8.buffer,
+          sendObj.txValues0.buffer,
+          sendObj.txValues1.buffer,
+          sendObj.txValues2.buffer,
+          sendObj.txValues3.buffer,
+          sendObj.txValues4.buffer,
+          sendObj.txValues5.buffer,
+          sendObj.txValues6.buffer,
+          sendObj.txValues7.buffer,
+          sendObj.txValues8.buffer,
 
-        sendObj.txIndexes0.buffer,
-        sendObj.txIndexes1.buffer,
-        sendObj.txIndexes2.buffer,
-        sendObj.txIndexes3.buffer,
-        sendObj.txIndexes4.buffer,
-        sendObj.txIndexes5.buffer,
-        sendObj.txIndexes6.buffer,
-        sendObj.txIndexes7.buffer,
-        sendObj.txIndexes8.buffer,
+          sendObj.txIndexes0.buffer,
+          sendObj.txIndexes1.buffer,
+          sendObj.txIndexes2.buffer,
+          sendObj.txIndexes3.buffer,
+          sendObj.txIndexes4.buffer,
+          sendObj.txIndexes5.buffer,
+          sendObj.txIndexes6.buffer,
+          sendObj.txIndexes7.buffer,
+          sendObj.txIndexes8.buffer,
 
-        sendObj.txSpentRatios0.buffer,
-        sendObj.txSpentRatios1.buffer,
-        sendObj.txSpentRatios2.buffer,
-        sendObj.txSpentRatios3.buffer,
-        sendObj.txSpentRatios4.buffer,
-        sendObj.txSpentRatios5.buffer,
-        sendObj.txSpentRatios6.buffer,
-        sendObj.txSpentRatios7.buffer,
-        sendObj.txSpentRatios8.buffer
-      ]
-    )
+          sendObj.txSpentRatios0.buffer,
+          sendObj.txSpentRatios1.buffer,
+          sendObj.txSpentRatios2.buffer,
+          sendObj.txSpentRatios3.buffer,
+          sendObj.txSpentRatios4.buffer,
+          sendObj.txSpentRatios5.buffer,
+          sendObj.txSpentRatios6.buffer,
+          sendObj.txSpentRatios7.buffer,
+          sendObj.txSpentRatios8.buffer
+        ]
+      )
+    })
   }
 
   toggleTxSearch () {
@@ -1966,7 +1982,7 @@ class App extends mixin(EventEmitter, Component) {
     this.closeSidebar()
   }
 
-  goToRandomBlock () {
+  async goToRandomBlock () {
     this.prepareCamNavigation()
 
     this.setState({
@@ -2053,7 +2069,7 @@ class App extends mixin(EventEmitter, Component) {
     removeInfoOverlay = false,
     speed = 'normal'
   ) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       this.isNavigating = true
 
       if (removeInfoOverlay) {
@@ -2413,7 +2429,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     this.crystalAOGenerator.update(window.performance.now())
-    this.treeGenerator.update(window.performance.now())
   }
 
   VRControlsUpdate () {
@@ -3613,15 +3628,15 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   updateOriginOffsets () {
-    this.treeGenerator.updateOriginOffset(this.originOffset)
     this.planeGenerator.updateOriginOffset(this.originOffset)
-    this.occlusionGenerator.updateOriginOffset(this.originOffset)
     this.crystalGenerator.updateOriginOffset(this.originOffset)
     this.crystalAOGenerator.updateOriginOffset(this.originOffset)
     this.diskGenerator.updateOriginOffset(this.originOffset)
     if (!this.config.detector.isMobile) {
+      this.occlusionGenerator.updateOriginOffset(this.originOffset)
       this.txGenerator.updateOriginOffset(this.originOffset)
     }
+    this.treeGenerator.updateOriginOffset(this.originOffset)
   }
 
   async updateClosestTrees () {
@@ -4016,6 +4031,17 @@ class App extends mixin(EventEmitter, Component) {
     if (this.pickingTexture) {
       this.pickingTexture.setSize(this.width, this.height)
     }
+
+    let UIClass = 'symphony'
+    if (this.width > this.height) {
+      UIClass += ' landscape'
+    } else {
+      UIClass += ' portrait'
+    }
+
+    this.setState({
+      UIClass: UIClass
+    })
   }
 
   toggleSidebar () {
@@ -4039,28 +4065,22 @@ class App extends mixin(EventEmitter, Component) {
     e.target.focus()
   }
 
-  gotoPrevBlock () {
+  async gotoPrevBlock () {
     if (this.animatingCamera) {
       return
     }
 
-    this.loadNearestBlocks()
-
     if (this.closestBlock.blockData.height - 1 < 0) {
       return
     }
+
+    this.loadNearestBlocks(true, this.closestBlock.blockData.height - 1)
 
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
-
-    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height - 1]
-    let offsetPos = new THREE.Vector2(
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-    )
 
     let newPos
     let toCenterVec
@@ -4072,7 +4092,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, this.topViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(0.01))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       case 'underside':
@@ -4080,7 +4100,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, this.undersideViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(20))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       case 'side':
@@ -4092,7 +4112,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(blockDist))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       default:
@@ -4109,10 +4129,10 @@ class App extends mixin(EventEmitter, Component) {
         this.animatingCamera = false
         switch (this.state.controlType) {
           case 'top' :
-            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'positive')
+            this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
             break
           case 'underside' :
-            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
+            this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'negative')
             break
           default:
             break
@@ -4124,28 +4144,22 @@ class App extends mixin(EventEmitter, Component) {
     this.animateCamRotation(2500)
   }
 
-  gotoNextBlock () {
+  async gotoNextBlock () {
     if (this.animatingCamera) {
       return
     }
 
-    this.loadNearestBlocks()
-
     if (this.closestBlock.blockData.height + 1 > this.maxHeight) {
       return
     }
+
+    this.loadNearestBlocks(true, this.closestBlock.blockData.height + 1)
 
     this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
-
-    let indexOffset = this.planeGenerator.blockHeightIndex[this.closestBlock.blockData.height + 1]
-    let offsetPos = new THREE.Vector2(
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 0],
-      this.plane.geometry.attributes.planeOffset.array[indexOffset + 1]
-    )
 
     let newPos
     let toCenterVec
@@ -4157,7 +4171,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, this.topViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(0.01))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       case 'underside':
@@ -4165,7 +4179,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, this.undersideViewYPos, to.z).add(toCenterVec.normalize().multiplyScalar(20))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       case 'side':
@@ -4177,7 +4191,7 @@ class App extends mixin(EventEmitter, Component) {
         newPos = new THREE.Vector3(to.x, -15, to.z).add(toCenterVec.normalize().multiplyScalar(blockDist))
         this.prepareCamAnim(
           newPos,
-          new THREE.Vector3(offsetPos.x, 0, offsetPos.y)
+          new THREE.Vector3(posX, 0, posZ)
         )
         break
       default:
@@ -4194,10 +4208,10 @@ class App extends mixin(EventEmitter, Component) {
         this.animatingCamera = false
         switch (this.state.controlType) {
           case 'top' :
-            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'positive')
+            this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
             break
           case 'underside' :
-            this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
+            this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'negative')
             break
           default:
             break
@@ -4347,73 +4361,9 @@ class App extends mixin(EventEmitter, Component) {
         blockDataJSON = blockDataJSON.blocks[0]
       }
 
-      let posX = this.blockPositions[blockDataJSON.height * 2 + 0]
-      let posZ = this.blockPositions[blockDataJSON.height * 2 + 1]
-
-      this.closestHeight = blockDataJSON.height
-
-      this.loadNearestBlocks(true, this.closestHeight)
-
-      let to = new THREE.Vector3(posX, 1000000, posZ)
-
-      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
-
-      let aboveStart = this.camera.position.clone()
-      aboveStart.y = 1000000
-
-      let blockYDist = this.vrActive ? 20 : this.topViewYPos
-
-      let that = this
-      new TWEEN.Tween(this.camera.position)
-        .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
-        .onUpdate(function () {
-          that.camera.position.set(this.x, this.y, this.z)
-        })
-        .onComplete(() => {
-          new TWEEN.Tween(this.camera.position)
-            .to(aboveStart, 5000)
-            .onUpdate(function () {
-              that.camera.position.set(this.x, this.y, this.z)
-            })
-            .onComplete(() => {
-              new TWEEN.Tween(that.camera.position)
-                .to(to, 5000)
-                .onUpdate(function () {
-                  that.camera.position.set(this.x, this.y, this.z)
-                })
-                .onComplete(() => {
-                  new TWEEN.Tween(this.camera.position)
-                    .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
-                    .onUpdate(function () {
-                      that.camera.position.set(this.x, this.y, this.z)
-                    })
-                    .onComplete(() => {
-                      new TWEEN.Tween(this.camera.position)
-                        .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
-                        .onUpdate(function () {
-                          that.camera.position.set(this.x, this.y, this.z)
-                        })
-                        .onComplete(() => {
-                          this.animatingCamera = false
-                        })
-                        .easing(TWEEN.Easing.Quadratic.Out)
-                        .start()
-                    })
-                    .easing(this.defaultCamEasing)
-                    .start()
-                })
-                .easing(this.defaultCamEasing)
-                .start()
-            })
-            .easing(this.defaultCamEasing)
-            .start()
-        })
-        .easing(this.defaultCamEasing)
-        .start()
-
-      this.animateCamRotation(20000)
+      this.goToBlock(blockDataJSON.height)
     } catch (error) {
-
+      console.log(error)
     }
   }
 
@@ -4604,7 +4554,7 @@ class App extends mixin(EventEmitter, Component) {
 
   render () {
     return (
-      <div className='symphony'>
+      <div className={this.state.UIClass}>
         {this.UIRotateMessage()}
         {this.UIIntro()}
         {this.UIQualityScreen()}

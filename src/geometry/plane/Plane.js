@@ -20,7 +20,7 @@ export default class Plane extends Base {
     this.instanceTotal = 100
 
     if (this.config.detector.isMobile) {
-      this.instanceTotal = 10
+      this.instanceTotal = 20
     }
 
     this.blockHeightIndex = {}

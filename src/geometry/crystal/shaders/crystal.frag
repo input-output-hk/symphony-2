@@ -39,10 +39,10 @@ varying vec3 vNormal;
 #include <uv_pars_fragment>
 #include <uv2_pars_fragment>
 #include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <aomap_pars_fragment>
-#include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
+// #include <alphamap_pars_fragment>
+// #include <aomap_pars_fragment>
+// #include <lightmap_pars_fragment>
+// #include <emissivemap_pars_fragment>
 #include <bsdfs>
 #include <cube_uv_reflection_fragment>
 #include <envmap_pars_fragment>
@@ -50,7 +50,7 @@ varying vec3 vNormal;
 #include <fog_pars_fragment>
 #include <lights_pars_begin>
 #include <lights_physical_pars_fragment>
-#include <shadowmap_pars_fragment>
+// #include <shadowmap_pars_fragment>
 #include <bumpmap_pars_fragment>
 #include <normalmap_pars_fragment>
 #include <roughnessmap_pars_fragment>
@@ -100,7 +100,7 @@ void main() {
 	#include <logdepthbuf_fragment>
 	#include <map_fragment>
 	#include <color_fragment>
-	#include <alphamap_fragment>
+	// #include <alphamap_fragment>
 	#include <alphatest_fragment>
 	#include <roughnessmap_fragment>
 	#include <metalnessmap_fragment>

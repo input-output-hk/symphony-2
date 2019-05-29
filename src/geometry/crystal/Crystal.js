@@ -18,7 +18,7 @@ export default class Crystal extends Base {
     this.instanceTotal = 10 * 3000
 
     if (this.config.detector.isMobile) {
-      this.instanceTotal = 3 * 3000
+      this.instanceTotal = 3 * 4000
     }
 
     this.txCount = 0
@@ -65,7 +65,6 @@ export default class Crystal extends Base {
 
     // set up base geometry
     let tubeGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-    // let tubeGeo = new THREE.BoxGeometry(1, 1, 1)
     tubeGeo.vertices[12].add(new THREE.Vector3(0, 0.01, 0))
     tubeGeo.vertices[0].add(new THREE.Vector3(0, 0.02, 0))
     tubeGeo.vertices[1].add(new THREE.Vector3(0, 0.02, 0))
@@ -76,7 +75,6 @@ export default class Crystal extends Base {
     this.geometry = new THREE.InstancedBufferGeometry().copy(tubeBufferGeo)
 
     // attributes
-    // let txValues = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let spentRatios = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let txTimes = new THREE.InstancedBufferAttribute(new Float32Array(this.instanceTotal), 1)
     let offsets = new THREE.InstancedBufferAttribute(this.offsetsArray, 3)
@@ -104,7 +102,6 @@ export default class Crystal extends Base {
     )
 
     this.geometry.addAttribute('offset', offsets)
-    // this.geometry.addAttribute('txValue', txValues)
     this.geometry.addAttribute('scale', scales)
     this.geometry.addAttribute('spentRatio', spentRatios)
     this.geometry.addAttribute('quaternion', quaternions)

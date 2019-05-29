@@ -34,16 +34,13 @@ self.addEventListener('message', async function (e) {
       let blockHeightIndexes = data.blockHeightIndexes
       let geoBlockHeightIndexes = data.geoBlockHeightIndexes
 
-      // let blockDataHelper = new BlockDataHelper({
-      //   config: data.config
-      // })
-
       let closestBlocksData = {}
 
       let blockGeoData = docRefGeo
-        .where('height', '>', data.closestHeight - blocksToLoadEitherSide)
-        .where('height', '<', data.closestHeight + blocksToLoadEitherSide)
+        .where('height', '>=', data.closestHeight - blocksToLoadEitherSide)
+        .where('height', '<=', data.closestHeight + blocksToLoadEitherSide)
         .orderBy('height', 'asc')
+        .limit(9)
 
       let geoSnapshot = await blockGeoData.get()
 
@@ -71,8 +68,8 @@ self.addEventListener('message', async function (e) {
       })
 
       let blockData = docRef
-        .where('height', '>', data.closestHeight - 5)
-        .where('height', '<', data.closestHeight + 5)
+        .where('height', '>=', data.closestHeight - blocksToLoadEitherSide)
+        .where('height', '<=', data.closestHeight + blocksToLoadEitherSide)
         .orderBy('height', 'asc')
         .limit(9)
 

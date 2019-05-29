@@ -2151,8 +2151,8 @@ canvas#sketchboard {
 	}
 }
 
- @media only screen and (max-width: 824px) and (orientation: landscape) { 
-  .rotate-message {
+@media only screen and (max-width: 824px) { 
+  .landscape .rotate-message {
     display: flex;
   }
- } 
+}

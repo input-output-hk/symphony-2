@@ -41,7 +41,7 @@ const Config = {
   },
   camera: {
     fov: 80,
-    initPos: detector.isMobile ? new THREE.Vector3(3000000.0, 150000.0, 0.0) : new THREE.Vector3(1500000.0, 100000.0, 0.0),
+    initPos: detector.isMobile ? new THREE.Vector3(0.0, 15000000.0, 0.0) : new THREE.Vector3(1500000.0, 100000.0, 0.0),
     initTarget: new THREE.Vector3(0.0, 0.0, 0.0)
   },
   VR: {
