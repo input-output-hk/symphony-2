@@ -1,8 +1,6 @@
 
 import React, { Component } from 'react'
 
-// import styles from './Sidebar.css'
-
 import iohkLogo from '../../assets/images/iohk-logo.png'
 import txValueKey from '../../assets/images/tx-value-key.png'
 import txSpent from '../../assets/images/tx-spent.svg'
@@ -19,20 +17,22 @@ export default class WebVRButton extends Component {
       sidebarClassName += ' closed'
     }
 
+    sidebarClassName += this.props.animatingCamera ? ' camera-animating' : ''
+
     return (
       <div className={sidebarClassName}>
         <button className='expand' onClick={this.props.toggleSidebar} />
         <h1>Symphony</h1>
-        <h2>Interactive Blockchain Map</h2>
+        <h2>3D Blockchain Explorer</h2>
         <div className='section key'>
           <h3>Transaction Value</h3>
           <div className='sidebar-show'><img alt='Transaction' src={txSingle} /></div>
-          <div className='sidebar-hide'><img alt='Transaction key' src={txValueKey} /></div>
+          <div className='sidebar-hide'><img alt='Transaction Key' src={txValueKey} /></div>
           <h3>Spending</h3>
-          <div className='sidebar-show'><img alt='Transaction spending' src={txSpent} /></div>
+          <div className='sidebar-show'><img alt='Transaction Spending' src={txSpent} /></div>
           <div className='sidebar-hide'>
-            <span className='spending-key'><img alt='Spent transaction' src={txSpent} /> <span>Spent</span></span>
-            <span className='spending-key'><img alt='Unspent transaction' src={txUnspent} /> <span>Unspent</span></span>
+            <span className='spending-key'><img alt='Spent Transaction' src={txSpent} /> <span>Spent</span></span>
+            <span className='spending-key'><img alt='Unspent Transaction' src={txUnspent} /> <span>Unspent</span></span>
           </div>
         </div>
         <div className='section explore'>
@@ -49,8 +49,10 @@ export default class WebVRButton extends Component {
         </div>
         <div className='sidebar-footer'>
           <div className='sidebar-footer-inner'>
-            <span className='iohk-supported'>IOHK Supported Project</span>
-            <img className='iohk-logo' alt='IOHK Logo' src={iohkLogo} />
+            <a href='https://iohk.io'>
+              <span className='iohk-supported'>IOHK Supported Project</span>
+              <img className='iohk-logo' alt='IOHK Logo' src={iohkLogo} />
+            </a>
           </div>
         </div>
       </div>

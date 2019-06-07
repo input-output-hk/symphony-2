@@ -176,7 +176,8 @@ class App extends mixin(EventEmitter, Component) {
       flyControlsInteractionCount: 0,
       qualitySelected: false,
       showInfoOverlay: true,
-      UIClass: 'symphony'
+      UIClass: 'symphony',
+      animatingCamera: true
     }
 
     this.initFirebase()
@@ -638,7 +639,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   onMouseUp (e) {
-    console.log(e.target.className)
+    // console.log(e.target.className)
 
     const classes = [
       'input-output',
@@ -1248,7 +1249,8 @@ class App extends mixin(EventEmitter, Component) {
     this.controls.maxDistance = 800
     this.controls.maxPolarAngle = orientation === 'positive' ? Math.PI / 2 : Math.PI * 2
     this.controls.rotateSpeed = 0.05
-    this.controls.panSpeed = 0.25
+    this.controls.panSpeed = 0.1
+    this.controls.keyPanSpeed = 3.0
     this.controls.zoomSpeed = 0.5
     this.controls.enableRotate = false
     this.controls.target = target
@@ -2108,7 +2110,10 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   stopAutoPilot () {
-    this.toggleTopView()
+    if (this.animatingCamera) {
+      this.animatingCamera = false
+      this.toggleTopView()
+    }
   }
 
   toggleAutoPilotDirection (direction = 'backward') {
@@ -2139,6 +2144,8 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager.stopNotes()
 
     this.setAutoPilotState()
+
+    this.animatingCamera = true
 
     if (this.vrActive) {
       this.autoPilotAnimLoopVR()
@@ -4277,7 +4284,7 @@ class App extends mixin(EventEmitter, Component) {
         <div className='search-container'>
           <h2>Enter Transaction Hash</h2>
           <button className='search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
-          <input className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <input autofocus='true' className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupTXFromHash.bind(this)} />
         </div>
       )
@@ -4290,7 +4297,7 @@ class App extends mixin(EventEmitter, Component) {
         <div className='search-container'>
           <h2>Enter Block Hash/Height</h2>
           <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
-          <input className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <input autofocus='true' className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupBlockFromHash.bind(this)} />
         </div>
       )
@@ -4320,6 +4327,7 @@ class App extends mixin(EventEmitter, Component) {
           goToBlock={this.goToBlock.bind(this)}
           sidebarOpen={this.state.sidebarOpen}
           maxHeight={this.maxHeight}
+          animatingCamera={this.state.animatingCamera}
         />
         {this.UITXSearchBox()}
         {this.UIBlockSearchBox()}
@@ -4366,6 +4374,7 @@ class App extends mixin(EventEmitter, Component) {
           <div className='logo-container'>
             <img className='symphony-logo' src={logo} alt='Symphony Logo' />
             <h1>Symphony</h1>
+            <h2>3D Blockchain Explorer</h2>
             <p className='choose-quality'>Choose Quality:</p>
             <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
             <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} tooltip='For Computers with low power graphics cards'>LOW</a>

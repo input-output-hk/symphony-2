@@ -51,7 +51,7 @@ self.addEventListener('message', async function (e) {
       }
 
       if (!shouldCache) {
-        console.log('Block data for: ' + data.hash + ' returned from cache')
+        // console.log('Block data for: ' + data.hash + ' returned from cache')
       } else {
         let snapshots = await docRefUpdate.get()
         let heightsToUpdate = []

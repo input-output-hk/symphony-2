@@ -630,7 +630,7 @@ canvas#sketchboard {
 }
 
 .block-details strong {
-  font-weight: normal;
+  font-weight: bold;
 }
 
 .block-details .line {
@@ -986,6 +986,10 @@ canvas#sketchboard {
   cursor: pointer;
 }
 
+.sidebar.camera-animating {
+  visibility: hidden;
+}
+
 .sidebar .section {
   padding: 10px 0;
   margin: 0 0 15px;
@@ -1023,7 +1027,6 @@ canvas#sketchboard {
 }
 
 .sidebar.open ul span:hover {
-  text-decoration: underline;
   color: #fff
 }
 
@@ -1049,23 +1052,22 @@ canvas#sketchboard {
   width: 240px;
   text-transform: none;
   color: #d8d6d7;
-  font-weight: normal;
+  font-weight: bold;
   letter-spacing: 1px;
   border: none;
   transition: opacity 0.5s;
   transition-timing-function: ease-in-out;
   padding: 0 0 20px;
-  visibility: hidden;
+  text-transform: uppercase;
 }
 
 .sidebar h3 {
-  visibility: hidden;
   overflow: hidden;
-  color: #719bf1;
+  font-weight: bold;
+  color: #cecece;
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 2px;
-  font-weight: normal;
   transition: opacity 0.5s;
   transition-timing-function: ease-in-out;
   padding: 0 0 20px;
@@ -1415,6 +1417,16 @@ canvas#sketchboard {
   .loading-container h1 {
     font-size: 7vw;
   }
+}
+
+
+.loading-container h2 {
+  font-weight: 300;
+  font-size: 0.7vw;
+  text-transform: uppercase;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  letter-spacing: 1px;
+  margin-top: 20px;
 }
 
 .loading-container h1 span {
