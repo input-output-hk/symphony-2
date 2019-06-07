@@ -1131,14 +1131,16 @@ canvas#sketchboard {
   border: none;
 }
 
-.search-box {
+.search-box,
+.react-datepicker-wrapper input {
   width: 453px;
   height: 28px;
   float: left;
 }
 
 @media only screen and (max-width: 600px) {
-  .search-box {
+  .search-box,
+  .react-datepicker-wrapper input {
     width: 90%;
   }
 }
@@ -2075,6 +2077,7 @@ canvas#sketchboard {
   padding: 100px 0 0;
   opacity: 0.8;
   text-transform: uppercase;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
 
 @media only screen and (max-width: 600px) {
@@ -2086,6 +2089,7 @@ canvas#sketchboard {
 .quality-select {
   opacity: 0.6;
   padding: 0 20px;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
 
 .quality-select:hover {

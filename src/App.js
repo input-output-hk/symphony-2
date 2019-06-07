@@ -21,6 +21,8 @@ import OBJLoader from './libs/OBJLoader'
 import ViveController from './libs/ViveController'
 import * as ArrayUtils from './utils/array'
 import NoSleep from 'nosleep.js'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 // Components
 import BlockDetails from './components/BlockDetails/BlockDetails'
@@ -31,7 +33,6 @@ import Sidebar from './components/Sidebar/Sidebar'
 import NearestBlocksWorker from './workers/nearestBlocks.worker.js'
 import GetBlockDataWorker from './workers/getBlockData.worker.js'
 import GetGeometryWorker from './workers/getGeometry.worker.js'
-// import BlockHeightWorker from './workers/blockHeight.worker.js'
 
 // Config
 import Config from './Config'
@@ -67,7 +68,7 @@ class App extends mixin(EventEmitter, Component) {
     this.planeMargin = 100
     this.blockReady = false
     this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
-    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 1 : 5
+    this.blocksToLoadEitherSide = this.config.detector.isMobile ? 1 : 4
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -86,7 +87,6 @@ class App extends mixin(EventEmitter, Component) {
     this.lastMousePos = new THREE.Vector2(0, 0)
     this.camera = null
     this.cameraMain = null
-    this.animatingCamera = false
     this.camPosTo = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camPosToTarget = new THREE.Vector3(0.0, 0.0, 0.0)
     this.camFromPosition = new THREE.Vector3(0.0, 0.0, 0.0)
@@ -165,6 +165,7 @@ class App extends mixin(EventEmitter, Component) {
       txSearchOpen: false,
       blockSearchOpen: false,
       dateSearchOpen: false,
+      currentDate: new Date(),
       searchTXHash: '',
       searchBlockHash: '',
       showIntro: false,
@@ -593,7 +594,7 @@ class App extends mixin(EventEmitter, Component) {
 
               this.setState({searchTXHash: ''})
 
-              this.animatingCamera = false
+              this.setState({animatingCamera: false})
             })
             .easing(this.defaultCamEasing)
             .start()
@@ -1214,7 +1215,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        that.animatingCamera = false
+        that.setState({animatingCamera: false})
 
         that.setState({flyControlsInteractionCount: that.state.flyControlsInteractionCount + 1})
 
@@ -1258,7 +1259,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   prepareCamAnim (to, toTarget) {
-    this.animatingCamera = true
+    this.setState({animatingCamera: true})
 
     if (this.controls) {
       this.controls.dispose()
@@ -1331,7 +1332,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.animatingCamera = false
+        this.setState({animatingCamera: false})
         this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
@@ -1375,7 +1376,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.animatingCamera = false
+        this.setState({animatingCamera: false})
         this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
@@ -1424,7 +1425,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.animatingCamera = false
+        this.setState({animatingCamera: false})
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1933,24 +1934,27 @@ class App extends mixin(EventEmitter, Component) {
 
   toggleTxSearch () {
     this.setState({
+      dateSearchOpen: false,
       blockSearchOpen: false,
-      txSearchOpen: !this.state.txSearchOpen,
+      txSearchOpen: true,
       showInfoOverlay: false
     })
   }
 
   toggleBlockSearch () {
     this.setState({
+      dateSearchOpen: false,
       txSearchOpen: false,
-      blockSearchOpen: !this.state.blockSearchOpen,
+      blockSearchOpen: true,
       showInfoOverlay: false
     })
   }
 
   toggleDateSearch () {
     this.setState({
+      blockSearchOpen: false,
       txSearchOpen: false,
-      dateSearchOpen: !this.state.dateSearchOpen,
+      dateSearchOpen: true,
       showInfoOverlay: false
     })
   }
@@ -1995,6 +1999,29 @@ class App extends mixin(EventEmitter, Component) {
     this.closestHeight = Math.round(Math.random() * this.maxHeight)
 
     this.goToBlock()
+  }
+
+  async goToDate (date) {
+    this.setState({
+      currentDate: date
+    })
+
+    let dateStart = parseInt(moment(date).startOf('day').valueOf() / 1000, 10)
+    let dateEnd = parseInt(moment(date).endOf('day').valueOf() / 1000, 10)
+
+    let blockData = this.FBDocRefData
+      .where('time', '>', dateStart)
+      .where('time', '<', dateEnd)
+      .orderBy('time', 'asc')
+      .limit(1)
+
+    let snapshot = await blockData.get()
+
+    snapshot.forEach(snapshot => {
+      let data = snapshot.data()
+
+      this.goToBlock(data.height)
+    })
   }
 
   async goToBlock (
@@ -2072,7 +2099,7 @@ class App extends mixin(EventEmitter, Component) {
                       this.VRInteractionReady = true
 
                       this.isNavigating = false
-                      this.animatingCamera = false
+                      this.setState({animatingCamera: false})
 
                       if (txIndex !== null) {
                         let foundTXID = 0
@@ -2110,8 +2137,8 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   stopAutoPilot () {
-    if (this.animatingCamera) {
-      this.animatingCamera = false
+    if (this.state.animatingCamera) {
+      this.setState({animatingCamera: false})
       this.toggleTopView()
     }
   }
@@ -2145,7 +2172,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.setAutoPilotState()
 
-    this.animatingCamera = true
+    this.setState({animatingCamera: true})
 
     if (this.vrActive) {
       this.autoPilotAnimLoopVR()
@@ -2296,7 +2323,7 @@ class App extends mixin(EventEmitter, Component) {
         if (this.vrActive) {
           this.bindVRGamepadEvents()
 
-          if (this.VRReadyToEnd === true && this.animatingCamera === false && this.audioManager.narrationPlaying === false) {
+          if (this.VRReadyToEnd === true && this.state.animatingCamera === false && this.audioManager.narrationPlaying === false) {
             let that = this
 
             that.showVRTitleText('... AUTOPILOT ENGAGED, INITIATING FLIGHT SEQUENCE TO MEMPOOL ...')
@@ -2439,7 +2466,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
     const clientRect = this.renderer.domElement.getBoundingClientRect()
@@ -3237,7 +3264,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
 
@@ -3281,7 +3308,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
 
@@ -3333,7 +3360,7 @@ class App extends mixin(EventEmitter, Component) {
       return
     }
 
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
 
@@ -4016,7 +4043,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async gotoPrevBlock () {
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
 
@@ -4076,7 +4103,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.animatingCamera = false
+        this.setState({animatingCamera: false})
         switch (this.state.controlType) {
           case 'top' :
             this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
@@ -4095,7 +4122,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   async gotoNextBlock () {
-    if (this.animatingCamera) {
+    if (this.state.animatingCamera) {
       return
     }
 
@@ -4155,7 +4182,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.animatingCamera = false
+        this.setState({animatingCamera: false})
         switch (this.state.controlType) {
           case 'top' :
             this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
@@ -4224,21 +4251,23 @@ class App extends mixin(EventEmitter, Component) {
       isHash = false
     }
 
+    let blockHeight
+
     try {
       let blockData
       let blockDataJSON
       if (isHash) {
         blockData = await window.fetch('https://blockchain.info/rawblock/' + this.state.searchBlockHash + '?cors=true&apiCode=' + this.config.blockchainInfo.apiCode)
         blockDataJSON = await blockData.json()
+        blockHeight = blockDataJSON.height
       } else {
-        const baseUrl = 'https://us-central1-webgl-gource-1da99.cloudfunctions.net/cors-proxy?url='
-        let url = baseUrl + encodeURIComponent('https://blockchain.info/block-height/' + this.state.searchBlockHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
-        blockData = await window.fetch(url)
-        blockDataJSON = await blockData.json()
-        blockDataJSON = blockDataJSON.blocks[0]
+        blockHeight = this.state.searchBlockHash
       }
-
-      this.goToBlock(blockDataJSON.height)
+      if (blockHeight < 0 || blockHeight > this.maxHeight) {
+        return
+      } else {
+        this.goToBlock(blockHeight)
+      }
     } catch (error) {
       console.log(error)
     }
@@ -4284,7 +4313,7 @@ class App extends mixin(EventEmitter, Component) {
         <div className='search-container'>
           <h2>Enter Transaction Hash</h2>
           <button className='search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
-          <input autofocus='true' className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <input autoFocus='true' className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupTXFromHash.bind(this)} />
         </div>
       )
@@ -4297,8 +4326,25 @@ class App extends mixin(EventEmitter, Component) {
         <div className='search-container'>
           <h2>Enter Block Hash/Height</h2>
           <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
-          <input autofocus='true' className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
+          <input autoFocus='true' className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupBlockFromHash.bind(this)} />
+        </div>
+      )
+    }
+  }
+
+  UIDateSearchBox () {
+    if (this.state.dateSearchOpen) {
+      return (
+        <div className='search-container'>
+          <h2>Enter Date</h2>
+          <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
+          <DatePicker
+            selected={this.state.currentDate}
+            onChange={this.goToDate.bind(this)}
+            minDate={new Date('3 January 2009')}
+            maxDate={new Date()}
+          />
         </div>
       )
     }
@@ -4325,12 +4371,14 @@ class App extends mixin(EventEmitter, Component) {
           goToRandomBlock={this.goToRandomBlock.bind(this)}
           toggleDateSearch={this.toggleDateSearch.bind(this)}
           goToBlock={this.goToBlock.bind(this)}
+          goToDate={this.goToDate.bind(this)}
           sidebarOpen={this.state.sidebarOpen}
           maxHeight={this.maxHeight}
           animatingCamera={this.state.animatingCamera}
         />
         {this.UITXSearchBox()}
         {this.UIBlockSearchBox()}
+        {this.UIDateSearchBox()}
         <BlockDetails
           config={this.config}
           posX={this.state.posX}
