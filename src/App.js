@@ -347,7 +347,7 @@ class App extends mixin(EventEmitter, Component) {
 
       this.crystal.renderOrder = 2
 
-      this.trees.renderOrder = 1
+      this.trees.renderOrder = 0
       this.disk.renderOrder = 3
       this.plane.renderOrder = 4
       this.crystalAO.renderOrder = 7
@@ -1988,89 +1988,18 @@ class App extends mixin(EventEmitter, Component) {
   async goToRandomBlock () {
     this.prepareCamNavigation()
 
-    this.setState({
-      controlType: 'top',
-      showInfoOverlay: false
-    })
+    this.setState({controlType: 'top'})
 
     this.closestHeight = Math.round(Math.random() * this.maxHeight)
 
-    this.loadNearestBlocks(true, this.closestHeight)
-
-    let posX = this.blockPositions[this.closestHeight * 2 + 0]
-    let posZ = this.blockPositions[this.closestHeight * 2 + 1]
-
-    let toCenterVec = new THREE.Vector3(posX, 0, posZ)
-    let newPos = new THREE.Vector3(posX, this.topViewYPos, posZ).add(toCenterVec.normalize().multiplyScalar(0.01))
-
-    let to = new THREE.Vector3(posX, 1000000, posZ)
-
-    this.prepareCamAnim(
-      newPos,
-      new THREE.Vector3(to.x, 0, to.z)
-    )
-
-    let aboveStart = this.camera.position.clone()
-    aboveStart.y = 1000000
-
-    let blockYDist = this.vrActive ? 20 : this.topViewYPos
-
-    let that = this
-    new TWEEN.Tween(this.camera.position)
-      .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
-      .onUpdate(function () {
-        that.camera.position.set(this.x, this.y, this.z)
-      })
-      .onComplete(() => {
-        new TWEEN.Tween(this.camera.position)
-          .to(aboveStart, 5000)
-          .onUpdate(function () {
-            that.camera.position.set(this.x, this.y, this.z)
-          })
-          .onComplete(() => {
-            new TWEEN.Tween(that.camera.position)
-              .to(to, 5000)
-              .onUpdate(function () {
-                that.camera.position.set(this.x, this.y, this.z)
-              })
-              .onComplete(() => {
-                new TWEEN.Tween(this.camera.position)
-                  .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
-                  .onUpdate(function () {
-                    that.camera.position.set(this.x, this.y, this.z)
-                  })
-                  .onComplete(() => {
-                    new TWEEN.Tween(this.camera.position)
-                      .to(new THREE.Vector3(that.camPosTo.x, blockYDist, that.camPosTo.z), 10000)
-                      .onUpdate(function () {
-                        that.camera.position.set(this.x, this.y, this.z)
-                      })
-                      .onComplete(() => {
-                        this.animatingCamera = false
-                        this.toggleMapControls(new THREE.Vector3(to.x, 0, to.z), 'positive')
-                      })
-                      .easing(TWEEN.Easing.Quadratic.Out)
-                      .start()
-                  })
-                  .easing(this.defaultCamEasing)
-                  .start()
-              })
-              .easing(this.defaultCamEasing)
-              .start()
-          })
-          .easing(this.defaultCamEasing)
-          .start()
-      })
-      .easing(this.defaultCamEasing)
-      .start()
-
-    this.animateCamRotation(20000)
+    this.goToBlock()
   }
 
   async goToBlock (
     blockHeight = null,
     removeInfoOverlay = false,
-    speed = 'normal'
+    speed = 'normal',
+    txIndex = null
   ) {
     return new Promise(async (resolve) => {
       this.isNavigating = true
@@ -2115,7 +2044,7 @@ class App extends mixin(EventEmitter, Component) {
 
       let that = this
       new TWEEN.Tween(this.camera.position)
-        .to(aboveStart, speed === 'normal' ? 5000 : 10000)
+        .to(aboveStart, speed === 'normal' ? 20000 : 10000)
         .onUpdate(function () {
           that.camera.position.set(this.x, this.y, this.z)
         })
@@ -2142,6 +2071,17 @@ class App extends mixin(EventEmitter, Component) {
 
                       this.isNavigating = false
                       this.animatingCamera = false
+
+                      if (txIndex !== null) {
+                        let foundTXID = 0
+                        this.closestBlock.blockData.txIndexes.forEach((index, i) => {
+                          if (index === txIndex) {
+                            foundTXID = i
+                          }
+                        })
+
+                        this.selectTX(foundTXID, this.state.searchTXHash)
+                      }
 
                       this.toggleMapControls(new THREE.Vector3(to.x, 0, to.z), 'positive')
                       resolve(true)
@@ -4235,80 +4175,7 @@ class App extends mixin(EventEmitter, Component) {
       let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
       let txDataJSON = await txData.json()
 
-      let posX = this.blockPositions[txDataJSON.block_height * 2 + 0]
-      let posZ = this.blockPositions[txDataJSON.block_height * 2 + 1]
-
-      this.closestHeight = txDataJSON.block_height
-
-      this.loadNearestBlocks(true, this.closestHeight)
-
-      let to = new THREE.Vector3(posX, 1000000, posZ)
-
-      this.prepareCamAnim(new THREE.Vector3(to.x, this.topViewYPos, to.z))
-
-      let aboveStart = this.camera.position.clone()
-      aboveStart.y = 1000000
-
-      let blockYDist = this.vrActive ? 20 : this.topViewYPos
-
-      let that = this
-      new TWEEN.Tween(this.camera.position)
-        .to(new THREE.Vector3(aboveStart.x, 2000, aboveStart.z), 10000)
-        .onUpdate(function () {
-          that.camera.position.set(this.x, this.y, this.z)
-        })
-        .onComplete(() => {
-          new TWEEN.Tween(this.camera.position)
-            .to(aboveStart, 5000)
-            .onUpdate(function () {
-              that.camera.position.set(this.x, this.y, this.z)
-            })
-            .onComplete(() => {
-              new TWEEN.Tween(that.camera.position)
-                .to(to, 5000)
-                .onUpdate(function () {
-                  that.camera.position.set(this.x, this.y, this.z)
-                })
-                .onComplete(() => {
-                  new TWEEN.Tween(this.camera.position)
-                    .to(new THREE.Vector3(to.x, 2000, to.z), 10000)
-                    .onUpdate(function () {
-                      that.camera.position.set(this.x, this.y, this.z)
-                    })
-                    .onComplete(() => {
-                      new TWEEN.Tween(this.camera.position)
-                        .to(new THREE.Vector3(to.x, blockYDist, to.z), 10000)
-                        .onUpdate(function () {
-                          that.camera.position.set(this.x, this.y, this.z)
-                        })
-                        .onComplete(() => {
-                          let foundTXID = 0
-                          this.closestBlock.blockData.txIndexes.forEach((index, i) => {
-                            if (index === txDataJSON.tx_index) {
-                              foundTXID = i
-                            }
-                          })
-
-                          this.selectTX(foundTXID, this.state.searchTXHash)
-
-                          this.animatingCamera = false
-                        })
-                        .easing(TWEEN.Easing.Quadratic.Out)
-                        .start()
-                    })
-                    .easing(this.defaultCamEasing)
-                    .start()
-                })
-                .easing(this.defaultCamEasing)
-                .start()
-            })
-            .easing(this.defaultCamEasing)
-            .start()
-        })
-        .easing(this.defaultCamEasing)
-        .start()
-
-      this.animateCamRotation(20000)
+      this.goToBlock(txDataJSON.block_height, false, 'normal', txDataJSON.tx_index)
     } catch (error) {
       console.log(error)
     }
