@@ -215,18 +215,7 @@ class App extends mixin(EventEmitter, Component) {
     )
   }
 
-  async initStage (quality = 'high') {
-    if (this.config.detector.isMobile) {
-      const noSleep = new NoSleep()
-      noSleep.enable()
-
-      if (document.body.requestFullscreen) {
-        document.body.requestFullscreen()
-      }
-    }
-
-    this.initRenderer(quality)
-
+  initObjects () {
     this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
     this.audioManager = new AudioManager({
       sampleRate: this.config.audio.sampleRate,
@@ -296,13 +285,29 @@ class App extends mixin(EventEmitter, Component) {
     this.heightsToLoad = []
     this.loadingMutex = []
 
-    this.initGUI()
-
     this.textGenerator = new Text({
       config: this.config,
       maxAnisotropy: this.renderer.capabilities.getMaxAnisotropy()
     })
+  }
 
+  setMobileStageOptions () {
+    if (this.config.detector.isMobile) {
+      const noSleep = new NoSleep()
+      noSleep.enable()
+
+      if (document.body.requestFullscreen) {
+        document.body.requestFullscreen()
+      }
+    }
+  }
+
+  async initStage (quality = 'high') {
+    this.setLoadingState()
+    this.setMobileStageOptions()
+    this.initRenderer(quality)
+    this.initObjects()
+    this.initGUI()
     this.initScene()
     this.initCamera()
     this.initLights()
@@ -2073,7 +2078,7 @@ class App extends mixin(EventEmitter, Component) {
 
       let that = this
       new TWEEN.Tween(this.camera.position)
-        .to(aboveStart, speed === 'normal' ? 20000 : 10000)
+        .to(aboveStart, speed === 'normal' ? 10000 : 10000)
         .onUpdate(function () {
           that.camera.position.set(this.x, this.y, this.z)
         })
@@ -2740,9 +2745,6 @@ class App extends mixin(EventEmitter, Component) {
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false)
 
     document.addEventListener('mouseup', (e) => {
-      // if (e.button !== 0) {
-      //   return
-      // }
       this.onMouseUp(e)
     })
 
@@ -2751,7 +2753,6 @@ class App extends mixin(EventEmitter, Component) {
     })
 
     document.addEventListener('touchmove', (e) => {
-      // if (e.scale !== 1) { e.preventDefault() }
       this.onMouseMove()
     }, false)
 
@@ -4295,6 +4296,13 @@ class App extends mixin(EventEmitter, Component) {
     this.audioManager.unMuteMaster()
   }
 
+  setLoadingState () {
+    this.setState({
+      loading: true,
+      qualitySelected: true
+    })
+  }
+
   toggleInfoOverlay () {
     this.setState({
       showInfoOverlay: false
@@ -4419,13 +4427,14 @@ class App extends mixin(EventEmitter, Component) {
 
       return (
         <div className={className}>
+          <div className='landing-bg' />
           <div className='logo-container'>
-            <img className='symphony-logo' src={logo} alt='Symphony Logo' />
+            <img className='symphony-logo' src={logo} alt='Symphony Logo' onClick={() => { this.initStage('high') }} />
             <h1>Symphony</h1>
             <h2>3D Blockchain Explorer</h2>
             <p className='choose-quality'>Choose Quality:</p>
-            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
-            <a className='quality-select' onClick={() => { this.setState({loading: true, qualitySelected: true}); this.initStage('low') }} tooltip='For Computers with low power graphics cards'>LOW</a>
+            <a className='quality-select' onClick={() => { this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
+            <a className='quality-select' onClick={() => { this.initStage('low') }} tooltip='For Computers with low power graphics cards'>LOW</a>
           </div>
         </div>
       )

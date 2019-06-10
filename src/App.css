@@ -1104,12 +1104,11 @@ canvas#sketchboard {
 }
 
 .search-container {
-  background: rgba(18,23,38,0.9);
+  background:rgba(0, 0, 0, 0.7);
   position: absolute;
   top: 50%;
   left: 50%;
-  border: 1px solid #153453;
-  box-shadow: 5px 5px 10px #030a17;
+  border: none;
   z-index: 10;
   padding: 17px;
   width: 522px;
@@ -1152,7 +1151,7 @@ canvas#sketchboard {
   border: none;
   background: none;
   font-weight: bold;
-  color: #22c0c3;
+  color: #cecece;
 }
 
 .search-box-close:hover {
@@ -1397,6 +1396,7 @@ canvas#sketchboard {
   width: 100%; 
   height: 100%; 
   background: #000;
+  background-size: cover;
   position: relative;
   z-index: 1;
   color: #fff;
@@ -1404,7 +1404,20 @@ canvas#sketchboard {
   align-items: center;
   text-align: center;
   justify-content: center;
-  
+  transition: opacity 10s, filter 10s;
+}
+
+.landing-bg {
+  width: 100%; 
+  height: 100%; 
+  background: #000 url(./assets/images/landing.jpg) no-repeat;
+  background-size: contain;
+  position: absolute;
+  z-index: 0;
+  color: #fff;
+  justify-content: center;
+  opacity: 0.10;
+  filter: grayscale(100%);
 }
 
 .loading-container h1 {
@@ -1431,6 +1444,12 @@ canvas#sketchboard {
   margin-top: 20px;
 }
 
+@media only screen and (max-width: 600px) {
+  .loading-container h2 {
+    font-size: 14px;
+  }
+}
+
 .loading-container h1 span {
   font-weight: 500;
 }
@@ -1439,6 +1458,11 @@ canvas#sketchboard {
   width: 17vw;
   opacity: 0.8;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  mix-blend-mode: screen;
+}
+
+.symphony-logo:hover {
+  cursor: pointer;
 }
 
 @media only screen and (max-width: 600px) {
@@ -2171,4 +2195,51 @@ canvas#sketchboard {
   .landscape .rotate-message {
     display: flex;
   }
+}
+
+.react-datepicker {
+  background: #000;
+  color: #cecece;
+  border: none;
+  opacity: 0.8;
+  border-radius: 0;
+  font-family: 'Inconsolata', monospace;
+}
+
+.react-datepicker__header {
+  color: #cecece;
+  background: #000;
+}
+
+.react-datepicker__current-month, 
+.react-datepicker-time__header, 
+.react-datepicker-year-header {
+  color: #cecece;
+}
+
+.react-datepicker__day-name, 
+.react-datepicker__day, 
+.react-datepicker__time-name {
+  color: #cecece;
+}
+
+.react-datepicker__day:hover, 
+.react-datepicker__month-text:hover {
+  border-radius: 0;
+  color: #000;
+}
+
+.react-datepicker__day--selected, 
+.react-datepicker__day--in-selecting-range, 
+.react-datepicker__day--in-range, 
+.react-datepicker__month-text--selected, 
+.react-datepicker__month-text--in-selecting-range, 
+.react-datepicker__month-text--in-range {
+  border-radius: 0;
+  background: #223577
+}
+
+.react-datepicker__day--disabled, 
+.react-datepicker__month-text--disabled {
+  color: #333;
 }

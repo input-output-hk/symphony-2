@@ -264,17 +264,10 @@ export default class BlockDetails extends Component {
       return (
         <div className={className}>
 
-          <div className='controls-container'>
-            <div className='controls-container-left' />
-            <div className='controls-container-right' />
-          </div>
-
           <div className='cockpit-border' />
 
           {this.UICockpitInfoOverlay()}
-
           {this.UIIntroOverlay()}
-
           {this.UICockpit()}
           {this.UICockpitButton()}
 
