@@ -2243,3 +2243,7 @@ canvas#sketchboard {
 .react-datepicker__month-text--disabled {
   color: #333;
 }
+
+.fa-btc:before {
+  margin: 0 4px 0 0;
+}

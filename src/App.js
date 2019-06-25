@@ -1937,6 +1937,15 @@ class App extends mixin(EventEmitter, Component) {
     })
   }
 
+  closeSearch () {
+    this.setState({
+      dateSearchOpen: false,
+      blockSearchOpen: false,
+      txSearchOpen: false,
+      showInfoOverlay: false
+    })
+  }
+
   toggleTxSearch () {
     this.setState({
       dateSearchOpen: false,
@@ -4320,7 +4329,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className='search-container'>
           <h2>Enter Transaction Hash</h2>
-          <button className='search-box-close' onClick={this.toggleTxSearch.bind(this)}>X</button>
+          <button className='search-box-close' onClick={this.closeSearch.bind(this)}>X</button>
           <input autoFocus='true' className='search-box' onChange={this.updateSearchTXHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupTXFromHash.bind(this)} />
         </div>
@@ -4333,7 +4342,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className='search-container'>
           <h2>Enter Block Hash/Height</h2>
-          <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
+          <button className='search-box-close' onClick={this.closeSearch.bind(this)}>X</button>
           <input autoFocus='true' className='search-box' onChange={this.updateSearchBlockHash.bind(this)} onClick={(e) => { this.searchFocus(e) }} />
           <button className='search-action' onClick={this.lookupBlockFromHash.bind(this)} />
         </div>
@@ -4346,7 +4355,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className='search-container'>
           <h2>Enter Date</h2>
-          <button className='search-box-close' onClick={this.toggleBlockSearch.bind(this)}>X</button>
+          <button className='search-box-close' onClick={this.closeSearch.bind(this)}>X</button>
           <DatePicker
             selected={this.state.currentDate}
             onChange={this.goToDate.bind(this)}

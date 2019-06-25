@@ -47,14 +47,14 @@ export default class BlockDetails extends Component {
             <span className='tx-detail-item'><strong>{ moment.unix(this.props.txSelected.time).format('YYYY-MM-DD HH:mm:ss') }</strong></span>
             <span className='tx-detail-item'><strong>{this.props.txSelected.size} bytes</strong></span>
             <span className='tx-detail-item'><h3>Relayed By:</h3> <strong>{this.props.txSelected.relayed_by}</strong></span>
-            <span className='tx-detail-item'><h3>Fee:</h3> <strong>{this.props.txSelected.fee} BTC</strong></span>
+            <span className='tx-detail-item'><h3>Fee:</h3> <i class='fab fa-btc' /><strong>{this.props.txSelected.fee}</strong></span>
 
             <ul className='input-output'>
               <li className='inputs'><h3>Inputs:</h3>
                 <ul>
                   {this.props.txSelected.inputs.slice(0, 5).map(function (el, index) {
-                    return <li key={index}>
-                      { typeof el.prev_out !== 'undefined' ? el.prev_out.value / 100000000 : 0 } BTC</li>
+                    return <li key={index}><i class='fab fa-btc' />
+                      { typeof el.prev_out !== 'undefined' ? el.prev_out.value / 100000000 : 0 }</li>
                   })}
                   {this.props.txSelected.inputs.length > 5 ? '...' : ''}
                 </ul>
@@ -63,10 +63,10 @@ export default class BlockDetails extends Component {
               <li className='outputs'><h3>Outputs:</h3>
                 <ul>
                   {this.props.txSelected.out.slice(0, 5).map(function (el, index) {
-                    return <li key={index}>{el.value / 100000000} BTC ({el.spent ? 'Spent' : 'Unspent'})</li>
+                    return <li key={index}><i class='fab fa-btc' />{el.value / 100000000} ({el.spent ? 'Spent' : 'Unspent'})</li>
                   })}
                   {this.props.txSelected.out.length > 5 ? '...' : ''}
-                  <li className='out-total'><strong>Total:</strong> {(this.props.txSelected.outTotal).toFixed(2)} BTC</li>
+                  <li className='out-total'><strong>Total:</strong> <i class='fab fa-btc' />{(this.props.txSelected.outTotal).toFixed(2)}</li>
                 </ul>
               </li>
             </ul>
@@ -121,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-          <br />
-          <br />
+            <br />
+            <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
@@ -307,8 +307,8 @@ export default class BlockDetails extends Component {
                 </div>
                 </li>
                 <li><h3>No. of Tx:</h3> <strong>{ this.props.closestBlock.blockData.n_tx }</strong></li>
-                <li><h3>Output:</h3> <strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) } BTC</strong></li>
-                <li><h3>Fees:</h3> <strong>{ (this.props.closestBlock.blockData.fee / 100000000).toFixed(2) } BTC</strong></li>
+                <li><h3>Output:</h3> <i class='fab fa-btc' /><strong>{ (this.props.closestBlock.blockData.outputTotal / 100000000).toFixed(2) }</strong></li>
+                <li><h3>Fees:</h3> <i class='fab fa-btc' /><strong>{ (this.props.closestBlock.blockData.fee / 100000000).toFixed(2) }</strong></li>
                 <li><h3>Date:</h3> <strong>{ moment.unix(this.props.closestBlock.blockData.time).format('HH:mm DD/MM/YY') }</strong></li>
                 <li><h3>Bits:</h3> <strong>{ this.props.closestBlock.blockData.bits }</strong></li>
                 <li><h3>Size:</h3> <strong>{ this.props.closestBlock.blockData.size / 1000 } KB</strong></li>
