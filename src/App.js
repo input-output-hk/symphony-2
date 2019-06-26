@@ -743,7 +743,7 @@ class App extends mixin(EventEmitter, Component) {
     this.FBDocRefData = this.firebaseDB.collection('bitcoin_blocks')
     this.FBDocRefGeo = this.firebaseDB.collection('bitcoin_blocks_geometry')
 
-    await this.anonymousSignin()
+    // await this.anonymousSignin()
 
     // send ready event
     this.emit('ready')

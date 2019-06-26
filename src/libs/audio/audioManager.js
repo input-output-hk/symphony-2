@@ -31,7 +31,7 @@ export default class Audio extends EventEmitter {
     this.blockAudioMaxLevel = 0.8
     this.masterBus = this.audioContext.createGain()
 
-    this.masterBus.gain.setTargetAtTime(0.8, this.audioContext.currentTime, 0.0)
+    this.masterBus.gain.setTargetAtTime(0.8, this.audioContext.currentTime, 0.1)
 
     this.compressor = this.audioContext.createDynamicsCompressor()
     this.compressor.threshold.setValueAtTime(-10, this.audioContext.currentTime)
@@ -95,7 +95,7 @@ export default class Audio extends EventEmitter {
     let delay = new SlapbackDelayNode(this.audioContext)
 
     this.analyserGain = this.audioContext.createGain()
-    this.analyserGain.gain.setTargetAtTime(4.0, this.audioContext.currentTime, 0.0)
+    this.analyserGain.gain.setTargetAtTime(4.0, this.audioContext.currentTime, 0.1)
 
     getImpulseBuffer(this.audioContext, './assets/sounds/IR/LittlefieldLobby.wav').then((buffer) => {
       this.convolver.buffer = buffer
