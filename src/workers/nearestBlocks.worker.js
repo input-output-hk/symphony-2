@@ -82,42 +82,45 @@ self.addEventListener('message', async function (e) {
 
       let ii = 0
       await ArrayUtils.asyncForEach(dataArr, async (blockDetails) => {
-        if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
+        // edge struggles with this for some reason
+        if (!data.config.detector.isEdge) {
+          if (moment().valueOf() - blockDetails.cacheTime.toMillis() > 604800000) {
           // console.log('Block: ' + blockDetails.hash + ' is out of date, marked for update')
-          let snapshots = await docRefUpdate.get()
-          let heightsToUpdate = []
-          snapshots.forEach(snapshot => {
-            let updateDataArr = snapshot.data()
-            heightsToUpdate = updateDataArr.heights
-          })
-          if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
-            heightsToUpdate.push(blockDetails.height)
-          }
-          if (heightsToUpdate.length > 0) {
-            try {
-              await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
-            } catch (error) {
-              console.log(error)
+            let snapshots = await docRefUpdate.get()
+            let heightsToUpdate = []
+            snapshots.forEach(snapshot => {
+              let updateDataArr = snapshot.data()
+              heightsToUpdate = updateDataArr.heights
+            })
+            if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
+              heightsToUpdate.push(blockDetails.height)
+            }
+            if (heightsToUpdate.length > 0) {
+              try {
+                await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+              } catch (error) {
+                console.log(error)
+              }
             }
           }
-        }
 
-        if (blockDetails.tx[0].index === 0) {
+          if (blockDetails.tx[0].index === 0) {
           // console.log('Block: ' + blockDetails.hash + ' data incomplete, marked for update')
-          let snapshots = await docRefUpdate.get()
-          let heightsToUpdate = []
-          snapshots.forEach(snapshot => {
-            let updateDataArr = snapshot.data()
-            heightsToUpdate = updateDataArr.heights
-          })
-          if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
-            heightsToUpdate.push(blockDetails.height)
-          }
-          if (heightsToUpdate.length > 0) {
-            try {
-              await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
-            } catch (error) {
-              console.log(error)
+            let snapshots = await docRefUpdate.get()
+            let heightsToUpdate = []
+            snapshots.forEach(snapshot => {
+              let updateDataArr = snapshot.data()
+              heightsToUpdate = updateDataArr.heights
+            })
+            if (heightsToUpdate.indexOf(blockDetails.height) === -1) {
+              heightsToUpdate.push(blockDetails.height)
+            }
+            if (heightsToUpdate.length > 0) {
+              try {
+                await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+              } catch (error) {
+                console.log(error)
+              }
             }
           }
         }
