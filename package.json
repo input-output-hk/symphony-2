@@ -34,7 +34,7 @@
     "eventemitter3": "^3.1.0",
     "extract-text-webpack-plugin": "3.0.2",
     "file-loader": "1.1.11",
-    "firebase": "^6.1.1",
+    "firebase": "^6.2.3",
     "fs-extra": "5.0.0",
     "glsl-noise": "^0.0.0",
     "gpu.js": "^1.10.4",

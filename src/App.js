@@ -106,7 +106,13 @@ class App extends mixin(EventEmitter, Component) {
     this.maxHeight = null
     this.isNavigating = false
 
-    this.audioEnabled = !this.config.detector.isMobile
+    this.audioEnabled = true
+    if (this.config.detector.isMobile) {
+      this.audioEnabled = false
+    }
+    if (this.config.detector.isEdge) {
+      this.audioEnabled = false
+    }
 
     // VR
     this.VRInteractionReady = false
@@ -1713,106 +1719,8 @@ class App extends mixin(EventEmitter, Component) {
             }
           })
 
-          // if (typeof this.blockGeoDataObject[this.closestHeight] === 'undefined') {
-          //   if (this.heightsToLoad.indexOf(this.closestHeight) === -1) {
-          //     this.heightsToLoad.push(this.closestHeight)
-          //   }
-          // }
-
-          // for (let i = 1; i < this.blocksToLoadEitherSide; i++) {
-          //   let next = this.closestHeight + i
-          //   let prev = this.closestHeight - i
-
-          //   if (typeof this.blockGeoDataObject[next] === 'undefined') {
-          //     if (next <= this.maxHeight && next >= 0) {
-          //       if (this.heightsToLoad.indexOf(next) === -1) {
-          //         this.heightsToLoad.push(next)
-          //       }
-          //     }
-          //   }
-
-          //   if (typeof this.blockGeoDataObject[prev] === 'undefined') {
-          //     if (prev <= this.maxHeight && prev >= 0) {
-          //       if (this.heightsToLoad.indexOf(prev) === -1) {
-          //         this.heightsToLoad.push(prev)
-          //       }
-          //     }
-          //   }
-          // }
-
-          // this.heightsToLoad.forEach((height, index) => {
-          //   if (
-          //     height > this.closestHeight + (this.blocksToLoadEitherSide * 2) ||
-          //     height < this.closestHeight - (this.blocksToLoadEitherSide * 2)
-          //   ) {
-          //     console.log('removed ' + height + ' from heightsToLoad')
-          //     delete this.heightsToLoad[index]
-          //   }
-          // })
-
-          // this.heightsToLoad.forEach(async (height) => {
-          //   if (this.loadingMutex.indexOf(height) === -1) {
-          //     this.loadingMutex.push(height)
-
-          //     if (typeof this.blockGeoDataObject[height] === 'undefined') {
-          //       if (
-          //         height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
-          //         height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
-          //       ) {
-          //         console.log('moved too far away from block at height: ' + height)
-          //         return
-          //       }
-
-          //       const blockHeightWorker = new BlockHeightWorker()
-          //       blockHeightWorker.onmessage = async ({ data }) => {
-          //         if (typeof data.hash !== 'undefined') {
-          //           let blockGeoData = await this.getGeometry(data.hash, height)
-
-          //           if (
-          //             height < this.closestHeight - (this.blocksToLoadEitherSide * 2) ||
-          //             height > this.closestHeight + (this.blocksToLoadEitherSide * 2)
-          //           ) {
-          //             console.log('moved too far away from block at height: ' + height)
-          //             return
-          //           }
-
-          //           if (blockGeoData) {
-          //             this.crystalGenerator.updateGeometry(blockGeoData)
-          //             this.crystalAOGenerator.updateGeometry(blockGeoData)
-          //           }
-
-          //           let heightIndex = this.heightsToLoad.indexOf(height)
-          //           if (heightIndex > -1) {
-          //             this.heightsToLoad.splice(heightIndex, 1)
-          //           }
-          //           let mutexIndex = this.loadingMutex.indexOf(height)
-          //           if (mutexIndex > -1) {
-          //             this.heightsToLoad.splice(mutexIndex, 1)
-          //           }
-
-          //           blockHeightWorker.terminate()
-          //         } else if (data.error !== 'undefined') {
-          //           console.error(data.error)
-          //         }
-          //       }
-
-          //       let blockHeightWorkerSendObj = {
-          //         cmd: 'get',
-          //         config: this.config,
-          //         height: height
-          //       }
-
-          //       blockHeightWorker.postMessage(
-          //         blockHeightWorkerSendObj
-          //       )
-          //     }
-          //   }
-          // })
-
           this.loadingNearestBlocks = false
           resolve()
-
-        // nearestBlocksWorker.terminate()
         }
       }
 
@@ -4063,7 +3971,6 @@ class App extends mixin(EventEmitter, Component) {
 
     this.loadNearestBlocks(true, this.closestBlock.blockData.height - 1)
 
-    this.hideMerkleDetail()
     this.prepareCamNavigation({stopAudio: false})
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
@@ -4257,7 +4164,12 @@ class App extends mixin(EventEmitter, Component) {
     this.setState({controlType: 'top'})
 
     let isHash = true
-    if (this.state.searchBlockHash.length !== 32) {
+    if (
+      this.state.searchBlockHash.length !== 32 &&
+      this.state.searchBlockHash.length !== 64 &&
+      this.state.searchBlockHash.length !== 128 &&
+      this.state.searchBlockHash.length !== 256
+    ) {
       isHash = false
     }
 
@@ -4273,7 +4185,14 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         blockHeight = this.state.searchBlockHash
       }
-      if (blockHeight < 0 || blockHeight > this.maxHeight) {
+
+
+
+      if (
+        blockHeight < 0 ||
+        blockHeight > this.maxHeight ||
+        blockHeight === this.closestHeight
+      ) {
         return
       } else {
         this.goToBlock(blockHeight)
@@ -4443,7 +4362,7 @@ class App extends mixin(EventEmitter, Component) {
             <h2>3D Blockchain Explorer</h2>
             <p className='choose-quality'>Choose Quality:</p>
             <a className='quality-select' onClick={() => { this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
-            <a className='quality-select' onClick={() => { this.initStage('low') }} tooltip='For Computers with low power graphics cards'>LOW</a>
+            <a className='quality-select' onClick={() => { this.initStage('low') }} tooltip='For Computers with low power graphics cards'>MEDIUM</a>
           </div>
         </div>
       )
