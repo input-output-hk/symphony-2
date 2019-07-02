@@ -1,6 +1,6 @@
-import firebase from 'firebase/app'
-import 'firebase/firestore'
-import 'firebase/auth'
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-app.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-firestore.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-auth.js')
 
 self.addEventListener('message', async function (e) {
   let data = e.data

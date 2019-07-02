@@ -20,7 +20,7 @@ import WebVR from './libs/WebVR'
 import OBJLoader from './libs/OBJLoader'
 import ViveController from './libs/ViveController'
 import * as ArrayUtils from './utils/array'
-import NoSleep from 'nosleep.js'
+// import NoSleep from 'nosleep.js'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 
@@ -299,8 +299,8 @@ class App extends mixin(EventEmitter, Component) {
 
   setMobileStageOptions () {
     if (this.config.detector.isMobile) {
-      const noSleep = new NoSleep()
-      noSleep.enable()
+      // const noSleep = new NoSleep()
+      // noSleep.enable()
 
       if (document.body.requestFullscreen) {
         document.body.requestFullscreen()

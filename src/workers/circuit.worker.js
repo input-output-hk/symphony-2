@@ -1,6 +1,7 @@
-import firebase from 'firebase/app'
-import 'firebase/firestore'
-import 'firebase/storage'
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-app.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-firestore.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-auth.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-storage.js')
 
 import MerkleTools from '../utils/merkleTools'
 

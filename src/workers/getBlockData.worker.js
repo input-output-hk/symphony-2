@@ -1,10 +1,11 @@
-import firebase from 'firebase/app'
-import 'firebase/firestore'
-import 'firebase/auth'
-// import 'firebase/storage'
 import moment from 'moment'
 
-import BlockDataHelper from '../helpers/BlockDataHelper'
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-app.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-firestore.js')
+importScripts('https://www.gstatic.com/firebasejs/6.2.4/firebase-auth.js')
+// import 'firebase/storage'
+
+// import BlockDataHelper from '../helpers/BlockDataHelper'
 
 let config = {}
 
@@ -27,9 +28,9 @@ self.addEventListener('message', async function (e) {
         console.log(error.message)
       })
 
-      let blockDataHelper = new BlockDataHelper({
-        config: config
-      })
+      // let blockDataHelper = new BlockDataHelper({
+      //   config: config
+      // })
 
       // first check firebase
       let blockRef = docRef.doc(data.hash)

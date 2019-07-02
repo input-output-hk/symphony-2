@@ -21,7 +21,7 @@
     "chalk": "2.4.0",
     "css-loader": "0.28.11",
     "dat.gui": "^0.7.2",
-    "deep-assign": "^2.0.0",
+    "deep-assign": "^3.0.0",
     "dotenv": "4.0.0",
     "dotenv-expand": "4.0.1",
     "eslint": "4.10.0",
@@ -31,10 +31,10 @@
     "eslint-plugin-import": "2.8.0",
     "eslint-plugin-jsx-a11y": "5.1.1",
     "eslint-plugin-react": "7.4.0",
-    "eventemitter3": "^3.1.0",
+    "eventemitter3": "^4.0.0",
     "extract-text-webpack-plugin": "3.0.2",
     "file-loader": "1.1.11",
-    "firebase": "^6.2.3",
+    "firebase": "^6.2.4",
     "fs-extra": "5.0.0",
     "glsl-noise": "^0.0.0",
     "gpu.js": "^1.10.4",
@@ -60,7 +60,7 @@
     "startaudiocontext": "^1.2.1",
     "style-loader": "0.21.0",
     "sw-precache-webpack-plugin": "0.11.5",
-    "three": "^0.105.2",
+    "three": "^0.106.2",
     "three-bmfont-text": "^2.3.0",
     "three-gltf-loader": "^1.100.0",
     "three-orbit-controls": "^82.1.0",
@@ -81,7 +81,8 @@
   "devDependencies": {
     "glslify-loader": "^1.0.2",
     "raw-loader": "^0.5.1",
-    "standard": "^11.0.1"
+    "standard": "^12.0.1",
+    "webpack-cli": "^3.3.5"
   },
   "jest": {
     "collectCoverageFrom": [
