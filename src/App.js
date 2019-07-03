@@ -3643,7 +3643,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('./assets/images/textures/cubemaps/space/')
+      .setPath('assets/images/textures/cubemaps/space/')
       .load([
         '_RT.png', // right
         '_LF.png', // left
