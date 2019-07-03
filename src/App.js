@@ -3645,12 +3645,12 @@ class App extends mixin(EventEmitter, Component) {
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/space/')
       .load([
-        '_RT.png', // right
-        '_LF.png', // left
-        '_UP.png', // top
-        '_DN.png', // bottom
-        '_FT.png', // front
-        '_BK.png' // back
+        'rt.png', // right
+        'lf.png', // left
+        'up.png', // top
+        'dn.png', // bottom
+        'ft.png', // front
+        'bk.png' // back
       ])
 
     this.scene.background = this.cubeMap
