@@ -32,7 +32,7 @@ export default class WebVR {
             .catch(this.VRNotFound.bind(this))
         }.bind(this)).catch(this.VRNotFound.bind(this))
       } catch (error) {
-        console.log(error)
+        // console.log(error)
       }
     } else if ('getVRDisplays' in navigator) {
       window.addEventListener('vrdisplayconnect', function (event) {

@@ -222,7 +222,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   initObjects () {
-    this.circuit = new Circuit({FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config})
+    this.circuit = new Circuit({ FBStorageCircuitRef: this.FBStorageCircuitRef, config: this.config })
     this.audioManager = new AudioManager({
       sampleRate: this.config.audio.sampleRate,
       soundDuration: this.config.audio.soundDuration,
@@ -603,9 +603,9 @@ class App extends mixin(EventEmitter, Component) {
               this.camera.position.x = to.x
               this.camera.position.z = to.z
 
-              this.setState({searchTXHash: ''})
+              this.setState({ searchTXHash: '' })
 
-              this.setState({animatingCamera: false})
+              this.setState({ animatingCamera: false })
             })
             .easing(this.defaultCamEasing)
             .start()
@@ -1226,9 +1226,9 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        that.setState({animatingCamera: false})
+        that.setState({ animatingCamera: false })
 
-        that.setState({flyControlsInteractionCount: that.state.flyControlsInteractionCount + 1})
+        that.setState({ flyControlsInteractionCount: that.state.flyControlsInteractionCount + 1 })
 
         that.controls = new FlyControls(that.cameraMain)
         that.controls.movementSpeed = 70
@@ -1270,7 +1270,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   prepareCamAnim (to, toTarget) {
-    this.setState({animatingCamera: true})
+    this.setState({ animatingCamera: true })
 
     if (this.controls) {
       this.controls.dispose()
@@ -1343,7 +1343,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.setState({animatingCamera: false})
+        this.setState({ animatingCamera: false })
         this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
@@ -1387,7 +1387,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.setState({animatingCamera: false})
+        this.setState({ animatingCamera: false })
         this.toggleMapControls(new THREE.Vector3(offsetPos.x, 0, offsetPos.y), 'negative')
       })
       .easing(this.defaultCamEasing)
@@ -1436,7 +1436,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.setState({animatingCamera: false})
+        this.setState({ animatingCamera: false })
       })
       .easing(this.defaultCamEasing)
       .start()
@@ -1449,7 +1449,7 @@ class App extends mixin(EventEmitter, Component) {
   getClosestBlock () {
     if (this.camera.position.y >= 1100) {
       if (this.state.closestBlock !== null) {
-        this.setState({closestBlock: null})
+        this.setState({ closestBlock: null })
       }
       this.closestBlockReadyForUpdate = true
       return
@@ -1901,7 +1901,7 @@ class App extends mixin(EventEmitter, Component) {
     }
   }
 
-  prepareCamNavigation (args = {stopAudio: true}) {
+  prepareCamNavigation (args = { stopAudio: true }) {
     this.deselectTx()
     if (args.stopAudio === true) {
       this.audioManager.stopNotes()
@@ -1916,7 +1916,7 @@ class App extends mixin(EventEmitter, Component) {
   async goToRandomBlock () {
     this.prepareCamNavigation()
 
-    this.setState({controlType: 'top'})
+    this.setState({ controlType: 'top' })
 
     this.closestHeight = Math.round(Math.random() * this.maxHeight)
 
@@ -2021,7 +2021,7 @@ class App extends mixin(EventEmitter, Component) {
                       this.VRInteractionReady = true
 
                       this.isNavigating = false
-                      this.setState({animatingCamera: false})
+                      this.setState({ animatingCamera: false })
 
                       if (txIndex !== null) {
                         let foundTXID = 0
@@ -2060,7 +2060,7 @@ class App extends mixin(EventEmitter, Component) {
 
   stopAutoPilot () {
     if (this.state.animatingCamera) {
-      this.setState({animatingCamera: false})
+      this.setState({ animatingCamera: false })
       this.toggleTopView()
     }
   }
@@ -2094,7 +2094,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.setAutoPilotState()
 
-    this.setState({animatingCamera: true})
+    this.setState({ animatingCamera: true })
 
     if (this.vrActive) {
       this.autoPilotAnimLoopVR()
@@ -2147,7 +2147,7 @@ class App extends mixin(EventEmitter, Component) {
     this.prepareCamAnim(to, toTarget)
 
     let that = this
-    let camPos = {x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z}
+    let camPos = { x: this.camera.position.x, y: this.camera.position.y, z: this.camera.position.z }
 
     this.autoPilotTween = new TWEEN.Tween(camPos)
       .to(to, 20000)
@@ -2199,7 +2199,7 @@ class App extends mixin(EventEmitter, Component) {
       this.blockPositions[(this.closestBlock.blockData.height) * 2 + 1]
     ).add(toBlockVec)
 
-    let camPos = {x: this.camera.position.x, y: this.camera.position.z}
+    let camPos = { x: this.camera.position.x, y: this.camera.position.z }
 
     let that = this
 
@@ -2433,8 +2433,8 @@ class App extends mixin(EventEmitter, Component) {
 
     // fade text out
     let that = this
-    new TWEEN.Tween({opacity: 1})
-      .to({opacity: 0}, fadeTime)
+    new TWEEN.Tween({ opacity: 1 })
+      .to({ opacity: 0 }, fadeTime)
       .onUpdate(function () {
         that.introTextMesh.material.uniforms.opacity.value = this.opacity
       })
@@ -2544,8 +2544,8 @@ class App extends mixin(EventEmitter, Component) {
   loadSpiralAnim () {
     let that = this
 
-    new TWEEN.Tween({uSpiralStart: 725000})
-      .to({uSpiralStart: 154387}, 30000)
+    new TWEEN.Tween({ uSpiralStart: 725000 })
+      .to({ uSpiralStart: 154387 }, 30000)
       .onUpdate(function () {
         that.disk.material.uniforms.uSpiralStart.value = this.uSpiralStart
       })
@@ -3318,7 +3318,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   sendWsMessage (message) {
-    this.ws.send(JSON.stringify({'op': message}))
+    this.ws.send(JSON.stringify({ 'op': message }))
   }
 
   receiveWsMessage (event) {
@@ -3360,7 +3360,7 @@ class App extends mixin(EventEmitter, Component) {
     let txIndexOffset = this.crystalGenerator.txIndexOffsets[this.closestBlock.blockData.height]
 
     if (typeof txIndexOffset === 'undefined') {
-      console.log({txIndexOffset})
+      console.log({ txIndexOffset })
       return
     }
 
@@ -3643,7 +3643,7 @@ class App extends mixin(EventEmitter, Component) {
     this.scene.fog = new THREE.FogExp2(Config.scene.bgColor, Config.scene.fogDensity)
 
     this.cubeMap = new THREE.CubeTextureLoader()
-      .setPath('assets/images/textures/cubemaps/space/')
+      .setPath('./assets/images/textures/cubemaps/space/')
       .load([
         '_RT.png', // right
         '_LF.png', // left
@@ -3871,8 +3871,8 @@ class App extends mixin(EventEmitter, Component) {
     that.txDetailsTextMesh.material.uniforms.opacity.value = 1.0
 
     // fade text out
-    new TWEEN.Tween({opacity: 1})
-      .to({opacity: 0}, 6000)
+    new TWEEN.Tween({ opacity: 1 })
+      .to({ opacity: 0 }, 6000)
       .onUpdate(function () {
         that.txDetailsTextMesh.material.uniforms.opacity.value = this.opacity
       })
@@ -3940,7 +3940,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   toggleSidebar () {
-    this.setState({sidebarOpen: !this.state.sidebarOpen})
+    this.setState({ sidebarOpen: !this.state.sidebarOpen })
   }
 
   closeSidebar () {
@@ -3953,7 +3953,7 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   openSidebar () {
-    this.setState({sidebarOpen: true})
+    this.setState({ sidebarOpen: true })
   }
 
   searchFocus (e) {
@@ -3971,7 +3971,7 @@ class App extends mixin(EventEmitter, Component) {
 
     this.loadNearestBlocks(true, this.closestBlock.blockData.height - 1)
 
-    this.prepareCamNavigation({stopAudio: false})
+    this.prepareCamNavigation({ stopAudio: false })
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height - 1) * 2 + 1]
@@ -4020,7 +4020,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.setState({animatingCamera: false})
+        this.setState({ animatingCamera: false })
         switch (this.state.controlType) {
           case 'top' :
             this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
@@ -4050,7 +4050,7 @@ class App extends mixin(EventEmitter, Component) {
     this.loadNearestBlocks(true, this.closestBlock.blockData.height + 1)
 
     this.hideMerkleDetail()
-    this.prepareCamNavigation({stopAudio: false})
+    this.prepareCamNavigation({ stopAudio: false })
 
     let posX = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 0]
     let posZ = this.blockPositions[(this.closestBlock.blockData.height + 1) * 2 + 1]
@@ -4099,7 +4099,7 @@ class App extends mixin(EventEmitter, Component) {
         that.camera.position.set(this.x, this.y, this.z)
       })
       .onComplete(() => {
-        this.setState({animatingCamera: false})
+        this.setState({ animatingCamera: false })
         switch (this.state.controlType) {
           case 'top' :
             this.toggleMapControls(new THREE.Vector3(posX, 0, posZ), 'positive')
@@ -4120,7 +4120,7 @@ class App extends mixin(EventEmitter, Component) {
   async lookupTXFromHash () {
     this.prepareCamNavigation()
 
-    this.setState({controlType: 'top'})
+    this.setState({ controlType: 'top' })
 
     try {
       let txData = await window.fetch('https://blockchain.info/rawtx/' + this.state.searchTXHash + '?cors=true&format=json&apiCode=' + this.config.blockchainInfo.apiCode)
@@ -4133,9 +4133,9 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   animateCamRotation (duration) {
-    let o = {t: 0}
+    let o = { t: 0 }
     this.cameraMainRotationTween = new TWEEN.Tween(o)
-      .to({t: 1}, duration)
+      .to({ t: 1 }, duration)
       .onUpdate(function () {
         THREE.Quaternion.slerp(this.camFromQuaternion, this.camToQuaternion, this.camMoveQuaternion, o.t)
         this.camera.quaternion.set(this.camMoveQuaternion.x, this.camMoveQuaternion.y, this.camMoveQuaternion.z, this.camMoveQuaternion.w)
@@ -4147,21 +4147,21 @@ class App extends mixin(EventEmitter, Component) {
   updateSearchTXHash (e) {
     let txHash = e.target.value.trim()
     if (txHash) {
-      this.setState({searchTXHash: txHash})
+      this.setState({ searchTXHash: txHash })
     }
   }
 
   updateSearchBlockHash (e) {
     let blockHash = e.target.value.trim()
     if (blockHash) {
-      this.setState({searchBlockHash: blockHash})
+      this.setState({ searchBlockHash: blockHash })
     }
   }
 
   async lookupBlockFromHash () {
     this.prepareCamNavigation()
 
-    this.setState({controlType: 'top'})
+    this.setState({ controlType: 'top' })
 
     let isHash = true
     if (
@@ -4185,8 +4185,6 @@ class App extends mixin(EventEmitter, Component) {
       } else {
         blockHeight = this.state.searchBlockHash
       }
-
-
 
       if (
         blockHeight < 0 ||
