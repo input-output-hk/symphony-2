@@ -121,8 +121,8 @@ export default class BlockDetails extends Component {
       return (
         <div className='free-explore-info-overlay'>
           <p>Flight Simulator mode lets you fly around the Blockchain and listen to the sounds of each block
-          <br />
-          <br />
+            <br />
+            <br />
           Press these keys to navigate:
           </p>
           <div className='free-explore-keys'>
@@ -273,7 +273,7 @@ export default class BlockDetails extends Component {
 
           <div className='autopilot-controls'>
             <div className='autopilot-inner'>
-              <span tooltip='Auto-pilot backwards in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+              <span tooltip='Auto-pilot back in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
               <span tooltip='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
               <span tooltip='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
             </div>

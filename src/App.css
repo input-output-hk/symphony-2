@@ -1480,6 +1480,12 @@ canvas#sketchboard {
   opacity: 0.6
 }
 
+.logo-container .fa-headphones-alt {
+  opacity: 0.6;
+  color: #ddd;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+}
+
 .loaded {
   display: none;
   opacity: 0.0;
@@ -2098,7 +2104,7 @@ canvas#sketchboard {
 
 .choose-quality {
   font-size: 12px;
-  padding: 100px 0 0;
+  padding: 50px 0 0;
   opacity: 0.8;
   text-transform: uppercase;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
@@ -2246,4 +2252,13 @@ canvas#sketchboard {
 
 .fa-btc:before {
   margin: 0 4px 0 0;
+}
+
+.headphone-hint {
+  color: #ddd;
+  font-size: 10px;
+  margin-top: 50px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
