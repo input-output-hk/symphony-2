@@ -764,7 +764,7 @@ canvas#sketchboard {
   position: absolute;
   left: 45%;
   top: 20px;
-  z-index: 2;
+  z-index: 10;
 }
 
 @media only screen and (max-width: 600px) {
@@ -1418,6 +1418,12 @@ canvas#sketchboard {
   justify-content: center;
   opacity: 0.10;
   filter: grayscale(100%);
+}
+
+@media only screen and (max-width: 600px) {
+  .landing-bg {
+    background-image: none;
+  }
 }
 
 .loading-container h1 {
