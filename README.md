@@ -1,5 +1,7 @@
 # [Symphony 2.0](https://symphony.iohk.io)
 
+![Symphony](https://symphony.iohk.io/static/assets/images/day-view.jpg)
+
 Symphony 2.0 is a **real-time, 3D, immersive blockchain explorer.**
 
 Symphony 2.0 aims to answer the question **what does a blockchain look and sound like?**
@@ -19,6 +21,9 @@ Transactions are represented as hexagonal crystals. The height of each crystal i
 The arrangement of crystals on the block surface and the crystal radii is controlled by a [2D Simplex Noise function](https://en.wikipedia.org/wiki/Simplex_noise). The noise amplitude is controlled by the ratio of total block transaction fees to total block value. We use this metric as a type of "Network Health". If the transaction fees are very high compared to the transaction amounts, we consider this an unhealthy state. An unhealthy state is visually reflected by transactions being more random in radius and spacing.
 
 ### Merkle Trees
+
+![Symphony](https://symphony.iohk.io/static/assets/images/block-angle.jpg)
+
 
 [Merkle Trees](https://en.wikipedia.org/wiki/Merkle_tree) are a fundamental component of blockchains and decentralized applications. They allow efficient verification of large data sets. In bitcoin and other cryptocurrencies, Merkle Trees connect one block to the next. They are constructed from hashes of the block transactions. In Symphony 2.0 we show how the branches of the trees connect to the transactions on the top of the block.
 
@@ -50,4 +55,4 @@ yarn install && yarn start
 
 ### License
 
-Symphony is licensed under the [Apache-2.0](./LICENSE.md) licence.
+Symphony 2.0 is licensed under the [Apache-2.0](./LICENSE.md) licence.
