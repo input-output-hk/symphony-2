@@ -303,7 +303,9 @@ class App extends mixin(EventEmitter, Component) {
       // noSleep.enable()
 
       if (document.body.requestFullscreen) {
-        document.body.requestFullscreen()
+        document.body.requestFullscreen().catch(err => {
+          console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`)
+        })
       }
     }
   }
