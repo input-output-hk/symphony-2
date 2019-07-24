@@ -4361,7 +4361,8 @@ class App extends mixin(EventEmitter, Component) {
             <img className='symphony-logo' src={logo} alt='Symphony Logo' onClick={() => { this.initStage('high') }} />
             <h1>Symphony</h1>
             <h2>3D Blockchain Explorer</h2>
-            {/* <p className='choose-quality'>COMING SOON...</p> */}
+            <p className='headphone-hint'>Headphones<br />Recommended</p>
+            <i className='fas fa-headphones-alt' />
             <p className='choose-quality'>Choose Quality:</p>
             <a className='quality-select' onClick={() => { this.initStage('high') }} tooltip='For computers with modern graphics cards'>HIGH</a>
             <a className='quality-select' onClick={() => { this.initStage('low') }} tooltip='For Computers with low power graphics cards'>MEDIUM</a>

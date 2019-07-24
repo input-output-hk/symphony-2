@@ -2268,3 +2268,10 @@ canvas#sketchboard {
   text-transform: uppercase;
   animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
 }
+
+@media only screen and (max-width: 600px) {
+  .headphone-hint,
+  .logo-container .fa-headphones-alt {
+    display: none;
+  }
+}
