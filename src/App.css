@@ -1430,7 +1430,7 @@ canvas#sketchboard {
   font-weight: 300;
   font-size: 1vw;
   text-transform: uppercase;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
   letter-spacing: 10px;
 }
 
@@ -1445,7 +1445,7 @@ canvas#sketchboard {
   font-weight: 300;
   font-size: 0.7vw;
   text-transform: uppercase;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
   letter-spacing: 1px;
   margin-top: 20px;
 }
@@ -1463,7 +1463,7 @@ canvas#sketchboard {
 .symphony-logo {
   width: 17vw;
   opacity: 0.8;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
   mix-blend-mode: screen;
 }
 
@@ -1478,7 +1478,7 @@ canvas#sketchboard {
 }
 
 .symphony-logo.pulsate {
-  animation: pulsate 2.0s ease-in-out infinite both, blur-in 2.5s ease-in, opacity-pulse 2.0s ease-in-out infinite both;
+  animation: pulsate 2.0s ease-in-out infinite both, blur-in 2.5s ease-in;
 }
 
 .logo-container p {
@@ -1489,7 +1489,7 @@ canvas#sketchboard {
 .logo-container .fa-headphones-alt {
   opacity: 0.6;
   color: #ddd;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
 }
 
 .loaded {
@@ -2113,7 +2113,7 @@ canvas#sketchboard {
   padding: 50px 0 0;
   opacity: 0.8;
   text-transform: uppercase;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
 }
 
 @media only screen and (max-width: 600px) {
@@ -2125,7 +2125,7 @@ canvas#sketchboard {
 .quality-select {
   opacity: 0.6;
   padding: 0 20px;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
 }
 
 .quality-select:hover {
@@ -2266,12 +2266,27 @@ canvas#sketchboard {
   margin-top: 50px;
   margin-bottom: 5px;
   text-transform: uppercase;
-  animation: blur-in 2.5s ease-in, opacity-pulse 4.0s ease-in-out infinite both;
+  animation: blur-in 2.5s ease-in;
 }
 
 @media only screen and (max-width: 600px) {
   .headphone-hint,
   .logo-container .fa-headphones-alt {
+    display: none;
+  }
+}
+
+.video-bg {
+  min-width: 100%;
+  min-height: 100%;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  opacity: 0.2;
+}
+
+@media only screen and (max-width: 600px) {
+  .video-bg {
     display: none;
   }
 }

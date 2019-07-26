@@ -4355,7 +4355,12 @@ class App extends mixin(EventEmitter, Component) {
 
       return (
         <div className={className}>
-          <div className='landing-bg' />
+
+          <video className='video-bg' autoPlay='true' loop='true' >
+            <source src='./assets/video/loop.mp4' type='video/mp4' />
+          </video>
+
+          {/* <div className='landing-bg' /> */}
           <div className='logo-container'>
             {/* <img className='symphony-logo' src={logo} alt='Symphony Logo' /> */}
             <img className='symphony-logo' src={logo} alt='Symphony Logo' onClick={() => { this.initStage('high') }} />
