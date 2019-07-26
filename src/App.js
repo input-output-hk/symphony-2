@@ -4356,7 +4356,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className={className}>
 
-          <video className='video-bg' autoPlay='true' loop='true' >
+          <video className='video-bg' autoPlay='true' loop='true' muted='true' >
             <source src='./assets/video/loop.mp4' type='video/mp4' />
           </video>
 
