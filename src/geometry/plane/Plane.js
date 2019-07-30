@@ -23,6 +23,10 @@ export default class Plane extends Base {
       this.instanceTotal = 20
     }
 
+    if (this.config.scene.mode === 'lite') {
+      this.instanceTotal = 20
+    }
+
     this.blockHeightIndex = {}
 
     this.cubeMap = new THREE.CubeTextureLoader()

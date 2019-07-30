@@ -78,17 +78,33 @@ export default class BlockDetails extends Component {
   }
 
   UICockpitButton () {
-    if (this.props.controlType === 'fly') {
+    if (this.props.config.scene.mode === 'full') {
+      if (this.props.controlType === 'fly') {
+        return (
+          <div className='explore-container'>
+            <button tooltip='Exit Flight Simulator' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
+            <span tooltip='Exit Flight Simulator' className='cancel' onClick={this.props.toggleTopView} />
+          </div>
+        )
+      } else {
+        return (
+          <div className='explore-container'>
+            <button tooltip='Flight Simulator Mode' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
+          </div>
+        )
+      }
+    }
+  }
+
+  UIAutoPilot () {
+    if (this.props.config.scene.mode === 'full') {
       return (
-        <div className='explore-container'>
-          <button tooltip='Exit Flight Simulator' onClick={this.props.toggleTopView} className='toggle-cockpit-controls leave' />
-          <span tooltip='Exit Flight Simulator' className='cancel' onClick={this.props.toggleTopView} />
-        </div>
-      )
-    } else {
-      return (
-        <div className='explore-container'>
-          <button tooltip='Flight Simulator Mode' onClick={this.props.toggleFlyControls} className='toggle-cockpit-controls enter' />
+        <div className='autopilot-controls'>
+          <div className='autopilot-inner'>
+            <span tooltip='Auto-pilot back in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
+            <span tooltip='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
+            <span tooltip='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
+          </div>
         </div>
       )
     }
@@ -270,14 +286,7 @@ export default class BlockDetails extends Component {
           {this.UIIntroOverlay()}
           {this.UICockpit()}
           {this.UICockpitButton()}
-
-          <div className='autopilot-controls'>
-            <div className='autopilot-inner'>
-              <span tooltip='Auto-pilot back in time' className='backward' onClick={() => this.props.toggleAutoPilotDirection('backward')} />
-              <span tooltip='Stop Auto Pilot' className='stop' onClick={() => this.props.stopAutoPilot()} />
-              <span tooltip='Auto-pilot forwards in time' className='forward' onClick={() => this.props.toggleAutoPilotDirection('forward')} />
-            </div>
-          </div>
+          {this.UIAutoPilot()}
 
           <div className={'grad-left' + gradClass} />
           <div className={'grad-right' + gradClass} />

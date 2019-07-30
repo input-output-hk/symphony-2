@@ -21,6 +21,10 @@ export default class Tree extends Base {
       this.instanceTotal = 20
     }
 
+    if (this.config.scene.mode === 'lite') {
+      this.instanceTotal = 20
+    }
+
     this.cubeMap = new THREE.CubeTextureLoader()
       .setPath('assets/images/textures/cubemaps/playa-full/')
       .load([

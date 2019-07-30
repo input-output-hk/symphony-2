@@ -17,6 +17,10 @@ export default class Crystal extends Base {
     this.normalMap.minFilter = THREE.NearestFilter
     this.instanceTotal = 9 * 4000
 
+    if (this.config.scene.mode === 'lite') {
+      this.instanceTotal = 5 * 4000
+    }
+    
     if (this.config.detector.isMobile) {
       this.instanceTotal = 3 * 4000
     }

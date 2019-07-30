@@ -6,7 +6,9 @@ const detector = new Detector()
 
 const Config = {
   scene: {
-    showIntro: true,
+    skipLaunchScreen: true,
+    mode: 'lite', // full or lite
+    showIntro: false,
     introTextTime: 5500, // ms
     canvasID: 'symphony-stage', // ID of webgl canvas element
     autoRotate: false, // auto rotate camera around target

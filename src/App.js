@@ -69,6 +69,12 @@ class App extends mixin(EventEmitter, Component) {
     this.blockReady = false
     this.baseGeoToLoadEitherSide = this.config.detector.isMobile ? 5 : 25
     this.blocksToLoadEitherSide = this.config.detector.isMobile ? 1 : 4
+
+    if (this.config.scene.mode === 'lite') {
+      this.baseGeoToLoadEitherSide = 10
+      this.blocksToLoadEitherSide = 3
+    }
+
     this.coils = 100
     this.radius = 1000000
     this.frame = 0
@@ -182,7 +188,7 @@ class App extends mixin(EventEmitter, Component) {
       started: false, // if the experience has started
       flyControlsInteractionCount: 0,
       qualitySelected: false,
-      showInfoOverlay: true,
+      showInfoOverlay: false,
       UIClass: 'symphony',
       animatingCamera: true
     }
@@ -197,7 +203,17 @@ class App extends mixin(EventEmitter, Component) {
     this.getUnconfirmedCount()
   }
 
+  componentDidMount () {
+    if (this.config.scene.skipLaunchScreen) {
+      this.setLoadingState()
+      this.initStage('high')
+    }
+  }
+
   async getUnconfirmedCount () {
+    // if (this.config.scene.mode === 'lite') {
+    // this.unconfirmedCount = 0
+    // } else {
     this.unconfirmedCount = 10000
 
     try {
@@ -206,6 +222,7 @@ class App extends mixin(EventEmitter, Component) {
     } catch (error) {
       console.log(error)
     }
+    // }
   }
 
   async initWorkers () {
@@ -314,12 +331,12 @@ class App extends mixin(EventEmitter, Component) {
     this.setLoadingState()
     this.setMobileStageOptions()
     this.initRenderer(quality)
+    await this.initPositions()
     this.initObjects()
     this.initGUI()
     this.initScene()
     this.initCamera()
     this.initLights()
-    await this.initPositions()
     this.initEnvironment()
     this.initGeometry()
     this.addEvents()
@@ -890,7 +907,9 @@ class App extends mixin(EventEmitter, Component) {
 
   async initEnvironment () {
     this.disk = await this.diskGenerator.init()
-    this.group.add(this.disk)
+    if (this.config.scene.mode === 'full') {
+      this.group.add(this.disk)
+    }
 
     this.glow = await this.glowGenerator.init()
     this.scene.add(this.glow)
@@ -1487,8 +1506,16 @@ class App extends mixin(EventEmitter, Component) {
           }
 
           if (blockDist < closestDist) {
+            let triggerLoadEvent = false
+            if (this.closestBlock === null) {
+              triggerLoadEvent = true
+            }
+
             closestDist = blockDist
             this.closestBlock = blockGeoData
+            if (triggerLoadEvent) {
+              this.emit('closestBlockLoaded')
+            }
           }
         }
       }
@@ -2146,6 +2173,15 @@ class App extends mixin(EventEmitter, Component) {
     ).add(toBlockVec)
     let toTarget = new THREE.Vector3(posX, this.autoPilotYPos + 20, posZ)
 
+    if (Math.random() > 0.75) {
+      toTarget = new THREE.Vector3(0, 0, 0)
+    }
+
+    if (Math.random() > 0.63) {
+      to.y = -50
+      toTarget.y = -50
+    }
+
     this.prepareCamAnim(to, toTarget)
 
     let that = this
@@ -2544,18 +2580,22 @@ class App extends mixin(EventEmitter, Component) {
   }
 
   loadSpiralAnim () {
-    let that = this
+    if (this.config.scene.mode !== 'lite') {
+      this.disk.material.uniforms.uSpiralStart.value = 154387
+    } else {
+      let that = this
 
-    new TWEEN.Tween({ uSpiralStart: 725000 })
-      .to({ uSpiralStart: 154387 }, 30000)
-      .onUpdate(function () {
-        that.disk.material.uniforms.uSpiralStart.value = this.uSpiralStart
-      })
-      .onComplete(() => {
-        that.startUnconfirmed()
-      })
-      .easing(this.defaultCamEasing)
-      .start()
+      new TWEEN.Tween({ uSpiralStart: 725000 })
+        .to({ uSpiralStart: 154387 }, 30000)
+        .onUpdate(function () {
+          that.disk.material.uniforms.uSpiralStart.value = this.uSpiralStart
+        })
+        .onComplete(() => {
+          that.startUnconfirmed()
+        })
+        .easing(this.defaultCamEasing)
+        .start()
+    }
   }
 
   async startIntro () {
@@ -2566,7 +2606,15 @@ class App extends mixin(EventEmitter, Component) {
     this.startScene()
 
     if (!this.config.scene.showIntro) {
-      this.goToBlock()
+      if (this.config.scene.mode === 'full') {
+        this.goToBlock()
+      }
+
+      if (this.config.scene.mode === 'lite') {
+        this.on('closestBlockLoaded', () => {
+          this.toggleAutoPilotDirection('backward')
+        })
+      }
     } else {
       if (this.vrActive) {
         await this.playTutorial()
@@ -3759,11 +3807,25 @@ class App extends mixin(EventEmitter, Component) {
 
     window.camera = this.camera
 
-    this.camera.position.x = this.config.camera.initPos.x
-    this.camera.position.y = this.config.camera.initPos.y
-    this.camera.position.z = this.config.camera.initPos.z
+    if (this.config.scene.mode === 'lite') {
+      this.camera.position.x = this.blockPositions[this.maxHeight * 2 + 0]
+      this.camera.position.y = 20
+      this.camera.position.z = this.blockPositions[this.maxHeight * 2 + 1]
 
-    this.camera.lookAt(this.config.camera.initTarget)
+      this.camera.lookAt(
+        new THREE.Vector3(
+          this.blockPositions[(this.maxHeight - 1) * 2 + 0],
+          20,
+          this.blockPositions[(this.maxHeight - 1) * 2 + 1]
+        )
+      )
+    } else {
+      this.camera.position.x = this.config.camera.initPos.x
+      this.camera.position.y = this.config.camera.initPos.y
+      this.camera.position.z = this.config.camera.initPos.z
+
+      this.camera.lookAt(this.config.camera.initTarget)
+    }
 
     this.cameraMain.fov = this.config.camera.fov
 
@@ -4356,7 +4418,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className={className}>
 
-          <video className='video-bg' autoPlay='true' loop='true' muted='true' >
+          <video className='video-bg' autoPlay loop muted>
             <source src='./assets/video/loop.mp4' type='video/mp4' />
           </video>
 

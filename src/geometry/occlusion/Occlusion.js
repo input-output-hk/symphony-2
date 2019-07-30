@@ -18,6 +18,10 @@ export default class Occlusion extends Base {
       this.instanceTotal = 11
     }
 
+    if (this.config.scene.mode === 'lite') {
+      this.instanceTotal = 20
+    }
+
     this.blockHeightIndex = {}
     this.material = new OcclusionMaterial({
       transparent: true

@@ -26,6 +26,9 @@ export default class CrystalAO extends Base {
     this.instanceTotal = 10 * 3000
     this.txCount = 0
 
+    if (this.config.scene.mode === 'lite') {
+      this.instanceTotal = 5 * 4000
+    }
     if (this.config.detector.isMobile) {
       this.instanceTotal = 0
     }
