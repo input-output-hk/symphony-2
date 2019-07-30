@@ -1860,13 +1860,15 @@ canvas#sketchboard {
 }
 
 .intro-overlay-merkle {
-  left: 36%;
+  left: 45%;
   top: 29px;
+  margin-left: -170px;
 }
 
 .intro-overlay-free-explore {
-  left: 47.3%;
+  left: 50%;
   top: 65px;
+  margin-left: -54px;
 }
 
 .intro-overlay-block-details {
@@ -1876,8 +1878,9 @@ canvas#sketchboard {
 }
 
 .intro-overlay-autopilot {
-  left: 61.4%;
+  left: 55%;
   top: 29px;
+  margin-left: 117px;
 }
 
 .intro-overlay-sidebar {
