@@ -4378,8 +4378,9 @@ class App extends mixin(EventEmitter, Component) {
             </div>
             :
             <div>
-              <h1>Internet Explorer is not supported.</h1>
-              <h2>Please change your browser.</h2>
+              <br />
+              <h1>Internet Explorer is not supported</h1>
+              <h2>Please change your browser</h2>
             </div>
             }
 
