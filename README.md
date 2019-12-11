@@ -1,6 +1,6 @@
 # [Symphony 2.0](https://symphony.iohk.io)
 
-![Symphony](https://symphony.iohk.io/static/assets/images/day-view.jpg)
+![Symphony](https://symphony.iohk.io/static/cc3e46f246ec28d72b2311a62590c527/775d9/day-view.jpg)
 
 Symphony 2.0 is a **real-time, 3D, immersive blockchain explorer.**
 
@@ -22,7 +22,7 @@ The arrangement of crystals on the block surface and the crystal radii is contro
 
 ### Merkle Trees
 
-![Symphony](https://symphony.iohk.io/static/assets/images/block-angle.jpg)
+![Symphony](https://symphony.iohk.io/static/6d0dd183b4c83ef4e918b3a3b65ecc00/775d9/block-angle.jpg)
 
 
 [Merkle Trees](https://en.wikipedia.org/wiki/Merkle_tree) are a fundamental component of blockchains and decentralized applications. They allow efficient verification of large data sets. In bitcoin and other cryptocurrencies, Merkle Trees connect one block to the next. They are constructed from hashes of the block transactions. In Symphony 2.0 we show how the branches of the trees connect to the transactions on the top of the block.
