@@ -37,6 +37,7 @@ self.addEventListener('message', async function (e) {
       let snapshot = await blockRef.get()
 
       let blockData
+      const txHashes = []
       let shouldCache = false
 
       if (!snapshot.exists) {
@@ -65,7 +66,7 @@ self.addEventListener('message', async function (e) {
         }
         if (heightsToUpdate.length > 0) {
           try {
-            await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+            await docRefUpdate.doc('heights').set({ heights: heightsToUpdate }, { merge: false })
           } catch (error) {
             console.log(error)
           }
@@ -83,6 +84,7 @@ self.addEventListener('message', async function (e) {
           data.txValues[i] = tx.value
           data.txSpentRatios[i] = tx.spentRatio
           data.txIndexes[i] = tx.index
+          txHashes[i] = tx.hash
         })
 
         blockData.tx = []
@@ -92,7 +94,8 @@ self.addEventListener('message', async function (e) {
         blockData: blockData,
         txValues: data.txValues,
         txSpentRatios: data.txSpentRatios,
-        txIndexes: data.txIndexes
+        txIndexes: data.txIndexes,
+        txHashes: txHashes
       }
 
       self.postMessage(returnData, [

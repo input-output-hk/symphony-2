@@ -98,7 +98,7 @@ self.addEventListener('message', async function (e) {
             }
             if (heightsToUpdate.length > 0) {
               try {
-                await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+                await docRefUpdate.doc('heights').set({ heights: heightsToUpdate }, { merge: false })
               } catch (error) {
                 console.log(error)
               }
@@ -118,7 +118,7 @@ self.addEventListener('message', async function (e) {
             }
             if (heightsToUpdate.length > 0) {
               try {
-                await docRefUpdate.doc('heights').set({heights: heightsToUpdate}, { merge: false })
+                await docRefUpdate.doc('heights').set({ heights: heightsToUpdate }, { merge: false })
               } catch (error) {
                 console.log(error)
               }
@@ -132,13 +132,16 @@ self.addEventListener('message', async function (e) {
         //   blockDetails = updatedBlockDetails
         // }
 
+        const txHashes = []
         blockDetails.tx.forEach((tx, index) => {
           data['txValues' + ii][index] = tx.value
           data['txIndexes' + ii][index] = tx.index
           data['txSpentRatios' + ii][index] = tx.spentRatio
+          txHashes[index] = tx.hash
         })
 
         blockDetails.tx = []
+        blockDetails.txHashes = txHashes
 
         closestBlocksData[blockDetails.height] = blockDetails
 

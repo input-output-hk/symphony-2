@@ -103,7 +103,10 @@ export default class Picker extends Base {
         txValue = 0.5
       }
 
-      this.txMap[i] = blockGeoData.blockData.txIndexes[i]
+      this.txMap[i] = 0
+      if (typeof blockGeoData.blockData.txHashes[i] !== 'undefined') {
+        this.txMap[i] = blockGeoData.blockData.txHashes[i]
+      }
 
       offsets.setY(
         i,
@@ -175,8 +178,11 @@ export default class Picker extends Base {
         scale
       )
 
-      if (typeof blockGeoData.blockData.txIndexes !== 'undefined') {
-        this.txMap[i] = blockGeoData.blockData.txIndexes[i]
+      this.txMap[i] = 0
+      if (typeof blockGeoData.blockData.txHashes !== 'undefined') {
+        if (typeof blockGeoData.blockData.txHashes[i] !== 'undefined') {
+          this.txMap[i] = blockGeoData.blockData.txHashes[i]
+        }
       }
     }
 

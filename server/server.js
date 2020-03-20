@@ -84,6 +84,7 @@ const cacheBlockData = async function (height) {
       }
 
       transactions.push({
+        hash: tx.hash,
         index: tx.tx_index,
         time: tx.time,
         value: tx.value,
@@ -153,7 +154,7 @@ const saveGeometry = async function (blockData) {
           }
         }
       }
-      sites.push({x: x, y: y})
+      sites.push({ x: x, y: y })
     }
 
     let voronoiDiagram = voronoi.compute(sites, {
@@ -363,7 +364,7 @@ app.get('/api2/updateChangedBlocks', async (req, res) => {
     })
   })
 
-  await docRefUpdate.doc('heights').set({heights: []}, { merge: false })
+  await docRefUpdate.doc('heights').set({ heights: [] }, { merge: false })
 
   res.send({ express: 'Updating...' })
 })
@@ -422,7 +423,7 @@ const createMerkleCircuit = async function (hash) {
 
   merkleTools.drawMerkleCanvas(canvas, blockData, blockData.n_tx, canvasSize, blockOffsets)
 
-  const {Storage} = require('@google-cloud/storage')
+  const { Storage } = require('@google-cloud/storage')
   const storage = new Storage({
     keyFilename: './auth/' + config.FBFilename,
     projectId: 'webgl-gource-1da99.appspot.com'
