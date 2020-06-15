@@ -316,7 +316,7 @@ export default class BlockDetails extends Component {
                 <li><h3>Merkle Root:</h3> <strong>{ this.props.closestBlock.blockData.mrkl_root.substring(0, 10) }</strong></li>
                 <li><h3>Nonce:</h3> <strong>{ this.props.closestBlock.blockData.nonce }</strong></li>
                 <li><h3>Version:</h3> <strong>{ this.props.closestBlock.blockData.ver }</strong></li>
-                <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block-height/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
+                <li className='view-details'><h3><strong><a target='_blank' href={'https://www.blockchain.com/btc/block/' + this.props.closestBlock.blockData.height}>View Details</a></strong></h3></li>
               </ul>
             </div>
           </div>
