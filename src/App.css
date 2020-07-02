@@ -1461,7 +1461,7 @@ canvas#sketchboard {
 }
 
 .symphony-logo {
-  width: 17vw;
+  width: 10vw;
   opacity: 0.8;
   animation: blur-in 2.5s ease-in;
   mix-blend-mode: screen;
@@ -1473,7 +1473,7 @@ canvas#sketchboard {
 
 @media only screen and (max-width: 600px) {
   .symphony-logo {
-    width: 80vw;
+    width: 40vw;
   }
 }
 
@@ -2113,7 +2113,7 @@ canvas#sketchboard {
 
 .choose-quality {
   font-size: 12px;
-  padding: 50px 0 0;
+  padding: 15px 0 0;
   opacity: 0.8;
   text-transform: uppercase;
   animation: blur-in 2.5s ease-in;
@@ -2266,7 +2266,7 @@ canvas#sketchboard {
 .headphone-hint {
   color: #ddd;
   font-size: 10px;
-  margin-top: 50px;
+  margin-top: 25px;
   margin-bottom: 5px;
   text-transform: uppercase;
   animation: blur-in 2.5s ease-in;
@@ -2292,4 +2292,14 @@ canvas#sketchboard {
   .video-bg {
     display: none;
   }
+}
+
+.virtual-exhibition {
+  position: relative;
+  z-index: 1;
+}
+
+.virtual-exhibition img{
+  width: 100%;
+  margin-top: 8vh;
 }

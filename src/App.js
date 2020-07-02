@@ -4359,7 +4359,7 @@ class App extends mixin(EventEmitter, Component) {
       return (
         <div className={className}>
 
-          <video className='video-bg' autoPlay='true' loop='true' muted='true' >
+          <video className='video-bg' autoPlay loop muted >
             <source src='./assets/video/loop.mp4' type='video/mp4' />
           </video>
 
@@ -4385,7 +4385,11 @@ class App extends mixin(EventEmitter, Component) {
               </div>
             }
 
+            <a className='virtual-exhibition' href='https://hubs.mozilla.com/58KQNku/symphony-of-blockchains/' target='_blank'>
+              <img src='./assets/images/virtual-gallery-thumb.jpg' alt='Enter Symphony Virtual Exhibition' />
+            </a>
           </div>
+
         </div>
       )
     }
