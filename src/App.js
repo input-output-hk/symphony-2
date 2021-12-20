@@ -4385,9 +4385,7 @@ class App extends mixin(EventEmitter, Component) {
               </div>
             }
 
-            <a className='virtual-exhibition' href='https://hubs.mozilla.com/58KQNku/symphony-of-blockchains/' target='_blank'>
-              <img src='./assets/images/virtual-gallery-thumb.jpg' alt='Enter Symphony Virtual Exhibition' />
-            </a>
+            
           </div>
 
         </div>
