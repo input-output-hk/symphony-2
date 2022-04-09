@@ -42,7 +42,7 @@
     "jest": "22.4.3",
     "load-bmfont": "^1.4.0",
     "mixin": "^0.2.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "noisejs": "^2.1.0",
     "nosleep.js": "^0.9.0",
     "object-assign": "4.1.1",
