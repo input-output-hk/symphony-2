@@ -38,7 +38,7 @@
     "fs-extra": "5.0.0",
     "glsl-noise": "^0.0.0",
     "gpu.js": "^1.10.4",
-    "html-webpack-plugin": "3.2.0",
+    "html-webpack-plugin": "5.5.0",
     "jest": "22.4.3",
     "load-bmfont": "^1.4.0",
     "mixin": "^0.2.0",
